@@ -1,0 +1,6 @@
+checklist:
+  - "Code is clean, readable, and adheres to team coding standards."
+  - "All relevant automated tests (unit, integration) pass successfully."
+  - "New features or bug fixes are covered by appropriate new tests."
+  - "Security implications of this change have been considered."
+  - "Relevant documentation (code comments, READMEs, etc.) is updated."

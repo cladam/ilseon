@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,11 +84,11 @@ private fun DeveloperInfoCard() {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Claes Adamsson",
+                text = "Claes Adamsson (@cladam)",
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = "Indie Developer",
+                text = "Software Engineer & Engineering Manager",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -96,7 +97,14 @@ private fun DeveloperInfoCard() {
                 icon = Icons.Default.Code,
                 text = "View on GitHub",
                 onClick = {
-                    uriHandler.openUri("https://github.com/cladam/ilseon")
+                    uriHandler.openUri("https://github.com/cladam")
+                }
+            )
+            InfoRow(
+                icon = Icons.Default.Language,
+                text = "More About the Developer",
+                onClick = {
+                    uriHandler.openUri("https://cladam.github.io/")
                 }
             )
         }

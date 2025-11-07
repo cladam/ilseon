@@ -6,11 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import com.ilseon.task.ReminderType
-import com.ilseon.task.Task
-import com.ilseon.task.TaskContext
-import com.ilseon.task.TaskDao
-import com.ilseon.task.TaskPriority
+import com.ilseon.data.task.ReminderType
+import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskDao
+import com.ilseon.data.task.TaskPriority
 
 
 @Database(entities = [Task::class], version = 1, exportSchema = false)

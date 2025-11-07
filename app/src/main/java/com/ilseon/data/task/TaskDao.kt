@@ -1,4 +1,4 @@
-package com.ilseon.task
+package com.ilseon.data.task
 
 import androidx.room.Dao
 import androidx.room.Insert

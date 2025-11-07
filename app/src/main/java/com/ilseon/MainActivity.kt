@@ -36,13 +36,13 @@ import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.DashboardScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.theme.IlseonTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: TaskViewModel by viewModels {
-        TaskViewModelFactory((application as IlseonApplication).database.taskDao())
-    }
+    private val viewModel: TaskViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {

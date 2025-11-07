@@ -40,9 +40,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ilseon.task.Task
-import com.ilseon.task.TaskContext
-import com.ilseon.task.TaskPriority
+import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskPriority
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date

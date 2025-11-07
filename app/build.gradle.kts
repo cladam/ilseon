@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -16,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.2"
+        versionName = "0.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -70,25 +71,24 @@ dependencies {
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // ** Hilt (Dependency Injection) **
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
 
     // ** 1. ROOM (Database Persistence) **
-    val roomVersion = "2.8.3"
+    val roomVersion = "2.6.1" // Updated to a more recent stable version
     implementation("androidx.room:room-runtime:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
-    ksp("androidx.room:room-compiler:2.5.0")
-
-    // To use Kotlin Symbol Processing (KSP) for Room (recommended over annotationProcessor)
-    // NOTE: You must also add the KSP plugin to the top-level build.gradle.kts file
-    // and apply it in this file. KSP is generally faster.
-    // ksp("androidx.room:room-compiler:$room_version") // Will use this if KSP is set up
+    ksp("androidx.room:room-compiler:$roomVersion")
 
     // Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$roomVersion")
 
     // ** 2. LIFECYCLE & COROUTINES **
     // For ViewModel and Coroutine Scope
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0") // Updated to a more recent stable version
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
 
     // ** 3. NAVIGATION **
     implementation("androidx.navigation:navigation-compose:2.7.7")

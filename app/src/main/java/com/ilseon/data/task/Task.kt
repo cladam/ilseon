@@ -1,4 +1,4 @@
-package com.ilseon.task
+package com.ilseon.data.task
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

@@ -1,7 +1,7 @@
 package com.ilseon
 
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
 
-class IlseonApplication : Application() {
-    val database: AppDatabase by lazy { AppDatabase.Companion.getDatabase(this) }
-}
+@HiltAndroidApp
+class IlseonApplication : Application()

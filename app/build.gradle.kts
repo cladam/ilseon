@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -74,6 +75,7 @@ dependencies {
     val roomVersion = "2.8.3"
     implementation("androidx.room:room-runtime:$roomVersion")
     annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    ksp("androidx.room:room-compiler:2.5.0")
 
     // To use Kotlin Symbol Processing (KSP) for Room (recommended over annotationProcessor)
     // NOTE: You must also add the KSP plugin to the top-level build.gradle.kts file

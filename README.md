@@ -10,7 +10,7 @@
 
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 
 assistant designed to reduce mental overload. It creates a protected focus environment that helps users 
-with **ADD/ADHD** and **ASD** regain control over time, attention, and priorities.
+regain control over time, attention, and priorities.
 
 ## The Core Problem
 

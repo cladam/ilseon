@@ -1,5 +1,9 @@
 package com.ilseon.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,12 +51,15 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun DashboardScreen(
     tasks: List<Task>,
     onTaskComplete: (Task) -> Unit
 ) {
+    var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -73,15 +80,51 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    CurrentPriorityTask(task = tasks.first(), onComplete = onTaskComplete)
+                    val task = tasks.first()
+                    AnimatedTaskItem(
+                        task = task,
+                        isVisible = !completedTaskIds.contains(task.id),
+                        onComplete = {
+                            completedTaskIds = completedTaskIds + task.id
+                        }
+                    ) {
+                        CurrentPriorityTask(task = it, onComplete = onTaskComplete)
+                    }
                 }
 
                 if (tasks.size > 1) {
                     item {
-                        NextUpTasks(tasks = tasks.drop(1), onComplete = onTaskComplete)
+                        NextUpTasks(
+                            tasks = tasks.drop(1),
+                            completedTaskIds = completedTaskIds,
+                            onComplete = onTaskComplete
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AnimatedTaskItem(
+    task: Task,
+    isVisible: Boolean,
+    onComplete: (Task) -> Unit,
+    content: @Composable (Task) -> Unit
+) {
+    AnimatedVisibility(
+        visible = isVisible,
+        exit = shrinkVertically(animationSpec = tween(durationMillis = 300)) +
+                fadeOut(animationSpec = tween(durationMillis = 300)),
+    ) {
+        content(task)
+    }
+
+    if (!isVisible) {
+        LaunchedEffect(task) {
+            delay(300) // Wait for animation to finish
+            onComplete(task)
         }
     }
 }
@@ -172,7 +215,7 @@ fun CurrentPriorityTask(task: Task, onComplete: (Task) -> Unit) {
 }
 
 @Composable
-fun NextUpTasks(tasks: List<Task>, onComplete: (Task) -> Unit) {
+fun NextUpTasks(tasks: List<Task>, completedTaskIds: Set<UUID>, onComplete: (Task) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -190,26 +233,32 @@ fun NextUpTasks(tasks: List<Task>, onComplete: (Task) -> Unit) {
         Spacer(Modifier.height(12.dp))
 
         tasks.take(3).forEach { task ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedTaskItem(
+                task = task,
+                isVisible = !completedTaskIds.contains(task.id),
+                onComplete = onComplete
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), CircleShape)
-                        .clickable { onComplete(task) },
-                    contentAlignment = Alignment.Center
-                ) {}
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    text = task.title,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 16.sp,
-                )
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), CircleShape)
+                            .clickable { onComplete(task) },
+                        contentAlignment = Alignment.Center
+                    ) {}
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = it.title,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 16.sp,
+                    )
+                }
             }
         }
     }
@@ -262,7 +311,7 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TaskContext.values().take(3).forEach { ctx ->
+            TaskContext.entries.toTypedArray().take(3).forEach { ctx ->
                 Button(
                     onClick = { context = ctx },
                     colors = ButtonDefaults.buttonColors(
@@ -285,7 +334,7 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TaskPriority.values().forEach { prio ->
+            TaskPriority.entries.forEach { prio ->
                 Button(
                     onClick = { priority = prio },
                     modifier = Modifier.weight(1f),

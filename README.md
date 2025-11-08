@@ -16,7 +16,7 @@ regain control over time, attention, and priorities.
 
 Traditional productivity apps assume users can manage endless lists and switch contexts freely. 
 But for neurodivergent users, this often leads to **context-switching burnout**, **time blindness**, and **task paralysis**.
-Ilseon tackles this by **filtering focus**, showing only one Context at a time (e.g. _Work_, _Family_, _Project 1_). 
+Ilseon tackles this by **filtering focus**, showing only one Context at a time (e.g. _Work_, _Family_, _Personal_, _Project 1_). 
 When you’re in a given context, everything else disappears. The goal is to reduce cognitive noise, 
 so your attention stays anchored on what matters _right now_.
 

@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskPriority
@@ -59,9 +62,12 @@ import java.util.UUID
 @Composable
 fun DashboardScreen(
     tasks: List<Task>,
-    onTaskComplete: (Task) -> Unit
+    onTaskComplete: (Task) -> Unit,
+    contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
     var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
+    val contexts by contextViewModel.contexts.collectAsState()
+    val contextMap = remember(contexts) { contexts.associateBy { it.id } }
 
     Column(
         modifier = Modifier
@@ -91,7 +97,11 @@ fun DashboardScreen(
                             completedTaskIds = completedTaskIds + task.id
                         }
                     ) {
-                        CurrentPriorityTask(task = it, onComplete = onTaskComplete)
+                        CurrentPriorityTask(
+                            task = it,
+                            contextName = contextMap[it.contextId]?.name ?: "N/A",
+                            onComplete = onTaskComplete
+                        )
                     }
                 }
 
@@ -178,7 +188,7 @@ fun ClockDisplay() {
 }
 
 @Composable
-fun CurrentPriorityTask(task: Task, onComplete: (Task) -> Unit) {
+fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Current Priority Task",
@@ -208,7 +218,7 @@ fun CurrentPriorityTask(task: Task, onComplete: (Task) -> Unit) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "${task.context.name} / ${task.priority.name} Priority",
+                        text = "$contextName / ${task.priority.name} Priority",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 14.sp
                     )
@@ -281,11 +291,19 @@ fun NextUpTasks(tasks: List<Task>, completedTaskIds: Set<UUID>, onComplete: (Tas
 
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, TaskContext, TaskPriority) -> Unit
+    onSave: (String, UUID?, TaskPriority) -> Unit,
+    viewModel: TaskContextViewModel = hiltViewModel()
 ) {
+    val contexts by viewModel.contexts.collectAsState()
     var title by remember { mutableStateOf("") }
-    var context by remember { mutableStateOf(TaskContext.Work) }
+    var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Mid) }
+
+    LaunchedEffect(contexts) {
+        if (selectedContextId == null) {
+            selectedContextId = contexts.firstOrNull()?.id
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -322,21 +340,30 @@ fun QuickCaptureSheet(
 
         Text("Context", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
         Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TaskContext.entries.toTypedArray().take(3).forEach { ctx ->
-                Button(
-                    onClick = { context = ctx },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (context == ctx) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (context == ctx) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            contexts.chunked(3).forEach { rowContexts ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(ctx.name)
+                    rowContexts.forEach { ctx ->
+                        Button(
+                            onClick = { selectedContextId = ctx.id },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(0.dp)
+                        ) {
+                            Text(ctx.name)
+                        }
+                    }
+                    // Add spacers to fill the row if there are less than 3 items
+                    repeat(3 - rowContexts.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -368,7 +395,7 @@ fun QuickCaptureSheet(
         Spacer(Modifier.height(32.dp))
 
         Button(
-            onClick = { onSave(title, context, priority) },
+            onClick = { onSave(title, selectedContextId, priority) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -376,7 +403,7 @@ fun QuickCaptureSheet(
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
             ),
-            enabled = title.isNotBlank()
+            enabled = title.isNotBlank() && selectedContextId != null
         ) {
             Text("Save Task", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         }

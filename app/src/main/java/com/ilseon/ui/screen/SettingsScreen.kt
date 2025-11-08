@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,69 +28,17 @@ import com.ilseon.ui.theme.IlseonTheme
 import java.util.TimeZone
 
 @Composable
-fun SettingsScreen() {
-    SettingsScreenContent()
-}
-
-@Composable
-private fun SettingsScreenContent() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item { GeneralSettingsCard() }
-    }
-}
-
-@Composable
-private fun GeneralSettingsCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+fun SettingsScreen(onManageContextsClick: () -> Unit) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onManageContextsClick)
+        ) {
             Text(
-                text = "General",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SettingsRow(
-                icon = Icons.Default.Schedule,
-                text = "Timezone",
-                value = TimeZone.getDefault().id
+                text = "Manage Contexts",
+                modifier = Modifier.padding(16.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun SettingsRow(icon: ImageVector, text: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(text = text, style = MaterialTheme.typography.bodyLarge)
-        }
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SettingsScreenPreview() {
-    IlseonTheme {
-        SettingsScreenContent()
     }
 }

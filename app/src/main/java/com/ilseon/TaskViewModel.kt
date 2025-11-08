@@ -8,32 +8,39 @@ import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
-class TaskViewModel @Inject constructor(
-    private val taskRepository: TaskRepository
-) : ViewModel() {
+class TaskViewModel @Inject constructor(private val taskRepository: TaskRepository) : ViewModel() {
 
-    val tasks = taskRepository.getIncompleteTasks()
+    val tasks: StateFlow<List<Task>> = taskRepository.getTasks()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    fun addTask(title: String, context: TaskContext, priority: TaskPriority) {
+    fun addTask(title: String, contextId: UUID?, priority: TaskPriority) {
         viewModelScope.launch {
-            val task = Task(title = title, context = context, priority = priority)
-            taskRepository.insert(task)
+            if (title.isNotBlank() && contextId != null) {
+                taskRepository.insertTask(
+                    Task(
+                        title = title,
+                        contextId = contextId,
+                        priority = priority
+                    )
+                )
+            }
         }
     }
 
     fun completeTask(task: Task) {
         viewModelScope.launch {
-            taskRepository.update(task.copy(isComplete = true))
+            taskRepository.updateTask(task.copy(isComplete = true))
         }
     }
 }

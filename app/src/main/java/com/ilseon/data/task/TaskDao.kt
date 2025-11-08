@@ -2,6 +2,7 @@ package com.ilseon.data.task
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -36,17 +37,26 @@ interface TaskDao {
     """)
     fun getIncompleteTasks(): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks WHERE isComplete = 0 ORDER BY createdAt DESC")
+    fun getTasks(): Flow<List<Task>>
+
     /**
      * Inserts a new task.
      */
     @Insert
     suspend fun insert(task: Task)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTask(task: Task)
+
     /**
      * Updates an existing task (e.g., to mark it as complete).
      */
     @Update
     suspend fun update(task: Task)
+
+    @Update
+    suspend fun updateTask(task: Task)
 
     /**
      * Gets a single task by its ID.

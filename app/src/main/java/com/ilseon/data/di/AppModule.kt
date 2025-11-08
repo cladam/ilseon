@@ -2,7 +2,9 @@ package com.ilseon.data.di
 
 import android.content.Context
 import androidx.room.Room
-import com.ilseon.data.local.AppDatabase
+import com.ilseon.AppDatabase
+import com.ilseon.data.task.TaskContextDao
+import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskRepository
 import dagger.Module
@@ -38,5 +40,16 @@ object AppModule {
     @Singleton
     fun provideTaskRepository(taskDao: TaskDao): TaskRepository {
         return TaskRepository(taskDao)
+    }
+
+    @Provides
+    fun provideTaskContextDao(appDatabase: com.ilseon.AppDatabase): TaskContextDao {
+        return appDatabase.taskContextDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTaskContextRepository(taskContextDao: TaskContextDao): TaskContextRepository {
+        return TaskContextRepository(taskContextDao)
     }
 }

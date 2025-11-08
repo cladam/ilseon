@@ -9,25 +9,33 @@ import androidx.room.TypeConverters
 import com.ilseon.data.task.ReminderType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
+import java.util.UUID
 
 
-@Database(entities = [Task::class], version = 1, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class], version = 2, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
+    abstract fun taskContextDao(): TaskContextDao
+
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.
      */
     class Converters {
         @TypeConverter
-        fun fromTaskContext(value: TaskContext): String = value.name
+        fun fromUUID(uuid: UUID?): String? {
+            return uuid?.toString()
+        }
 
         @TypeConverter
-        fun toTaskContext(value: String): TaskContext = TaskContext.valueOf(value)
+        fun toUUID(uuid: String?): UUID? {
+            return uuid?.let { UUID.fromString(it) }
+        }
 
         @TypeConverter
         fun fromTaskPriority(value: TaskPriority): String = value.name

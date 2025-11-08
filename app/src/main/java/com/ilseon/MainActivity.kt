@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,8 +37,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
+import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
-import com.ilseon.ui.screen.QuickCaptureScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
@@ -136,10 +135,17 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable(Screen.Settings.route) {
-                                SettingsScreen()
+                                SettingsScreen(
+                                    onManageContextsClick = {
+                                        navController.navigate("context_management")
+                                    }
+                                )
                             }
                             composable(Screen.About.route) {
                                 AboutScreen()
+                            }
+                            composable("context_management") {
+                                ContextManagementScreen()
                             }
                         }
                     }
@@ -151,8 +157,8 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, context, priority ->
-                                viewModel.addTask(title, context, priority)
+                            onSave = { title, contextId, priority ->
+                                viewModel.addTask(title, contextId, priority)
                                 scope.launch { sheetState.hide() }
                             }
                         )

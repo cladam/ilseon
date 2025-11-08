@@ -5,18 +5,18 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 
 // This should be in an external configuration file, testing with hardcoded values first
-enum class TaskContext {
-    Work,
-    Family,
-    Personal,
-    Shopping,
-    Health,
-    Tbdflow,
-    Choreo,
-    Ilseon,
-    Medi,
-    Blog
-}
+//enum class TaskContext {
+//    Work,
+//    Family,
+//    Personal,
+//    Shopping,
+//    Health,
+//    Tbdflow,
+//    Choreo,
+//    Ilseon,
+//    Medi,
+//    Blog
+//}
 
 enum class TaskPriority {
     High,
@@ -41,15 +41,26 @@ data class Task(
 
     val title: String,
 
-    val context: TaskContext,
+    val contextId: UUID,
 
     val priority: TaskPriority,
 
     val dueTime: Long? = null, // Timestamp
+
+    val durationMs: Long? = null, // Duration in milliseconds
+
+    val location: String? = null,
 
     val isComplete: Boolean = false,
 
     val reminderType: ReminderType = ReminderType.Time,
 
     val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "task_contexts")
+data class TaskContext(
+    @PrimaryKey val id: UUID = UUID.randomUUID(),
+    val name: String,
+    val displayOrder: Int = 0
 )

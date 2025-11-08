@@ -1,4 +1,16 @@
-# Ilseon: Priority Focus
+<p align="center">
+<img src="app/src/main/ic_launcher-playstore.png" alt="Ilseon App Icon" width="150" height="150">
+</p>
+
+<h1 align="center">ilseon</h1>
+
+<p align="center">
+<strong>A low-friction, distraction-minimal executive function assistant.</strong>
+<br />
+Built for Android to support challenges associated with ADD/ADHD and ASD.
+</p>
+
+# Ilseon
 
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 
 assistant designed to reduce mental overload. It creates a protected focus environment that helps users 

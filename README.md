@@ -6,8 +6,6 @@
 
 <p align="center">
 <strong>A low-friction, distraction-minimal executive function assistant.</strong>
-<br />
-Built for Android to support challenges associated with ADD/ADHD and ASD.
 </p>
 
 # Ilseon

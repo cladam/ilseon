@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +53,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 
 @Composable
@@ -133,14 +136,26 @@ fun AnimatedTaskItem(
 fun ClockDisplay() {
     var currentTime by remember { mutableStateOf("") }
     var currentDate by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        while (true) {
-            val date = Date()
-            currentTime = SimpleDateFormat("h:mm a", Locale.getDefault()).format(date)
-            currentDate = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(date).uppercase()
-            delay(1000) // Update every second
+        val timeZone = TimeZone.getDefault()
+        val is24HourFormat = DateFormat.is24HourFormat(context)
+        val timePattern = if (is24HourFormat) "HH:mm" else "h:mm a"
+
+        val timeFormat = SimpleDateFormat(timePattern, Locale.getDefault()).apply {
+            this.timeZone = timeZone
         }
+        val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).apply {
+            this.timeZone = timeZone
+        }
+
+        while (true) {
+            currentTime = timeFormat.format(Date())
+            currentDate = dateFormat.format(Date())
+            delay(1000)
+        }
+
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

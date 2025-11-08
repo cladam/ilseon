@@ -35,6 +35,7 @@ import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.DashboardScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
+import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -68,6 +69,14 @@ class MainActivity : ComponentActivity() {
                                 selected = currentRoute == Screen.DailyDashboard.route,
                                 onClick = {
                                     navController.navigate(Screen.DailyDashboard.route)
+                                    scope.launch { drawerState.close() }
+                                }
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Settings") },
+                                selected = currentRoute == Screen.Settings.route,
+                                onClick = {
+                                    navController.navigate(Screen.Settings.route)
                                     scope.launch { drawerState.close() }
                                 }
                             )
@@ -113,6 +122,9 @@ class MainActivity : ComponentActivity() {
                                     tasks = tasks,
                                     onTaskComplete = { task -> viewModel.completeTask(task) }
                                 )
+                            }
+                            composable(Screen.Settings.route) {
+                                SettingsScreen()
                             }
                             composable(Screen.About.route) {
                                 AboutScreen()

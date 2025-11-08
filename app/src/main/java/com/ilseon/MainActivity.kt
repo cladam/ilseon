@@ -4,15 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -26,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,6 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.DashboardScreen
+import com.ilseon.ui.screen.QuickCaptureScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
@@ -104,11 +110,17 @@ class MainActivity : ComponentActivity() {
                         },
                         floatingActionButton = {
                             if (currentRoute == Screen.DailyDashboard.route) {
-                                FloatingActionButton(
-                                    onClick = { scope.launch { sheetState.show() } }
-                                ) {
-                                    Icon(Icons.Filled.Add, "Quick Capture")
-                                }
+                                ExtendedFloatingActionButton(
+                                    onClick = { scope.launch { sheetState.show() } },
+                                    icon = { Icon(Icons.Filled.Add, contentDescription = "Quick Capture") },
+                                    text = { Text("Quick Capture") },
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        FloatingActionButtonDefaults.shape
+                                    )
+                                )
                             }
                         }
                     ) { paddingValues ->

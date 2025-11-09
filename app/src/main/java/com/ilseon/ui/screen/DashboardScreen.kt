@@ -54,6 +54,9 @@ import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
+import com.ilseon.ui.theme.PriorityHigh
+import com.ilseon.ui.theme.PriorityLow
+import com.ilseon.ui.theme.PriorityMedium
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -240,10 +243,16 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
 
         if (timerState == TimerState.Running && task.totalTimeInMinutes != null) {
             val totalTimeMillis = task.totalTimeInMinutes * 60 * 1000L
-            com.ilseon.ui.components.VisualCountdownTimer(
-                totalTimeInMillis = totalTimeMillis,
-                remainingTimeInMillis = remainingTime
-            )
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                com.ilseon.ui.components.VisualCountdownTimer(
+                    totalTimeInMillis = totalTimeMillis,
+                    remainingTimeInMillis = remainingTime,
+                    size = 180.dp
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -257,6 +266,23 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(task.priority.toColor().copy(alpha = 0.1f))
+                            .border(2.dp, task.priority.toColor(), CircleShape)
+                            .clickable { onComplete(task) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = "Complete Task",
+                            tint = task.priority.toColor(),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = task.title,
@@ -265,25 +291,18 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(4.dp))
+                        val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+                        val subText = if (task.startTime != null && task.endTime != null) {
+                            val startTimeStr = timeFormat.format(Date(task.startTime))
+                            val endTimeStr = timeFormat.format(Date(task.endTime))
+                            "Time Block: $startTimeStr - $endTimeStr - $contextName"
+                        } else {
+                            contextName
+                        }
                         Text(
-                            text = contextName,
+                            text = subText,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 14.sp
-                        )
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.background)
-                            .clickable { onComplete(task) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Filled.Check,
-                            contentDescription = "Complete Task",
-                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -383,10 +402,10 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                cursorColor = MaterialTheme.colorScheme.primary,
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                cursorColor = MaterialTheme.colorScheme.secondary,
+                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
                 unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
@@ -407,10 +426,10 @@ fun QuickCaptureSheet(
                 modifier = Modifier.weight(1f),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
@@ -425,10 +444,10 @@ fun QuickCaptureSheet(
                 modifier = Modifier.weight(1f),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
@@ -453,8 +472,8 @@ fun QuickCaptureSheet(
                             onClick = { selectedContextId = ctx.id },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             ),
                             shape = RoundedCornerShape(12.dp),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
@@ -514,8 +533,8 @@ fun QuickCaptureSheet(
 
 fun TaskPriority.toColor(): Color {
     return when(this) {
-        TaskPriority.High -> Color(0xFFEF4444)
-        TaskPriority.Mid -> Color(0xFFF59E0B)
-        TaskPriority.Low -> Color(0xFF3B82F6)
+        TaskPriority.High -> PriorityHigh
+        TaskPriority.Mid -> PriorityMedium
+        TaskPriority.Low -> PriorityLow
     }
 }

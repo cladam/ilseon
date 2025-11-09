@@ -15,3 +15,7 @@ val TextSecondary = Color(0xFFB0B0B0) // Secondary text color
 val MutedRed = Color(0xFFB35F5F)      // For FAB (Primary Action)
 val MutedTeal = Color(0xFF4C9A9B)     // For Task Borders (Secondary Highlight)
 val QuietAmber = Color(0xFFC08A3E)    // For timer alerts
+
+val PriorityHigh = MutedRed
+val PriorityMedium = QuietAmber
+val PriorityLow = TextSecondary

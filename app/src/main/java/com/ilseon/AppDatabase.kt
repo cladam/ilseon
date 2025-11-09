@@ -6,16 +6,21 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.data.task.ReminderType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class], version = 2, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class], version = 3, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -55,15 +60,28 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun getDatabase(context: Context): AppDatabase {
+        fun getDatabase(context: Context, taskContextDaoProvider: Provider<TaskContextDao>): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "ilseon_database"
                 )
-                    // This is not suitable for production.
-                    // A proper migration strategy should be implemented.
+                    .addCallback(object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            INSTANCE?.let { database ->
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val dao = taskContextDaoProvider.get()
+                                    dao.insertContext(TaskContext(name = "Work", displayOrder = 0))
+                                    dao.insertContext(TaskContext(name = "Family", displayOrder = 1))
+                                    dao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
+                                }
+                            }
+                        }
+                    })
+                    // This is not suitable for production, at all....!
+                    // TODO: Add proper migration strategy.
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

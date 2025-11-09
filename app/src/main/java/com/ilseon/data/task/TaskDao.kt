@@ -37,6 +37,9 @@ interface TaskDao {
     """)
     fun getIncompleteTasks(): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks WHERE isComplete = 1 ORDER BY createdAt DESC")
+    fun getCompletedTasks(): Flow<List<Task>>
+
     @Query("SELECT * FROM tasks WHERE isComplete = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
 

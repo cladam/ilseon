@@ -8,6 +8,10 @@ class TaskRepository(private val taskDao: TaskDao) {
         return taskDao.getIncompleteTasks()
     }
 
+    fun getCompletedTasks(): Flow<List<Task>> {
+        return taskDao.getCompletedTasks()
+    }
+
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
     suspend fun insertTask(task: Task) {

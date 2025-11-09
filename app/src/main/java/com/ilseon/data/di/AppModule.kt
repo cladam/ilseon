@@ -1,7 +1,6 @@
 package com.ilseon.data.di
 
 import android.content.Context
-import androidx.room.Room
 import com.ilseon.AppDatabase
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskContextRepository
@@ -12,6 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -20,14 +20,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "ilseon_database"
-        )
-            .fallbackToDestructiveMigration()
-            .build()
+    fun provideAppDatabase(
+        @ApplicationContext context: Context,
+        // Use a Provider to break the circular dependency
+        taskContextDaoProvider: Provider<TaskContextDao>
+    ): AppDatabase {
+        return AppDatabase.getDatabase(context, taskContextDaoProvider)
     }
 
     @Provides
@@ -43,7 +41,8 @@ object AppModule {
     }
 
     @Provides
-    fun provideTaskContextDao(appDatabase: com.ilseon.AppDatabase): TaskContextDao {
+    @Singleton
+    fun provideTaskContextDao(appDatabase: AppDatabase): TaskContextDao {
         return appDatabase.taskContextDao()
     }
 

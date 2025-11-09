@@ -37,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
+import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
@@ -138,6 +139,9 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     onManageContextsClick = {
                                         navController.navigate("context_management")
+                                    },
+                                    onCompletedTasksClick = {
+                                        navController.navigate("completed_tasks")
                                     }
                                 )
                             }
@@ -146,6 +150,9 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("context_management") {
                                 ContextManagementScreen()
+                            }
+                            composable("completed_tasks") {
+                                CompletedTasksScreen()
                             }
                         }
                     }

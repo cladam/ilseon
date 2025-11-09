@@ -40,7 +40,10 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
 
     fun completeTask(task: Task) {
         viewModelScope.launch {
-            taskRepository.updateTask(task.copy(isComplete = true))
+            taskRepository.updateTask(task.copy(
+                isComplete = true,
+                completedAt = System.currentTimeMillis())
+            )
         }
     }
 }

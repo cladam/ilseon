@@ -27,7 +27,10 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -35,6 +38,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.ilseon.data.task.Task
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
@@ -45,6 +49,7 @@ import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -65,6 +70,7 @@ class MainActivity : ComponentActivity() {
 
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val tasks by viewModel.tasks.collectAsState()
+                var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -132,7 +138,13 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.DailyDashboard.route) {
                                 DashboardScreen(
                                     tasks = tasks,
-                                    onTaskComplete = { task -> viewModel.completeTask(task) }
+                                    completedTaskIds = completedTaskIds,
+                                    onAnimateComplete = { task ->
+                                        completedTaskIds = completedTaskIds + task.id
+                                    },
+                                    onTaskComplete = { task ->
+                                        viewModel.completeTask(task)
+                                    }
                                 )
                             }
                             composable(Screen.Settings.route) {

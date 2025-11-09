@@ -62,10 +62,11 @@ import java.util.UUID
 @Composable
 fun DashboardScreen(
     tasks: List<Task>,
+    completedTaskIds: Set<UUID>,
+    onAnimateComplete: (Task) -> Unit,
     onTaskComplete: (Task) -> Unit,
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
-    var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
     val contexts by contextViewModel.contexts.collectAsState()
     val contextMap = remember(contexts) { contexts.associateBy { it.id } }
 
@@ -93,14 +94,14 @@ fun DashboardScreen(
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
-                        onComplete = {
-                            completedTaskIds = completedTaskIds + task.id
-                        }
+                        onComplete = { onTaskComplete(it) }
                     ) {
                         CurrentPriorityTask(
                             task = it,
                             contextName = contextMap[it.contextId]?.name ?: "N/A",
-                            onComplete = onTaskComplete
+                            onComplete = { completedTask ->
+                                onAnimateComplete(completedTask)
+                            }
                         )
                     }
                 }
@@ -110,7 +111,10 @@ fun DashboardScreen(
                         NextUpTasks(
                             tasks = tasks.drop(1),
                             completedTaskIds = completedTaskIds,
-                            onComplete = onTaskComplete
+                            onComplete = { completedTask ->
+                                onAnimateComplete(completedTask)
+                            },
+                            onAnimationFinished = onTaskComplete
                         )
                     }
                 }
@@ -126,19 +130,20 @@ fun AnimatedTaskItem(
     onComplete: (Task) -> Unit,
     content: @Composable (Task) -> Unit
 ) {
+    // This effect will run when isVisible changes from true to false
+    LaunchedEffect(isVisible) {
+        if (!isVisible) {
+            delay(300) // Wait for animation to finish
+            onComplete(task)
+        }
+    }
+
     AnimatedVisibility(
         visible = isVisible,
         exit = shrinkVertically(animationSpec = tween(durationMillis = 300)) +
                 fadeOut(animationSpec = tween(durationMillis = 300)),
     ) {
         content(task)
-    }
-
-    if (!isVisible) {
-        LaunchedEffect(task) {
-            delay(300) // Wait for animation to finish
-            onComplete(task)
-        }
     }
 }
 
@@ -240,7 +245,12 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
 }
 
 @Composable
-fun NextUpTasks(tasks: List<Task>, completedTaskIds: Set<UUID>, onComplete: (Task) -> Unit) {
+fun NextUpTasks(
+    tasks: List<Task>,
+    completedTaskIds: Set<UUID>,
+    onComplete: (Task) -> Unit,
+    onAnimationFinished: (Task) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -261,7 +271,7 @@ fun NextUpTasks(tasks: List<Task>, completedTaskIds: Set<UUID>, onComplete: (Tas
             AnimatedTaskItem(
                 task = task,
                 isVisible = !completedTaskIds.contains(task.id),
-                onComplete = onComplete
+                onComplete = onAnimationFinished
             ) {
                 Row(
                     modifier = Modifier

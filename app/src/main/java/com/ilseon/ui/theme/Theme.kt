@@ -6,11 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Teal,
-    secondary = AccentRed,
+    primary = MutedRed,
+    secondary = MutedTeal,
     background = DarkGrey,
     surface = LightGrey,
-    onPrimary = Color.Black,
+    onPrimary = TextPrimary,
     onSecondary = TextPrimary,
     onBackground = TextPrimary,
     onSurface = TextPrimary

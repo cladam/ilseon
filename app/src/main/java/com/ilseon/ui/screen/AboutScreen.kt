@@ -148,7 +148,7 @@ private fun InfoRow(icon: ImageVector, text: String, onClick: (() -> Unit)? = nu
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.secondary
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = text, style = MaterialTheme.typography.bodyLarge)

@@ -4,20 +4,6 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-// This should be in an external configuration file, testing with hardcoded values first
-//enum class TaskContext {
-//    Work,
-//    Family,
-//    Personal,
-//    Shopping,
-//    Health,
-//    Tbdflow,
-//    Choreo,
-//    Ilseon,
-//    Medi,
-//    Blog
-//}
-
 enum class TaskPriority {
     High,
     Mid,
@@ -30,6 +16,13 @@ enum class ReminderType {
     Proximity
 }
 
+enum class TimerState {
+    NotStarted,
+    Running,
+    Paused,
+    Finished
+}
+
 /**
  * This is the Task Entity (Data Model)
  * It defines the table structure for the Room database.
@@ -38,25 +31,21 @@ enum class ReminderType {
 data class Task(
     @PrimaryKey
     val id: UUID = UUID.randomUUID(),
-
     val title: String,
-
     val contextId: UUID,
-
     val priority: TaskPriority,
-
-    val dueTime: Long? = null, // Timestamp
-
-    val durationMs: Long? = null, // Duration in milliseconds
-
+    val dueTime: Long? = null, // Timestamp for when the task is due
+    val startTime: Long? = null, // Start of the time block
+    val endTime: Long? = null, // End of the time block
+    val totalTimeInMinutes: Int? = null, // Original planned duration
+    var remainingTimeInSeconds: Long = totalTimeInMinutes?.times(60L) ?: 0,
+    var timerState: TimerState = TimerState.NotStarted,
+    val timerStartTime: Long? = null, // Actual timestamp when the timer was started
+    val isCurrentPriority: Boolean = false,
     val location: String? = null,
-
     val isComplete: Boolean = false,
-
     val completedAt: Long? = null,
-
     val reminderType: ReminderType = ReminderType.Time,
-
     val createdAt: Long = System.currentTimeMillis()
 )
 

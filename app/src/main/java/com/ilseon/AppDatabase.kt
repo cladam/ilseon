@@ -13,6 +13,7 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
+import com.ilseon.data.task.TimerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ import java.util.UUID
 import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class], version = 3, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class], version = 5, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -53,6 +54,12 @@ abstract class AppDatabase : RoomDatabase() {
 
         @TypeConverter
         fun toReminderType(value: String): ReminderType = ReminderType.valueOf(value)
+
+        @TypeConverter
+        fun fromTimerState(value: TimerState): String = value.name
+
+        @TypeConverter
+        fun toTimerState(value: String): TimerState = TimerState.valueOf(value)
     }
 
     companion object {

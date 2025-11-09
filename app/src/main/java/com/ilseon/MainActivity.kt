@@ -38,7 +38,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.ilseon.data.task.Task
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
@@ -176,8 +175,8 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, contextId, priority ->
-                                viewModel.addTask(title, contextId, priority)
+                            onSave = { title, contextId, priority, startTime, endTime ->
+                                viewModel.addTask(title, contextId, priority, startTime, endTime)
                                 scope.launch { sheetState.hide() }
                             }
                         )

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -45,13 +46,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.Task
-import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskPriority
+import com.ilseon.data.task.TimerState
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -94,14 +96,12 @@ fun DashboardScreen(
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
-                        onComplete = { onTaskComplete(it) }
+                        onComplete = { onAnimateComplete(task) }
                     ) {
                         CurrentPriorityTask(
                             task = it,
-                            contextName = contextMap[it.contextId]?.name ?: "N/A",
-                            onComplete = { completedTask ->
-                                onAnimateComplete(completedTask)
-                            }
+                            contextName = contextMap[it.contextId]?.name ?: "General",
+                            onComplete = { onTaskComplete(it) }
                         )
                     }
                 }
@@ -109,12 +109,10 @@ fun DashboardScreen(
                 if (tasks.size > 1) {
                     item {
                         NextUpTasks(
-                            tasks = tasks.drop(1),
+                            tasks = tasks.subList(1, tasks.size),
                             completedTaskIds = completedTaskIds,
-                            onComplete = { completedTask ->
-                                onAnimateComplete(completedTask)
-                            },
-                            onAnimationFinished = onTaskComplete
+                            onComplete = onTaskComplete,
+                            onAnimationFinished = onAnimateComplete
                         )
                     }
                 }
@@ -194,6 +192,43 @@ fun ClockDisplay() {
 
 @Composable
 fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> Unit) {
+    var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
+    var timerState by remember(task.id) { mutableStateOf(task.timerState) }
+
+    LaunchedEffect(task.id, task.startTime, task.endTime, task.isComplete) {
+        if (task.startTime == null || task.endTime == null || task.isComplete) {
+            timerState = if (task.isComplete) TimerState.Finished else TimerState.NotStarted
+            return@LaunchedEffect
+        }
+
+        // Wait until it's time to start
+        while (System.currentTimeMillis() < task.startTime) {
+            delay(1000)
+        }
+
+        // Start the timer
+        timerState = TimerState.Running
+        task.timerState = TimerState.Running
+
+        val initialRemaining = task.endTime - System.currentTimeMillis()
+        if (initialRemaining > 0) {
+            remainingTime = initialRemaining
+        } else {
+            remainingTime = 0
+        }
+
+        while (remainingTime > 0) {
+            delay(1000)
+            remainingTime -= 1000
+            task.remainingTimeInSeconds = remainingTime / 1000
+        }
+
+        timerState = TimerState.Finished
+        task.timerState = TimerState.Finished
+        // Optionally auto-complete the task when the timer finishes
+        // onComplete(task)
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Current Priority Task",
@@ -202,42 +237,55 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
             fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(16.dp))
-        ) {
-            Row(
+
+        if (timerState == TimerState.Running && task.totalTimeInMinutes != null) {
+            val totalTimeMillis = task.totalTimeInMinutes * 60 * 1000L
+            com.ilseon.ui.components.VisualCountdownTimer(
+                totalTimeInMillis = totalTimeMillis,
+                remainingTimeInMillis = remainingTime
+            )
+        } else {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(16.dp))
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = task.title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "$contextName / ${task.priority.name} Priority",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 14.sp
-                    )
-                }
-                Spacer(Modifier.width(16.dp))
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f))
-                        .clickable { onComplete(task) },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Filled.Check, "Complete Task", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(28.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = task.title,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = contextName,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.background)
+                            .clickable { onComplete(task) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = "Complete Task",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
@@ -281,11 +329,9 @@ fun NextUpTasks(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
-                            .border(2.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), CircleShape)
-                            .clickable { onComplete(task) },
-                        contentAlignment = Alignment.Center
+                            .background(it.priority.toColor())
                     ) {}
                     Spacer(Modifier.width(16.dp))
                     Text(
@@ -301,13 +347,15 @@ fun NextUpTasks(
 
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, UUID?, TaskPriority) -> Unit,
+    onSave: (String, UUID?, TaskPriority, String, String) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel()
 ) {
     val contexts by viewModel.contexts.collectAsState()
     var title by remember { mutableStateOf("") }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Mid) }
+    var startTime by remember { mutableStateOf("") }
+    var endTime by remember { mutableStateOf("") }
 
     LaunchedEffect(contexts) {
         if (selectedContextId == null) {
@@ -346,7 +394,51 @@ fun QuickCaptureSheet(
             maxLines = 1
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = startTime,
+                onValueChange = { startTime = it },
+                label = { Text("Start Time (HH:mm)") },
+                modifier = Modifier.weight(1f),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                ),
+                maxLines = 1,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            OutlinedTextField(
+                value = endTime,
+                onValueChange = { endTime = it },
+                label = { Text("End Time (HH:mm)") },
+                modifier = Modifier.weight(1f),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                ),
+                maxLines = 1,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
 
         Text("Context", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
         Spacer(Modifier.height(8.dp))
@@ -361,8 +453,8 @@ fun QuickCaptureSheet(
                             onClick = { selectedContextId = ctx.id },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                             ),
                             shape = RoundedCornerShape(12.dp),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
@@ -391,8 +483,8 @@ fun QuickCaptureSheet(
                     onClick = { priority = prio },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (priority == prio) prio.toColor() else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (priority == prio) Color.Black else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        containerColor = if (priority == prio) prio.toColor() else MaterialTheme.colorScheme.surface,
+                        contentColor = if (priority == prio) Color.White else MaterialTheme.colorScheme.onSurface
                     ),
                     shape = RoundedCornerShape(12.dp),
                     elevation = ButtonDefaults.buttonElevation(0.dp)
@@ -405,7 +497,7 @@ fun QuickCaptureSheet(
         Spacer(Modifier.height(32.dp))
 
         Button(
-            onClick = { onSave(title, selectedContextId, priority) },
+            onClick = { onSave(title, selectedContextId, priority, startTime, endTime) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

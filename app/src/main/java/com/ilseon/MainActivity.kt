@@ -5,17 +5,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
@@ -32,8 +33,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -120,17 +123,28 @@ class MainActivity : ComponentActivity() {
                         floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
                             if (currentRoute == Screen.DailyDashboard.route) {
-                                ExtendedFloatingActionButton(
+                                LargeFloatingActionButton(
                                     onClick = { scope.launch { sheetState.show() } },
-                                    icon = { Icon(Icons.Filled.Add, contentDescription = "Quick Capture") },
-                                    text = { Text("Quick Capture") },
+                                    shape = CircleShape,
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     modifier = Modifier.border(
-                                        1.dp,
+                                        2.dp,
                                         MaterialTheme.colorScheme.primary,
-                                        FloatingActionButtonDefaults.shape
+                                        CircleShape
                                     )
-                                )
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            Icons.Filled.Add,
+                                            contentDescription = "Quick Capture"
+                                        )
+                                        Text(
+                                            text = "QUICK CAPTURE",
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
                             }
                         }
                     ) { paddingValues ->
@@ -180,8 +194,8 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, contextId, priority, startTime, endTime, duration ->
-                                viewModel.addTask(title, contextId, priority, startTime, endTime, duration)
+                            onSave = { title, description, contextId, priority, startTime, endTime, duration ->
+                                viewModel.addTask(title, description, contextId, priority, startTime, endTime, duration)
                                 scope.launch { sheetState.hide() }
                             }
                         )

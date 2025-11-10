@@ -39,6 +39,7 @@ data class Task(
     val id: UUID = UUID.randomUUID(),
     val title: String,
     val contextId: UUID,
+    val description: String? = null,
     val priority: TaskPriority,
     val dueTime: Long? = null, // Timestamp for when the task is due
     val startTime: Long? = null, // Start of the time block

@@ -21,7 +21,7 @@ import java.util.UUID
 import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class], version = 5, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class], version = 6, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

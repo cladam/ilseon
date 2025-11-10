@@ -29,6 +29,7 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
 
     fun addTask(
         title: String,
+        description: String?,
         contextId: UUID?,
         priority: TaskPriority,
         startTimeStr: String,
@@ -57,6 +58,7 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
                 taskRepository.insertTask(
                     Task(
                         title = title,
+                        description = description,
                         contextId = contextId,
                         priority = priority,
                         startTime = startTime,

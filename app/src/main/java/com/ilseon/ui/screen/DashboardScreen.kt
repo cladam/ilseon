@@ -2,6 +2,7 @@ package com.ilseon.ui.screen
 
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -20,10 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -49,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -86,16 +90,31 @@ fun DashboardScreen(
     val contextMap = remember(contexts) { contexts.associateBy { it.id } }
 
     val (priorityTask, nextUpTasks) = remember(tasks) {
-        val sortedTasks = tasks.sortedWith(
-            compareByDescending<Task> { it.priority }
-                .thenBy { it.createdAt }
+        val now = System.currentTimeMillis()
+
+        val sortedTasks = tasks.filter { !it.isComplete }.sortedWith(
+            // Primary sort key: task "status"
+            compareBy<Task> {
+                when {
+                    it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> 1 // Active
+                    it.startTime != null && now < it.startTime -> 2 // Upcoming
+                    it.dueTime != null -> 3 // Due soon
+                    else -> 4 + it.priority.ordinal // Everything else, by priority
+                }
+            }
+                // Secondary sort key: time for timed tasks, creation for others
+                .thenBy {
+                    when {
+                        it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> it.endTime
+                        it.startTime != null && now < it.startTime -> it.startTime
+                        it.dueTime != null -> it.dueTime
+                        else -> it.createdAt
+                    }
+                }
         )
-        val priorityTask = sortedTasks.firstOrNull { !it.isComplete }
-        val nextUp = if (priorityTask != null) {
-            sortedTasks.filter { it.id != priorityTask.id && !it.isComplete }
-        } else {
-            sortedTasks.filter { !it.isComplete }
-        }
+
+        val priorityTask = sortedTasks.firstOrNull()
+        val nextUp = sortedTasks.drop(1)
         priorityTask to nextUp
     }
 
@@ -109,7 +128,7 @@ fun DashboardScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        if (tasks.isEmpty()) {
+        if (priorityTask == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("All clear!", color = MaterialTheme.colorScheme.secondary, fontSize = 20.sp)
             }
@@ -119,11 +138,10 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    val task = tasks.first()
                     AnimatedTaskItem(
-                        task = task,
-                        isVisible = !completedTaskIds.contains(task.id),
-                        onComplete = { onAnimateComplete(task) }
+                        task = priorityTask,
+                        isVisible = !completedTaskIds.contains(priorityTask.id),
+                        onComplete = { onAnimateComplete(priorityTask) }
                     ) {
                         CurrentPriorityTask(
                             task = it,
@@ -133,10 +151,10 @@ fun DashboardScreen(
                     }
                 }
 
-                if (tasks.size > 1) {
+                if (nextUpTasks.isNotEmpty()) {
                     item {
                         NextUpTasks(
-                            tasks = tasks.subList(1, tasks.size),
+                            tasks = nextUpTasks,
                             completedTaskIds = completedTaskIds,
                             onComplete = onTaskComplete,
                             onAnimationFinished = onAnimateComplete
@@ -297,6 +315,14 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+                    task.description?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontSize = 14.sp
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
                     val subText = if (task.startTime != null && task.endTime != null && timerState != TimerState.Running) {
@@ -341,9 +367,15 @@ fun NextUpTasks(
     onComplete: (Task) -> Unit,
     onAnimationFinished: (Task) -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isExpanded = !isExpanded }
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -353,34 +385,58 @@ fun NextUpTasks(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
-            Icon(Icons.Filled.ChevronRight, "View All", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = "Expand or collapse",
+                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                modifier = Modifier.rotate(rotationAngle)
+            )
         }
-        Spacer(Modifier.height(12.dp))
-
-        tasks.take(3).forEach { task ->
-            AnimatedTaskItem(
-                task = task,
-                isVisible = !completedTaskIds.contains(task.id),
-                onComplete = onAnimationFinished
+        AnimatedVisibility(visible = isExpanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(it.priority.toColor())
-                    ) {}
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = it.title,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 16.sp,
-                    )
+                tasks.forEach { task ->
+                    AnimatedTaskItem(
+                        task = task,
+                        isVisible = !completedTaskIds.contains(task.id),
+                        onComplete = onAnimationFinished
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(it.priority.toColor())
+                            ) {}
+                            Spacer(Modifier.width(16.dp))
+                            Text(
+                                text = it.title,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 16.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f), CircleShape)
+                                    .clickable { onComplete(it) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // Empty, for the checkmark to appear after click
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -390,11 +446,12 @@ fun NextUpTasks(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, UUID?, TaskPriority, String, String, Int?) -> Unit,
+    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel()
 ) {
     val contexts by viewModel.contexts.collectAsState()
     var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Mid) }
     var startTime by remember { mutableStateOf("") }
@@ -471,6 +528,26 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(16.dp))
 
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description (Optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.secondary,
+                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
+            ),
+            maxLines = 3
+        )
+
+        Spacer(Modifier.height(16.dp))
+
         Text("Scheduling", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -490,7 +567,7 @@ fun QuickCaptureSheet(
                 ) {
                     RadioButton(
                         selected = (type == schedulingType),
-                        onClick = null 
+                        onClick = null
                     )
                     Text(
                         text = type.name,
@@ -501,7 +578,7 @@ fun QuickCaptureSheet(
             }
         }
         Spacer(Modifier.height(16.dp))
-        
+
         AnimatedVisibility(visible = schedulingType == SchedulingType.TimeBlock) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -561,7 +638,7 @@ fun QuickCaptureSheet(
                 }
             }
         }
-        
+
         AnimatedVisibility(visible = schedulingType == SchedulingType.Duration) {
             OutlinedTextField(
                 value = duration,
@@ -623,7 +700,7 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TaskPriority.values().forEach { prio ->
+            TaskPriority.entries.forEach { prio ->
                 Button(
                     onClick = { priority = prio },
                     modifier = Modifier.weight(1f),
@@ -642,10 +719,10 @@ fun QuickCaptureSheet(
         Spacer(Modifier.height(32.dp))
 
         Button(
-            onClick = { 
+            onClick = {
                 val durationInt = if (schedulingType == SchedulingType.Duration) duration.toIntOrNull() else null
                 val (st, et) = if (schedulingType == SchedulingType.TimeBlock) startTime to endTime else "" to ""
-                onSave(title, selectedContextId, priority, st, et, durationInt) 
+                onSave(title, description.takeIf { it.isNotBlank() }, selectedContextId, priority, st, et, durationInt)
             },
             modifier = Modifier
                 .fillMaxWidth()

@@ -22,17 +22,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,14 +49,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
+import com.ilseon.ui.components.VisualCountdownTimer
 import com.ilseon.ui.theme.PriorityHigh
 import com.ilseon.ui.theme.PriorityLow
 import com.ilseon.ui.theme.PriorityMedium
@@ -74,6 +78,20 @@ fun DashboardScreen(
 ) {
     val contexts by contextViewModel.contexts.collectAsState()
     val contextMap = remember(contexts) { contexts.associateBy { it.id } }
+
+    val (priorityTask, nextUpTasks) = remember(tasks) {
+        val sortedTasks = tasks.sortedWith(
+            compareByDescending<Task> { it.priority }
+                .thenBy { it.createdAt }
+        )
+        val priorityTask = sortedTasks.firstOrNull { !it.isComplete }
+        val nextUp = if (priorityTask != null) {
+            sortedTasks.filter { it.id != priorityTask.id && !it.isComplete }
+        } else {
+            sortedTasks.filter { !it.isComplete }
+        }
+        priorityTask to nextUp
+    }
 
     Column(
         modifier = Modifier
@@ -247,7 +265,7 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                com.ilseon.ui.components.VisualCountdownTimer(
+                VisualCountdownTimer(
                     totalTimeInMillis = totalTimeMillis,
                     remainingTimeInMillis = remainingTime,
                     size = 180.dp
@@ -266,23 +284,6 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(task.priority.toColor().copy(alpha = 0.1f))
-                            .border(2.dp, task.priority.toColor(), CircleShape)
-                            .clickable { onComplete(task) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Filled.Check,
-                            contentDescription = "Complete Task",
-                            tint = task.priority.toColor(),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = task.title,
@@ -303,6 +304,23 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
                             text = subText,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 14.sp
+                        )
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(task.priority.toColor().copy(alpha = 0.1f))
+                            .border(2.dp, task.priority.toColor(), CircleShape)
+                            .clickable { onComplete(task) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = "Complete Task",
+                            tint = task.priority.toColor(),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -364,6 +382,7 @@ fun NextUpTasks(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
     onSave: (String, UUID?, TaskPriority, String, String) -> Unit,
@@ -376,12 +395,42 @@ fun QuickCaptureSheet(
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
 
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+
+    val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
+    val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+    val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+
     LaunchedEffect(contexts) {
         if (selectedContextId == null) {
             selectedContextId = contexts.firstOrNull()?.id
         }
     }
 
+    if (showStartTimePicker) {
+        TimePickerDialog(
+            onCancel = { showStartTimePicker = false },
+            onConfirm = {
+                startTime = String.format("%02d:%02d", startTimeState.hour, startTimeState.minute)
+                showStartTimePicker = false
+            },
+        ) {
+            TimePicker(state = startTimeState)
+        }
+    }
+
+    if (showEndTimePicker) {
+        TimePickerDialog(
+            onCancel = { showEndTimePicker = false },
+            onConfirm = {
+                endTime = String.format("%02d:%02d", endTimeState.hour, endTimeState.minute)
+                showEndTimePicker = false
+            },
+        ) {
+            TimePicker(state = endTimeState)
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -419,42 +468,58 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = startTime,
-                onValueChange = { startTime = it },
-                label = { Text("Start Time (HH:mm)") },
-                modifier = Modifier.weight(1f),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                ),
-                maxLines = 1,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            OutlinedTextField(
-                value = endTime,
-                onValueChange = { endTime = it },
-                label = { Text("End Time (HH:mm)") },
-                modifier = Modifier.weight(1f),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                ),
-                maxLines = 1,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = startTime,
+                    onValueChange = {},
+                    label = { Text("Start Time") },
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    ),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showStartTimePicker = true }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = endTime,
+                    onValueChange = {},
+                    label = { Text("End Time") },
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    ),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showEndTimePicker = true }
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -497,7 +562,7 @@ fun QuickCaptureSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TaskPriority.entries.forEach { prio ->
+            TaskPriority.values().forEach { prio ->
                 Button(
                     onClick = { priority = prio },
                     modifier = Modifier.weight(1f),
@@ -527,6 +592,47 @@ fun QuickCaptureSheet(
             enabled = title.isNotBlank() && selectedContextId != null
         ) {
             Text("Save Task", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    title: String = "Select Time",
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    toggle: @Composable () -> Unit = {},
+    content: @Composable () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onCancel,
+    ) {
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+                .padding(top = 24.dp, start = 24.dp, end = 24.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                text = title,
+                style = MaterialTheme.typography.labelMedium
+            )
+            content()
+            Row(
+                modifier = Modifier
+                    .height(40.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                toggle()
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = onCancel) { Text("Cancel") }
+                TextButton(onClick = onConfirm) { Text("OK") }
+            }
         }
     }
 }

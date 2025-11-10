@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,6 +72,9 @@ class MainActivity : ComponentActivity() {
                 val tasks by viewModel.tasks.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
 
+                // This would be loaded from user preferences
+                val isRightHanded by remember { mutableStateOf(true) }
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -113,6 +117,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         },
+                        floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
                             if (currentRoute == Screen.DailyDashboard.route) {
                                 ExtendedFloatingActionButton(
@@ -143,7 +148,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onTaskComplete = { task ->
                                         viewModel.completeTask(task)
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.Settings.route) {

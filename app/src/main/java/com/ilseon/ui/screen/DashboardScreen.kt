@@ -104,7 +104,8 @@ fun DashboardScreen(
                             tasks = nextUpTasks,
                             completedTaskIds = completedTaskIds,
                             onComplete = onTaskComplete,
-                            onAnimationFinished = onAnimateComplete
+                            onAnimationFinished = onAnimateComplete,
+                            contextMap = contextMap
                         )
                     }
                 }

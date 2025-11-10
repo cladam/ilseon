@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
@@ -50,7 +52,8 @@ fun NextUpTasks(
     tasks: List<Task>,
     completedTaskIds: Set<UUID>,
     onComplete: (Task) -> Unit,
-    onAnimationFinished: (Task) -> Unit
+    onAnimationFinished: (Task) -> Unit,
+    contextMap: Map<UUID, TaskContext>
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
@@ -61,7 +64,7 @@ fun NextUpTasks(
             AlertDialog(
                 onDismissRequest = { taskToShowDescription = null },
                 title = { Text(task.title) },
-                text = { Text(task.description) },
+                text = { Text(text = "${task.description}\n\n${contextMap[task.contextId]?.name ?: "General"}") },
                 confirmButton = {
                     TextButton(onClick = { taskToShowDescription = null }) {
                         Text("Close")
@@ -75,21 +78,23 @@ fun NextUpTasks(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surface)
                 .clickable { isExpanded = !isExpanded }
-                .padding(vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Next Up (${tasks.size})",
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
             Icon(
                 Icons.Filled.ChevronRight,
                 contentDescription = "Expand or collapse",
-                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.rotate(rotationAngle)
             )
         }

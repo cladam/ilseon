@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.task.TimerState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,14 +32,27 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
         contextId: UUID?,
         priority: TaskPriority,
         startTimeStr: String,
-        endTimeStr: String
+        endTimeStr: String,
+        durationInMinutes: Int?
     ) {
         viewModelScope.launch {
             if (title.isNotBlank() && contextId != null) {
-                val (startTime, endTime, duration) = parseTimeAndCalculateDuration(
-                    startTimeStr,
-                    endTimeStr
-                )
+                var startTime: Long? = null
+                var endTime: Long? = null
+                var duration: Int? = null
+                var timerState = TimerState.NotStarted
+
+                if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
+                    val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
+                    startTime = st
+                    endTime = et
+                    duration = dur
+                } else if (durationInMinutes != null) {
+                    startTime = System.currentTimeMillis()
+                    endTime = startTime + durationInMinutes * 60 * 1000
+                    duration = durationInMinutes
+                    timerState = TimerState.Running
+                }
 
                 taskRepository.insertTask(
                     Task(
@@ -47,7 +61,8 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
                         priority = priority,
                         startTime = startTime,
                         endTime = endTime,
-                        totalTimeInMinutes = duration
+                        totalTimeInMinutes = duration,
+                        timerState = timerState
                     )
                 )
             }

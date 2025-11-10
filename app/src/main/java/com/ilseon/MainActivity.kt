@@ -180,8 +180,8 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, contextId, priority, startTime, endTime ->
-                                viewModel.addTask(title, contextId, priority, startTime, endTime)
+                            onSave = { title, contextId, priority, startTime, endTime, duration ->
+                                viewModel.addTask(title, contextId, priority, startTime, endTime, duration)
                                 scope.launch { sheetState.hide() }
                             }
                         )

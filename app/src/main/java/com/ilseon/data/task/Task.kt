@@ -23,6 +23,12 @@ enum class TimerState {
     Finished
 }
 
+enum class SchedulingType {
+    None,
+    TimeBlock,
+    Duration
+}
+
 /**
  * This is the Task Entity (Data Model)
  * It defines the table structure for the Room database.

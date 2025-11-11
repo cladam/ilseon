@@ -45,6 +45,7 @@ fun CurrentPriorityTask(
     task: Task,
     contextName: String,
     onComplete: (Task) -> Unit,
+    onTimerFinished: (Task) -> Unit,
     focusContextName: String?
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
@@ -80,8 +81,7 @@ fun CurrentPriorityTask(
 
         timerState = TimerState.Finished
         task.timerState = TimerState.Finished
-        // Optionally auto-complete the task when the timer finishes
-        // onComplete(task)
+        onTimerFinished(task)
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {

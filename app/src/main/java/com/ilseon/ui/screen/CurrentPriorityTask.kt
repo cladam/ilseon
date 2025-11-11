@@ -41,7 +41,12 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> Unit) {
+fun CurrentPriorityTask(
+    task: Task,
+    contextName: String,
+    onComplete: (Task) -> Unit,
+    focusContextName: String?
+) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
     var timerState by remember(task.id) { mutableStateOf(task.timerState) }
 
@@ -80,8 +85,13 @@ fun CurrentPriorityTask(task: Task, contextName: String, onComplete: (Task) -> U
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        val title = if (focusContextName != null) {
+            "Current Priority Task ($focusContextName)"
+        } else {
+            "Current Priority Task"
+        }
         Text(
-            text = "Current Priority Task",
+            text = title,
             color = MaterialTheme.colorScheme.secondary,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold

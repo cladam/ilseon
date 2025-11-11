@@ -60,18 +60,24 @@ fun NextUpTasks(
     var taskToShowDescription by remember { mutableStateOf<Task?>(null) }
 
     taskToShowDescription?.let { task ->
-        if (!task.description.isNullOrBlank()) {
-            AlertDialog(
-                onDismissRequest = { taskToShowDescription = null },
-                title = { Text(task.title) },
-                text = { Text(text = "${task.description}\n\n${contextMap[task.contextId]?.name ?: "General"}") },
-                confirmButton = {
-                    TextButton(onClick = { taskToShowDescription = null }) {
-                        Text("Close")
-                    }
-                }
-            )
+        val dialogText = buildString {
+            if (!task.description.isNullOrBlank()) {
+                append(task.description)
+                append("\n\n")
+            }
+            append(contextMap[task.contextId]?.name ?: "General")
         }
+
+        AlertDialog(
+            onDismissRequest = { taskToShowDescription = null },
+            title = { Text(task.title) },
+            text = { Text(text = dialogText) },
+            confirmButton = {
+                TextButton(onClick = { taskToShowDescription = null }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {

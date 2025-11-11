@@ -14,6 +14,8 @@ import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
+import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.FocusBlockDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,12 +23,15 @@ import java.util.UUID
 import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class], version = 6, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 8, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
     abstract fun taskContextDao(): TaskContextDao
+
+    abstract fun FocusBlockDao(): FocusBlockDao
+
 
 
     /**
@@ -83,7 +88,7 @@ abstract class AppDatabase : RoomDatabase() {
                                     dao.insertContext(TaskContext(name = "Work", displayOrder = 0))
                                     dao.insertContext(TaskContext(name = "Family", displayOrder = 1))
                                     dao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
-                                }
+                                 }
                             }
                         }
                     })

@@ -54,7 +54,10 @@ fun QuickCaptureSheet(
     onSave: (String, String?, UUID?, TaskPriority, String, String, Int?) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel()
 ) {
-    val contexts by viewModel.contexts.collectAsState()
+    val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
+    val contexts = remember(contextsWithFocusBlock) {
+        contextsWithFocusBlock.map { it.context }
+    }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }

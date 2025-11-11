@@ -20,7 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
+import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
 import java.util.UUID
@@ -31,15 +33,18 @@ fun DashboardScreen(
     completedTaskIds: Set<UUID>,
     onAnimateComplete: (Task) -> Unit,
     onTaskComplete: (Task) -> Unit,
+    activeFocusBlock: FocusBlock?,
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
-    val contexts by contextViewModel.contexts.collectAsState()
-    val contextMap = remember(contexts) { contexts.associateBy { it.id } }
+    val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
+    val contextMap = remember(contextsWithFocusBlock) {
+        contextsWithFocusBlock.associate { it.context.id to it.context }
+    }
 
     val (priorityTask, nextUpTasks) = remember(tasks) {
         val now = System.currentTimeMillis()
 
-        val sortedTasks = tasks.filter { !it.isComplete }.sortedWith(
+        val sortedTasks = tasks.sortedWith(
             // Primary sort key: task "status"
             compareBy<Task> {
                 when {
@@ -65,6 +70,8 @@ fun DashboardScreen(
         priorityTask to nextUp
     }
 
+    val focusContextName = activeFocusBlock?.let { block -> contextMap[block.contextId]?.name }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -77,7 +84,11 @@ fun DashboardScreen(
 
         if (priorityTask == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("All clear!", color = MaterialTheme.colorScheme.secondary, fontSize = 20.sp)
+                Text(
+                    if (focusContextName != null) "No tasks for $focusContextName" else "All clear!",
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontSize = 20.sp
+                )
             }
         } else {
             LazyColumn(
@@ -93,7 +104,8 @@ fun DashboardScreen(
                         CurrentPriorityTask(
                             task = task,
                             contextName = contextMap[task.contextId]?.name ?: "General",
-                            onComplete = onTaskComplete
+                            onComplete = onTaskComplete,
+                            focusContextName = focusContextName
                         )
                     }
                 }

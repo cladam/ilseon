@@ -6,6 +6,7 @@ import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.task.FocusBlockDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,8 +37,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTaskRepository(taskDao: TaskDao): TaskRepository {
-        return TaskRepository(taskDao)
+    fun provideWorkBlockDao(appDatabase: AppDatabase): FocusBlockDao {
+        return appDatabase.FocusBlockDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTaskRepository(taskDao: TaskDao, focusBlockDao: FocusBlockDao): TaskRepository {
+        return TaskRepository(taskDao, focusBlockDao)
     }
 
     @Provides
@@ -48,7 +55,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTaskContextRepository(taskContextDao: TaskContextDao): TaskContextRepository {
-        return TaskContextRepository(taskContextDao)
+    fun provideTaskContextRepository(
+        taskContextDao: TaskContextDao,
+        focusBlockDao: FocusBlockDao
+    ): TaskContextRepository {
+        return TaskContextRepository(taskContextDao, focusBlockDao)
     }
 }

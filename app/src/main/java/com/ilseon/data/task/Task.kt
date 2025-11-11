@@ -60,5 +60,6 @@ data class Task(
 data class TaskContext(
     @PrimaryKey val id: UUID = UUID.randomUUID(),
     val name: String,
+    val description: String? = null,
     val displayOrder: Int = 0
 )

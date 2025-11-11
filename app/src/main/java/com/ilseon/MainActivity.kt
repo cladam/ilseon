@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
 
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val tasks by viewModel.tasks.collectAsState()
+                val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
 
                 // This would be loaded from user preferences
@@ -174,6 +175,7 @@ class MainActivity : ComponentActivity() {
                                     onTaskComplete = { task ->
                                         viewModel.completeTask(task)
                                     },
+                                    activeFocusBlock = activeFocusBlock,
                                 )
                             }
                             composable(Screen.Settings.route) {

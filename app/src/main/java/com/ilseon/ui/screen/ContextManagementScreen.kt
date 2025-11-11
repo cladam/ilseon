@@ -1,7 +1,10 @@
 package com.ilseon.ui.screen
 
+import android.text.format.DateFormat
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,17 +17,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,19 +42,60 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.TaskContext
+import com.ilseon.ui.components.TimePickerDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContextManagementScreen(
     viewModel: TaskContextViewModel = hiltViewModel()
 ) {
-    val contexts by viewModel.contexts.collectAsState()
+    val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
     var newContextName by remember { mutableStateOf("") }
+    var newContextDescription by remember { mutableStateOf("") }
+    var startTime by remember { mutableStateOf("") }
+    var endTime by remember { mutableStateOf("") }
+    var focusBlockEnabled by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+
+    val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
+    val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+    val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+
+
+    if (showStartTimePicker) {
+        TimePickerDialog(
+            onCancel = { showStartTimePicker = false },
+            onConfirm = {
+                startTime = String.format("%02d:%02d", startTimeState.hour, startTimeState.minute)
+                showStartTimePicker = false
+            },
+        ) {
+            TimePicker(state = startTimeState)
+        }
+    }
+
+    if (showEndTimePicker) {
+        TimePickerDialog(
+            onCancel = { showEndTimePicker = false },
+            onConfirm = {
+                endTime = String.format("%02d:%02d", endTimeState.hour, endTimeState.minute)
+                showEndTimePicker = false
+            },
+        ) {
+            TimePicker(state = endTimeState)
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -81,11 +130,119 @@ fun ContextManagementScreen(
                 maxLines = 1
             )
             Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = newContextDescription,
+                onValueChange = { newContextDescription = it },
+                label = { Text("Description (optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                ),
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .selectable(
+                        selected = focusBlockEnabled,
+                        onClick = { focusBlockEnabled = !focusBlockEnabled },
+                        role = Role.Checkbox
+                    )
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = focusBlockEnabled,
+                    onCheckedChange = null
+                )
+                Text(
+                    text = "Enable Focus Block",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            AnimatedVisibility(visible = focusBlockEnabled) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = startTime,
+                            onValueChange = {},
+                            label = { Text("Start Time") },
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.secondary,
+                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            ),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showStartTimePicker = true }
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = endTime,
+                            onValueChange = {},
+                            label = { Text("End Time") },
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.secondary,
+                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            ),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showEndTimePicker = true }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
                     if (newContextName.isNotBlank()) {
-                        viewModel.addContext(newContextName)
+                        val st = if (focusBlockEnabled) startTime else null
+                        val et = if (focusBlockEnabled) endTime else null
+                        val desc = newContextDescription.ifBlank { null }
+                        viewModel.addContext(newContextName, desc, st, et)
                         newContextName = ""
+                        newContextDescription = ""
+                        startTime = ""
+                        endTime = ""
+                        focusBlockEnabled = false
                     }
                 },
                 modifier = Modifier
@@ -112,7 +269,7 @@ fun ContextManagementScreen(
         )
         Spacer(Modifier.height(12.dp))
 
-        if (contexts.isEmpty()) {
+        if (contextsWithFocusBlock.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -129,10 +286,10 @@ fun ContextManagementScreen(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(contexts, key = { it.id }) { context ->
+                items(contextsWithFocusBlock, key = { it.context.id }) { item ->
                     ContextItem(
-                        context = context,
-                        onDelete = { viewModel.deleteContext(it.id) }
+                        contextWithFocusBlock = item,
+                        onDelete = { viewModel.deleteContext(it.context.id) }
                     )
                 }
             }
@@ -141,7 +298,12 @@ fun ContextManagementScreen(
 }
 
 @Composable
-private fun ContextItem(context: TaskContext, onDelete: (TaskContext) -> Unit) {
+private fun ContextItem(
+    contextWithFocusBlock: ContextWithFocusBlock,
+    onDelete: (ContextWithFocusBlock) -> Unit
+) {
+    val context = contextWithFocusBlock.context
+    val focusBlock = contextWithFocusBlock.focusBlock
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,21 +313,39 @@ private fun ContextItem(context: TaskContext, onDelete: (TaskContext) -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = context.name,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 18.sp,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = { onDelete(context) }) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = context.name,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                context.description?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
+                }
+                focusBlock?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Focus: ${it.startTime} - ${it.endTime}",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            IconButton(onClick = { onDelete(contextWithFocusBlock) }) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete context",
-                    tint = Color(0xFFEF4444),
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(24.dp)
                 )
             }

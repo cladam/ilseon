@@ -2,6 +2,7 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
@@ -20,7 +21,14 @@ import javax.inject.Inject
 @HiltViewModel
 class TaskViewModel @Inject constructor(private val taskRepository: TaskRepository) : ViewModel() {
 
-    val tasks: StateFlow<List<Task>> = taskRepository.getTasks()
+    val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    val tasks: StateFlow<List<Task>> = taskRepository.getIncompleteTasks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

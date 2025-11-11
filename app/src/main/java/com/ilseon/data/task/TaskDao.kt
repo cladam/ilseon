@@ -1,6 +1,7 @@
 package com.ilseon.data.task
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -60,6 +61,12 @@ interface TaskDao {
 
     @Update
     suspend fun updateTask(task: Task)
+
+    /**
+     * Deletes a task.
+     */
+    @Delete
+    suspend fun delete(task: Task)
 
     /**
      * Gets a single task by its ID.

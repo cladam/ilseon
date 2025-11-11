@@ -82,7 +82,7 @@ abstract class AppDatabase : RoomDatabase() {
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
-                            INSTANCE?.let { database ->
+                            INSTANCE?.let {
                                 CoroutineScope(Dispatchers.IO).launch {
                                     val dao = taskContextDaoProvider.get()
                                     dao.insertContext(TaskContext(name = "Work", displayOrder = 0))

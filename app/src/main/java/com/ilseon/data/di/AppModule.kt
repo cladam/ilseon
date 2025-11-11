@@ -1,5 +1,6 @@
 package com.ilseon.data.di
 
+import android.app.AlarmManager
 import android.content.Context
 import com.ilseon.AppDatabase
 import com.ilseon.data.task.TaskContextDao
@@ -7,6 +8,7 @@ import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.notifications.ReminderManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,8 +45,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTaskRepository(taskDao: TaskDao, focusBlockDao: FocusBlockDao): TaskRepository {
-        return TaskRepository(taskDao, focusBlockDao)
+    fun provideTaskRepository(
+        taskDao: TaskDao,
+        focusBlockDao: FocusBlockDao,
+        reminderManager: ReminderManager
+    ): TaskRepository {
+        return TaskRepository(taskDao, focusBlockDao, reminderManager)
     }
 
     @Provides
@@ -60,5 +66,11 @@ object AppModule {
         focusBlockDao: FocusBlockDao
     ): TaskContextRepository {
         return TaskContextRepository(taskContextDao, focusBlockDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAlarmManager(@ApplicationContext context: Context): AlarmManager {
+        return context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     }
 }

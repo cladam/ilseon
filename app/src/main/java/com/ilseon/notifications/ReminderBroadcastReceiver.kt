@@ -18,7 +18,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         val description = intent.getStringExtra("EXTRA_TASK_DESCRIPTION")
 
         if (taskId != null && title != null) {
-            notificationHelper.showNotification(taskId, title, description)
+            notificationHelper.showReminderNotification(taskId, title, description)
         }
     }
 }

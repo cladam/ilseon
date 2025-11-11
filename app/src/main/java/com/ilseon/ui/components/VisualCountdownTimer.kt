@@ -47,16 +47,26 @@ fun VisualCountdownTimer(
     val isTimeLow = remainingTimeInMillis <= FIVE_MINUTES_IN_MILLIS
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+
     val pulsingColor by infiniteTransition.animateColor(
         initialValue = QuietAmber,
         targetValue = QuietAmber.copy(alpha = 0.7f),
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        ), label = "pulse_color"
+        ), label = "pulse_color_low_time"
     )
 
-    val arcColor = if (isTimeLow) pulsingColor else MutedTeal
+    val subtlePulseColor by infiniteTransition.animateColor(
+        initialValue = MutedTeal,
+        targetValue = MutedTeal.copy(alpha = 0.8f),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "subtle_pulse_color"
+    )
+
+    val arcColor = if (isTimeLow) pulsingColor else subtlePulseColor
 
     fun formatTime(millis: Long): String {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)

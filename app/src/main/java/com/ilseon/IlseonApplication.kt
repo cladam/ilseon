@@ -13,6 +13,6 @@ class IlseonApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        notificationHelper.createNotificationChannel()
+        notificationHelper.createNotificationChannels()
     }
 }

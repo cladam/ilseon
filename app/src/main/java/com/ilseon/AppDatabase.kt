@@ -82,12 +82,63 @@ abstract class AppDatabase : RoomDatabase() {
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
-                            INSTANCE?.let {
+                            INSTANCE?.let { database ->
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    val dao = taskContextDaoProvider.get()
-                                    dao.insertContext(TaskContext(name = "Work", displayOrder = 0))
-                                    dao.insertContext(TaskContext(name = "Family", displayOrder = 1))
-                                    dao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
+                                    val taskContextDao = database.taskContextDao()
+                                    val taskDao = database.taskDao()
+                                    val focusBlockDao = database.FocusBlockDao()
+
+                                    // Pre-populate with default contexts
+                                    val workContextId = UUID.randomUUID()
+                                    val healthContext = TaskContext(id = UUID.randomUUID(), name = "Health", description = "Fix back pain", displayOrder = 0)
+                                    taskContextDao.insertContext(healthContext)
+                                    focusBlockDao.insert(FocusBlock(id = UUID.randomUUID(),
+                                        contextId = healthContext.id,
+                                        startTime = "23:00",
+                                        endTime = "23:59"
+                                    ))
+                                    taskContextDao.insertContext(TaskContext(id = workContextId, name = "Work", displayOrder = 0))
+                                    taskContextDao.insertContext(TaskContext(name = "Family", displayOrder = 1))
+                                    taskContextDao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
+
+                                    // --- TEST DATA ---
+
+                                    // Rule 1: Task as a Simple Note (no alarms)
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Buy milk",
+                                            contextId = workContextId,
+                                            priority = TaskPriority.Low,
+                                            description = "This is a simple note and should not trigger any alarms."
+                                        )
+                                    )
+
+                                    // Rule 2: Task with a Scheduled Start & End Time (multiple alarms)
+                                    val now = System.currentTimeMillis()
+                                    val startTime = now + 60 * 1000 // 1 minute from now
+                                    val endTime = startTime + 5 * 60 * 1000 // 5-minute duration
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Prep presentation",
+                                            contextId = workContextId,
+                                            priority = TaskPriority.High,
+                                            startTime = startTime,
+                                            dueTime = endTime,
+                                            endTime = endTime,
+                                            description = "Scheduled from 1 to 6 minutes from now."
+                                        )
+                                    )
+
+                                    // Rule 3: Task with a Duration (alarms only after manual start)
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Read Chapter 3",
+                                            contextId = workContextId,
+                                            priority = TaskPriority.Mid,
+                                            totalTimeInMinutes = 15,
+                                            description = "15-min task. Timer must be started manually."
+                                        )
+                                    )
                                  }
                             }
                         }

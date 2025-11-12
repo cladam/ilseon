@@ -22,6 +22,11 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     private val notificationManager = NotificationManagerCompat.from(context)
 
     companion object {
+        // Haptic Feedback Patterns
+        private val CRITICAL_VIBRATION_PATTERN = longArrayOf(0, 500, 200, 500, 200, 500) // On, off, on, off...
+        private val WARNING_VIBRATION_PATTERN = longArrayOf(0, 300, 150, 300)
+        private val ANCHOR_VIBRATION_PATTERN = longArrayOf(0, 100)
+
         // Tier 3
         private const val CRITICAL_CHANNEL_ID = "ilseon_critical_decision"
         private const val CRITICAL_CHANNEL_NAME = "Critical Decision"
@@ -50,6 +55,8 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = CRITICAL_CHANNEL_DESCRIPTION
+                enableVibration(true)
+                vibrationPattern = CRITICAL_VIBRATION_PATTERN
             }
 
             val warningChannel = NotificationChannel(
@@ -58,6 +65,8 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = WARNING_CHANNEL_DESCRIPTION
+                enableVibration(true)
+                vibrationPattern = WARNING_VIBRATION_PATTERN
             }
 
             val anchorChannel = NotificationChannel(
@@ -66,6 +75,8 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = ANCHOR_CHANNEL_DESCRIPTION
+                enableVibration(true)
+                vibrationPattern = ANCHOR_VIBRATION_PATTERN
             }
 
             val focusChannel = NotificationChannel(
@@ -74,6 +85,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = FOCUS_CHANNEL_DESCRIPTION
+                // No vibration for the persistent focus notification
             }
 
             notificationManager.createNotificationChannels(
@@ -95,6 +107,12 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
             NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
         }
 
+        val vibrationPattern = when (tier) {
+            NotificationTier.CriticalDecision -> CRITICAL_VIBRATION_PATTERN
+            NotificationTier.PreBlockWarning -> WARNING_VIBRATION_PATTERN
+            NotificationTier.SubtleAnchor -> ANCHOR_VIBRATION_PATTERN
+        }
+
         val priority = when (tier) {
             NotificationTier.CriticalDecision -> NotificationCompat.PRIORITY_HIGH
             NotificationTier.PreBlockWarning -> NotificationCompat.PRIORITY_DEFAULT
@@ -106,6 +124,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
             .setContentTitle(title)
             .setContentText(description)
             .setPriority(priority)
+            .setVibrate(vibrationPattern) // Set vibration pattern for pre-Oreo
             .setAutoCancel(true)
 
         notificationManager.notify(taskId.hashCode(), builder.build())

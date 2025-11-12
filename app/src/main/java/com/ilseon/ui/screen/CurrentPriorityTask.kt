@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
 import com.ilseon.ui.components.VisualCountdownTimer
+import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -51,32 +52,38 @@ fun CurrentPriorityTask(
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
     val timerState = task.timerState
+    val isInFocusBlock = focusContextName != null
+    var isOverdue by remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = task.id, key2 = timerState) {
+    LaunchedEffect(key1 = task) {
+        // Check for overdue status whenever the task changes
+        isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
+
         if (timerState == TimerState.Running) {
             val startTime = task.timerStartTime ?: System.currentTimeMillis()
             val durationMillis = task.totalTimeInMinutes?.times(60000L) ?: 0L
             val endTime = startTime + durationMillis
 
-            // Correctly calculate initial remaining time
             val initialRemaining = endTime - System.currentTimeMillis()
             remainingTime = max(0, initialRemaining)
 
             while (remainingTime > 0) {
                 delay(1000L)
                 remainingTime -= 1000L
+                // Re-check overdue status during countdown
+                isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
             }
 
-            // When timer finishes
-            if (task.timerState == TimerState.Running) { // Ensure task wasn't paused/completed
+            if (task.timerState == TimerState.Running) {
                 onTimerFinished(task)
+                isOverdue = true // Mark as overdue once timer finishes
             }
         }
     }
 
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        val title = if (focusContextName != null) {
+        val title = if (isInFocusBlock) {
             "Current Priority Task ($focusContextName)"
         } else {
             "Current Priority Task"
@@ -93,7 +100,14 @@ fun CurrentPriorityTask(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(16.dp))
+                .border(
+                    width = 1.dp,
+                    color = when {
+                        isOverdue -> QuietAmber
+                        else -> MaterialTheme.colorScheme.secondary
+                    },
+                    shape = RoundedCornerShape(16.dp)
+                )
                 .padding(16.dp)
         ) {
             if (timerState == TimerState.Running && task.totalTimeInMinutes != null) {
@@ -149,15 +163,14 @@ fun CurrentPriorityTask(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(task.priority.toColor().copy(alpha = 0.1f))
-                        .border(2.dp, task.priority.toColor(), CircleShape)
+                        .background(MaterialTheme.colorScheme.secondary)
                         .clickable { onComplete(task) },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Filled.Check,
                         contentDescription = "Complete Task",
-                        tint = task.priority.toColor(),
+                        tint = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.size(24.dp)
                     )
                 }

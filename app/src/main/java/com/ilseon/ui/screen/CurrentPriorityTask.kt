@@ -39,6 +39,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.max
 
 @Composable
 fun CurrentPriorityTask(
@@ -49,40 +50,30 @@ fun CurrentPriorityTask(
     focusContextName: String?
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
-    var timerState by remember(task.id) { mutableStateOf(task.timerState) }
+    val timerState = task.timerState
 
-    LaunchedEffect(task.id, task.startTime, task.endTime, task.isComplete) {
-        if (task.startTime == null || task.endTime == null || task.isComplete) {
-            timerState = if (task.isComplete) TimerState.Finished else TimerState.NotStarted
-            return@LaunchedEffect
+    LaunchedEffect(key1 = task.id, key2 = timerState) {
+        if (timerState == TimerState.Running) {
+            val startTime = task.timerStartTime ?: System.currentTimeMillis()
+            val durationMillis = task.totalTimeInMinutes?.times(60000L) ?: 0L
+            val endTime = startTime + durationMillis
+
+            // Correctly calculate initial remaining time
+            val initialRemaining = endTime - System.currentTimeMillis()
+            remainingTime = max(0, initialRemaining)
+
+            while (remainingTime > 0) {
+                delay(1000L)
+                remainingTime -= 1000L
+            }
+
+            // When timer finishes
+            if (task.timerState == TimerState.Running) { // Ensure task wasn't paused/completed
+                onTimerFinished(task)
+            }
         }
-
-        // Wait until it's time to start
-        while (System.currentTimeMillis() < task.startTime) {
-            delay(1000)
-        }
-
-        // Start the timer
-        timerState = TimerState.Running
-        task.timerState = TimerState.Running
-
-        val initialRemaining = task.endTime - System.currentTimeMillis()
-        if (initialRemaining > 0) {
-            remainingTime = initialRemaining
-        } else {
-            remainingTime = 0
-        }
-
-        while (remainingTime > 0) {
-            delay(1000)
-            remainingTime -= 1000
-            task.remainingTimeInSeconds = remainingTime / 1000
-        }
-
-        timerState = TimerState.Finished
-        task.timerState = TimerState.Finished
-        onTimerFinished(task)
     }
+
 
     Column(modifier = Modifier.fillMaxWidth()) {
         val title = if (focusContextName != null) {

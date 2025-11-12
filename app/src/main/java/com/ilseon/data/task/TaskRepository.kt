@@ -33,31 +33,13 @@ class TaskRepository @Inject constructor(
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
     suspend fun insertTask(task: Task) {
-        taskDao.insertTask(task)
-        reminderManager.scheduleReminder(task)
-    }
-
-    suspend fun insert(task: Task) {
         taskDao.insert(task)
-        reminderManager.scheduleReminder(task)
-    }
-
-    suspend fun update(task: Task) {
-        taskDao.update(task)
-        if (task.isComplete) {
-            reminderManager.cancelReminder(task)
-        } else {
-            reminderManager.scheduleReminder(task)
-        }
+        updateRemindersForTask(task)
     }
 
     suspend fun updateTask(task: Task) {
-        taskDao.updateTask(task)
-        if (task.isComplete) {
-            reminderManager.cancelReminder(task)
-        } else {
-            reminderManager.scheduleReminder(task)
-        }
+        taskDao.update(task)
+        updateRemindersForTask(task)
     }
 
     suspend fun deleteTask(task: Task) {
@@ -67,6 +49,39 @@ class TaskRepository @Inject constructor(
 
     suspend fun getTaskById(id: UUID): Task? {
         return taskDao.getTaskById(id)
+    }
+
+    suspend fun startDurationTask(taskId: UUID) {
+        val task = taskDao.getTaskById(taskId)
+        if (task != null && task.totalTimeInMinutes != null && task.timerState == TimerState.NotStarted) {
+            val updatedTask = task.copy(
+                timerState = TimerState.Running,
+                timerStartTime = System.currentTimeMillis()
+            )
+            taskDao.update(updatedTask)
+            reminderManager.scheduleDurationTaskReminders(updatedTask)
+        }
+    }
+
+    private fun updateRemindersForTask(task: Task) {
+        if (task.isComplete) {
+            reminderManager.cancelReminder(task)
+            return
+        }
+
+        // Rule 2: Task with a Scheduled Start & End Time
+        if (task.startTime != null && task.dueTime != null) {
+            reminderManager.scheduleTimedTaskReminders(task)
+        }
+        // Rule 3: A duration task that is running has its reminders set when started.
+        // We don't need to reschedule them on every update unless properties change.
+        // For now, we assume startDurationTask is the only entry point for these reminders.
+
+        // Rule 1 & others: For any other case, cancel reminders to be safe.
+        // This includes simple notes and duration tasks that haven't been started.
+        else {
+            reminderManager.cancelReminder(task)
+        }
     }
 
     fun getActiveFocusBlock(): Flow<FocusBlock?> {

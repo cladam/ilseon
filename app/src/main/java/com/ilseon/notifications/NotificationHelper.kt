@@ -1,11 +1,13 @@
 package com.ilseon.notifications
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.ilseon.MainActivity
@@ -20,9 +22,20 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     private val notificationManager = NotificationManagerCompat.from(context)
 
     companion object {
-        private const val REMINDER_CHANNEL_ID = "ilseon_reminders"
-        private const val REMINDER_CHANNEL_NAME = "Task Reminders"
-        private const val REMINDER_CHANNEL_DESCRIPTION = "Notifications for task reminders"
+        // Tier 3
+        private const val CRITICAL_CHANNEL_ID = "ilseon_critical_decision"
+        private const val CRITICAL_CHANNEL_NAME = "Critical Decision"
+        private const val CRITICAL_CHANNEL_DESCRIPTION = "High-priority alerts for starting or overdue tasks."
+
+        // Tier 2
+        private const val WARNING_CHANNEL_ID = "ilseon_pre_block_warning"
+        private const val WARNING_CHANNEL_NAME = "Pre-Block Warning"
+        private const val WARNING_CHANNEL_DESCRIPTION = "Medium-priority warnings before a focus block ends."
+
+        // Tier 1
+        private const val ANCHOR_CHANNEL_ID = "ilseon_subtle_anchor"
+        private const val ANCHOR_CHANNEL_NAME = "Subtle Anchor"
+        private const val ANCHOR_CHANNEL_DESCRIPTION = "Low-priority, subtle cues during a focus block."
 
         private const val FOCUS_CHANNEL_ID = "ilseon_focus"
         private const val FOCUS_CHANNEL_NAME = "Focus Session"
@@ -31,14 +44,29 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
 
     fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val reminderChannel = NotificationChannel(
-                REMINDER_CHANNEL_ID,
-                REMINDER_CHANNEL_NAME,
+            val criticalChannel = NotificationChannel(
+                CRITICAL_CHANNEL_ID,
+                CRITICAL_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = REMINDER_CHANNEL_DESCRIPTION
+                description = CRITICAL_CHANNEL_DESCRIPTION
             }
-            notificationManager.createNotificationChannel(reminderChannel)
+
+            val warningChannel = NotificationChannel(
+                WARNING_CHANNEL_ID,
+                WARNING_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = WARNING_CHANNEL_DESCRIPTION
+            }
+
+            val anchorChannel = NotificationChannel(
+                ANCHOR_CHANNEL_ID,
+                ANCHOR_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = ANCHOR_CHANNEL_DESCRIPTION
+            }
 
             val focusChannel = NotificationChannel(
                 FOCUS_CHANNEL_ID,
@@ -47,21 +75,43 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
             ).apply {
                 description = FOCUS_CHANNEL_DESCRIPTION
             }
-            notificationManager.createNotificationChannel(focusChannel)
+
+            notificationManager.createNotificationChannels(
+                listOf(criticalChannel, warningChannel, anchorChannel, focusChannel)
+            )
         }
     }
 
-    fun showReminderNotification(taskId: String, title: String, description: String?) {
-        val builder = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showReminderNotification(
+        taskId: String,
+        title: String,
+        description: String?,
+        tier: NotificationTier
+    ) {
+        val channelId = when (tier) {
+            NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
+            NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
+            NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
+        }
+
+        val priority = when (tier) {
+            NotificationTier.CriticalDecision -> NotificationCompat.PRIORITY_HIGH
+            NotificationTier.PreBlockWarning -> NotificationCompat.PRIORITY_DEFAULT
+            NotificationTier.SubtleAnchor -> NotificationCompat.PRIORITY_LOW
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(description)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(priority)
             .setAutoCancel(true)
 
         notificationManager.notify(taskId.hashCode(), builder.build())
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showFocusNotification(taskName: String) {
         // Intent to open the app when the notification is tapped
         val intent = Intent(context, MainActivity::class.java).apply {

@@ -17,52 +17,127 @@ class ReminderManager @Inject constructor(
     private val alarmManager: AlarmManager
 ) {
 
-    fun scheduleReminder(task: Task) {
-        val pendingIntent = createPendingIntent(task)
+    companion object {
+        const val PRE_BLOCK_WARNING_MINUTES = 5
+        const val END_TIME_OVERDUE_MINUTES = 1
+    }
 
-        task.dueTime?.let { dueTime ->
-            // Schedule a reminder for the due time
-            if (dueTime > System.currentTimeMillis()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                    // TODO: Handle case where exact alarms are not permitted.
-                    // For now, we'll just log or skip. In a real app, you'd guide the user to settings.
-                    return
-                }
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    dueTime,
-                    pendingIntent
-                )
-            }
-        }
+    fun scheduleTimedTaskReminders(task: Task) {
+        // Rule 2: Task with a Scheduled Start/End Time
+        val startTime = task.startTime ?: return
+        val dueTime = task.dueTime ?: return
 
-        // Countdown reminder
-        if (task.timerState == com.ilseon.data.task.TimerState.Running && task.remainingTimeInSeconds > 0) {
-            val triggerAtMillis = System.currentTimeMillis() + task.remainingTimeInSeconds * 1000
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
+        // Cancel any existing reminders for this task to avoid duplicates
+        cancelReminder(task)
+
+        // 1. Start Time Alert
+        if (startTime > System.currentTimeMillis()) {
+            scheduleAlarm(
+                task,
+                startTime,
+                NotificationTier.CriticalDecision,
+                "FOCUS BEGINS: ${task.title}"
             )
         }
+
+        // 2. Mid-Block Warning (5 minutes before end time)
+        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        if (preBlockWarningTime > System.currentTimeMillis()) {
+            scheduleAlarm(
+                task,
+                preBlockWarningTime,
+                NotificationTier.PreBlockWarning
+            )
+        }
+
+        // 3. End Time Overdue (1 minute after end time)
+        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
+        scheduleAlarm(
+            task,
+            overdueTime,
+            NotificationTier.CriticalDecision,
+        )
+    }
+
+    fun scheduleDurationTaskReminders(task: Task) {
+        // Rule 3: Task with a Duration
+        if (task.totalTimeInMinutes == null || task.totalTimeInMinutes <= 0) return
+
+        cancelReminder(task)
+
+        val now = System.currentTimeMillis()
+        val durationMillis = task.totalTimeInMinutes * 60 * 1000L
+
+        // Subtle Anchor (every 5-15 minutes, let's start with 10 for now)
+        // TODO: Implement repeating alarm for Subtle Anchor
+
+        // Mid-Block Warning (5 minutes before the end)
+        if (durationMillis > PRE_BLOCK_WARNING_MINUTES * 60 * 1000) {
+            val preBlockWarningTime = now + durationMillis - (PRE_BLOCK_WARNING_MINUTES * 60 * 1000)
+            scheduleAlarm(
+                task,
+                preBlockWarningTime,
+                NotificationTier.PreBlockWarning
+            )
+        }
+
+        // End Time Overdue (1 minute after duration expires)
+        val overdueTime = now + durationMillis + (END_TIME_OVERDUE_MINUTES * 60 * 1000)
+        scheduleAlarm(
+            task,
+            overdueTime,
+            NotificationTier.CriticalDecision
+        )
+    }
+
+    private fun scheduleAlarm(
+        task: Task,
+        triggerAtMillis: Long,
+        tier: NotificationTier,
+        titleOverride: String? = null
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            // TODO: Handle case where exact alarms are not permitted.
+            return
+        }
+
+        val pendingIntent = createPendingIntent(task, tier, titleOverride)
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAtMillis,
+            pendingIntent
+        )
     }
 
     fun cancelReminder(task: Task) {
-        val pendingIntent = createPendingIntent(task)
-        alarmManager.cancel(pendingIntent)
+        // To cancel all alarms for a task, we need to create matching PendingIntents
+        // for each possible alarm type and cancel them.
+        val tiers = NotificationTier.values()
+        tiers.forEach { tier ->
+            val pendingIntent = createPendingIntent(task, tier, null)
+            alarmManager.cancel(pendingIntent)
+        }
     }
 
-    private fun createPendingIntent(task: Task): PendingIntent {
+    private fun createPendingIntent(
+        task: Task,
+        tier: NotificationTier,
+        titleOverride: String?
+    ): PendingIntent {
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             action = "com.ilseon.REMINDER"
             putExtra("EXTRA_TASK_ID", task.id.toString())
-            putExtra("EXTRA_TASK_TITLE", task.title)
+            putExtra("EXTRA_TASK_TITLE", titleOverride ?: task.title)
             putExtra("EXTRA_TASK_DESCRIPTION", task.description)
+            putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
         }
+
+        // To make each PendingIntent unique for a task and tier, we use a unique request code.
+        val requestCode = (task.id.toString() + tier.name).hashCode()
 
         return PendingIntent.getBroadcast(
             context,
-            task.id.hashCode(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

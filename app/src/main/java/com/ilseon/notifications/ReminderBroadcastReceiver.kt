@@ -16,9 +16,11 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         val taskId = intent.getStringExtra("EXTRA_TASK_ID")
         val title = intent.getStringExtra("EXTRA_TASK_TITLE")
         val description = intent.getStringExtra("EXTRA_TASK_DESCRIPTION")
+        val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
+        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: NotificationTier.PreBlockWarning
 
         if (taskId != null && title != null) {
-            notificationHelper.showReminderNotification(taskId, title, description)
+            notificationHelper.showReminderNotification(taskId, title, description, tier)
         }
     }
 }

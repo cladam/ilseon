@@ -22,6 +22,7 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.max
 
 @HiltViewModel
 class TaskViewModel @Inject constructor(
@@ -166,6 +167,33 @@ class TaskViewModel @Inject constructor(
                     completedAt = System.currentTimeMillis()
                 )
             )
+        }
+    }
+
+    fun startTaskTimer(task: Task) {
+        viewModelScope.launch {
+            taskRepository.updateTask(
+                task.copy(
+                    timerState = TimerState.Running,
+                    timerStartTime = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun pauseTaskTimer(task: Task) {
+        viewModelScope.launch {
+            if (task.timerState == TimerState.Running) {
+                val now = System.currentTimeMillis()
+                val elapsed = now - (task.timerStartTime ?: now)
+                val newRemaining = task.remainingTimeInSeconds - (elapsed / 1000)
+                taskRepository.updateTask(
+                    task.copy(
+                        timerState = TimerState.Paused,
+                        remainingTimeInSeconds = max(0, newRemaining)
+                    )
+                )
+            }
         }
     }
 }

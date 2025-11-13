@@ -34,6 +34,8 @@ fun DashboardScreen(
     onAnimateComplete: (Task) -> Unit,
     onTaskComplete: (Task) -> Unit,
     onTaskTimerFinished: (Task) -> Unit,
+    onStartTask: (Task) -> Unit,
+    onPauseTask: (Task) -> Unit,
     activeFocusBlock: FocusBlock?,
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
@@ -107,6 +109,8 @@ fun DashboardScreen(
                             contextName = contextMap[task.contextId]?.name ?: "General",
                             onComplete = onTaskComplete,
                             onTimerFinished = onTaskTimerFinished,
+                            onStartTask = onStartTask,
+                            onPauseTask = onPauseTask,
                             focusContextName = focusContextName
                         )
                     }

@@ -16,7 +16,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +51,8 @@ fun CurrentPriorityTask(
     contextName: String,
     onComplete: (Task) -> Unit,
     onTimerFinished: (Task) -> Unit,
+    onStartTask: (Task) -> Unit,
+    onPauseTask: (Task) -> Unit,
     focusContextName: String?
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
@@ -56,13 +61,13 @@ fun CurrentPriorityTask(
     var isOverdue by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = task) {
-        // Check for overdue status whenever the task changes
         isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
 
         if (timerState == TimerState.Running) {
             val startTime = task.timerStartTime ?: System.currentTimeMillis()
-            val durationMillis = task.totalTimeInMinutes?.times(60000L) ?: 0L
-            val endTime = startTime + durationMillis
+            // This is the duration to countdown from *now*
+            val countdownDuration = task.remainingTimeInSeconds * 1000L
+            val endTime = startTime + countdownDuration
 
             val initialRemaining = endTime - System.currentTimeMillis()
             remainingTime = max(0, initialRemaining)
@@ -70,14 +75,16 @@ fun CurrentPriorityTask(
             while (remainingTime > 0) {
                 delay(1000L)
                 remainingTime -= 1000L
-                // Re-check overdue status during countdown
                 isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
             }
 
             if (task.timerState == TimerState.Running) {
                 onTimerFinished(task)
-                isOverdue = true // Mark as overdue once timer finishes
+                isOverdue = true
             }
+        } else {
+            // If not running, display the remaining time from the task
+            remainingTime = task.remainingTimeInSeconds * 1000L
         }
     }
 
@@ -159,6 +166,30 @@ fun CurrentPriorityTask(
                     )
                 }
                 Spacer(Modifier.width(16.dp))
+
+                if (task.timerState == TimerState.NotStarted || task.timerState == TimerState.Paused) {
+                    IconButton(onClick = { onStartTask(task) }) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = "Start Task",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+
+                if (task.timerState == TimerState.Running) {
+                    IconButton(onClick = { onPauseTask(task) }) {
+                        Icon(
+                            Icons.Filled.Pause,
+                            contentDescription = "Pause Task",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+
+
                 Box(
                     modifier = Modifier
                         .size(48.dp)

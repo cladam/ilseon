@@ -61,7 +61,7 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private fun startTask(task: Task) {
+    fun startTask(task: Task) {
         viewModelScope.launch {
             taskRepository.updateTask(task.copy(timerState = TimerState.Running))
         }

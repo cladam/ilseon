@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.ilseon.MainActivity
 import com.ilseon.R
+import com.ilseon.data.task.TimerState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -99,7 +100,8 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         taskId: String,
         title: String,
         description: String?,
-        tier: NotificationTier
+        tier: NotificationTier,
+        timerState: TimerState
     ) {
         val channelId = when (tier) {
             NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
@@ -126,6 +128,37 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
             .setPriority(priority)
             .setVibrate(vibrationPattern) // Set vibration pattern for pre-Oreo
             .setAutoCancel(true)
+
+        if (tier == NotificationTier.CriticalDecision) {
+            if (timerState == TimerState.NotStarted) {
+                // Action to start the task
+                val startIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                    action = "com.ilseon.ACTION_START_TASK"
+                    putExtra("EXTRA_TASK_ID", taskId)
+                    putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
+                }
+                val startPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    (taskId + "_start").hashCode(),
+                    startIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(R.drawable.ic_launcher_foreground, "Start", startPendingIntent)
+            } else if (timerState == TimerState.Running) {
+                // Action to complete the task
+                val completeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                    action = "com.ilseon.ACTION_COMPLETE_TASK"
+                    putExtra("EXTRA_TASK_ID", taskId)
+                }
+                val completePendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    (taskId + "_complete").hashCode(),
+                    completeIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(R.drawable.ic_launcher_foreground, "Complete", completePendingIntent)
+            }
+        }
 
         notificationManager.notify(taskId.hashCode(), builder.build())
     }

@@ -141,6 +141,7 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TASK_TITLE", titleOverride ?: task.title)
             putExtra("EXTRA_TASK_DESCRIPTION", task.description)
             putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
+            putExtra("EXTRA_TIMER_STATE", task.timerState.name)
         }
 
         // To make each PendingIntent unique for a task and tier, we use a unique request code.

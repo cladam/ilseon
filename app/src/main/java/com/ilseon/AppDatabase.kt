@@ -90,6 +90,15 @@ abstract class AppDatabase : RoomDatabase() {
 
                                     // Pre-populate with default contexts
                                     val workContextId = UUID.randomUUID()
+                                    val workContext = TaskContext(id = workContextId, name = "Work", displayOrder = 0)
+                                    taskContextDao.insertContext(workContext)
+                                    focusBlockDao.insert(FocusBlock(
+                                        id = UUID.randomUUID(),
+                                        contextId = workContextId,
+                                        startTime = "09:00",
+                                        endTime = "16:00"
+                                    ))
+
                                     val healthContext = TaskContext(id = UUID.randomUUID(), name = "Health", description = "Fix back pain", displayOrder = 0)
                                     taskContextDao.insertContext(healthContext)
                                     focusBlockDao.insert(FocusBlock(id = UUID.randomUUID(),
@@ -97,7 +106,7 @@ abstract class AppDatabase : RoomDatabase() {
                                         startTime = "23:00",
                                         endTime = "23:59"
                                     ))
-                                    taskContextDao.insertContext(TaskContext(id = workContextId, name = "Work", displayOrder = 0))
+
                                     taskContextDao.insertContext(TaskContext(name = "Family", displayOrder = 1))
                                     taskContextDao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
 
@@ -125,7 +134,7 @@ abstract class AppDatabase : RoomDatabase() {
                                             startTime = startTime,
                                             dueTime = endTime,
                                             endTime = endTime,
-                                            description = "Scheduled from 1 to 6 minutes from now."
+                                            description = "Scheduled to start in 1 minute, with a 5 minute duration."
                                         )
                                     )
 

@@ -3,6 +3,8 @@ package com.ilseon.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.ilseon.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -12,6 +14,7 @@ import javax.inject.Singleton
 interface NotificationService {
     fun createNotificationChannel()
     fun sendTaskFinishedNotification(taskTitle: String)
+    fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int)
 }
 
 @Singleton
@@ -27,6 +30,7 @@ class NotificationServiceImpl @Inject constructor(
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -47,6 +51,17 @@ class NotificationServiceImpl @Inject constructor(
             .setContentTitle("Task Finished")
             .setContentText("Your task '$taskTitle' has completed.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with a real icon
+            .setContentTitle("Task Starting Soon")
+            .setContentText("Your task '$taskTitle' is starting in $minutesUntilStart minutes.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
 
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())

@@ -30,6 +30,17 @@ class ReminderManager @Inject constructor(
         // Cancel any existing reminders for this task to avoid duplicates
         cancelReminder(task)
 
+        // 0. Pre-start warning
+        val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        if (preStartTime > System.currentTimeMillis()) {
+            scheduleAlarm(
+                task,
+                preStartTime,
+                NotificationTier.PreBlockWarning,
+                "FOCUS STARTING SOON: ${task.title}"
+            )
+        }
+
         // 1. Start Time Alert
         if (startTime > System.currentTimeMillis()) {
             scheduleAlarm(
@@ -112,7 +123,7 @@ class ReminderManager @Inject constructor(
     fun cancelReminder(task: Task) {
         // To cancel all alarms for a task, we need to create matching PendingIntents
         // for each possible alarm type and cancel them.
-        val tiers = NotificationTier.values()
+        val tiers = NotificationTier.entries.toTypedArray()
         tiers.forEach { tier ->
             val pendingIntent = createPendingIntent(task, tier, null)
             alarmManager.cancel(pendingIntent)

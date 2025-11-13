@@ -32,9 +32,10 @@ class HapticManagerImpl @Inject constructor(
         }
     }
 
-    private val nudgePattern = longArrayOf(0, 50)
-    private val warningPattern = longArrayOf(0, 100, 50, 100)
-    private val alertPattern = longArrayOf(0, 150, 200, 150, 200, 150)
+    private val successPattern = longArrayOf(0, 120, 10, 50)
+    private val nudgePattern = longArrayOf(0, 40)
+    private val warningPattern = longArrayOf(0, 80, 100, 80)
+    private val alertPattern = longArrayOf(0, 50, 100, 50, 100, 50, 100, 50)
 
     // Tier 1
     override fun performNudge() {

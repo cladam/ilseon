@@ -49,16 +49,13 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             while (isActive) {
                 val now = System.currentTimeMillis()
-                tasks.value
-                    .filter {
-                        it.timerState == TimerState.NotStarted &&
-                                it.startTime != null &&
-                                it.startTime <= now &&
-                                (it.endTime == null || now < it.endTime)
+                tasks.value.forEach { task ->
+                    if (task.timerState == TimerState.NotStarted && task.startTime != null) {
+                        if (task.startTime <= now && (task.endTime == null || now < task.endTime)) {
+                            startTask(task)
+                        }
                     }
-                    .forEach { task ->
-                        startTask(task)
-                    }
+                }
                 delay(1000) // Check every second
             }
         }

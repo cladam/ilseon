@@ -2,6 +2,7 @@ package com.ilseon.data.task
 
 import com.ilseon.notifications.ReminderManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.LocalTime
@@ -60,6 +61,13 @@ class TaskRepository @Inject constructor(
             )
             taskDao.update(updatedTask)
             reminderManager.scheduleDurationTaskReminders(updatedTask)
+        }
+    }
+
+    suspend fun rescheduleAllReminders() {
+        val allTasks = taskDao.getTasks().first()
+        for (task in allTasks) {
+            updateRemindersForTask(task)
         }
     }
 

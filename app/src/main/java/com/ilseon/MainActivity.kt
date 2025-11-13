@@ -41,10 +41,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
@@ -56,9 +58,13 @@ import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var taskRepository: TaskRepository
 
     private val viewModel: TaskViewModel by viewModels()
 
@@ -66,6 +72,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
+
+        lifecycleScope.launch {
+            taskRepository.rescheduleAllReminders()
+        }
+
         setContent {
             IlseonTheme {
                 val navController = rememberNavController()
@@ -177,7 +188,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onTaskTimerFinished = { task ->
                                         viewModel.onTaskTimerFinished(task)
-                                    },
+.                                    },
                                     activeFocusBlock = activeFocusBlock,
                                 )
                             }

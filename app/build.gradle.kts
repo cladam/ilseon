@@ -90,6 +90,7 @@ dependencies {
     // For ViewModel and Coroutine Scope
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0") // Updated to a more recent stable version
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     // ** 3. NAVIGATION **
     implementation("androidx.navigation:navigation-compose:2.7.7")

@@ -11,9 +11,11 @@ import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
 import com.ilseon.service.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -42,6 +44,31 @@ class TaskViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    init {
+        viewModelScope.launch {
+            while (isActive) {
+                val now = System.currentTimeMillis()
+                tasks.value
+                    .filter {
+                        it.timerState == TimerState.NotStarted &&
+                                it.startTime != null &&
+                                it.startTime <= now &&
+                                (it.endTime == null || now < it.endTime)
+                    }
+                    .forEach { task ->
+                        startTask(task)
+                    }
+                delay(1000) // Check every second
+            }
+        }
+    }
+
+    private fun startTask(task: Task) {
+        viewModelScope.launch {
+            taskRepository.updateTask(task.copy(timerState = TimerState.Running))
+        }
+    }
 
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()

@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,12 +53,15 @@ class HapticManagerImpl @Inject constructor(
 
     private fun vibrate(pattern: LongArray) {
         if (vibrator.hasVibrator()) {
+            Log.d("HapticManager", "Device has vibrator, attempting to vibrate.")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
             } else {
                 @Suppress("DEPRECATION")
                 vibrator.vibrate(pattern, -1)
             }
+        } else {
+            Log.d("HapticManager", "Device does not have a vibrator.")
         }
     }
 }

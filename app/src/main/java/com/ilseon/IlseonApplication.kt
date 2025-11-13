@@ -1,7 +1,7 @@
 package com.ilseon
 
 import android.app.Application
-import com.ilseon.notifications.NotificationHelper
+import com.ilseon.service.NotificationService
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -9,10 +9,10 @@ import javax.inject.Inject
 class IlseonApplication : Application() {
 
     @Inject
-    lateinit var notificationHelper: NotificationHelper
+    lateinit var notificationService: NotificationService
 
     override fun onCreate() {
         super.onCreate()
-        notificationHelper.createNotificationChannels()
+        notificationService.createNotificationChannel()
     }
 }

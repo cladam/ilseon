@@ -8,6 +8,7 @@ import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
 import com.ilseon.service.HapticManager
+import com.ilseon.service.NotificationService
 import com.ilseon.service.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +25,8 @@ import javax.inject.Inject
 class TaskViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val hapticManager: HapticManager,
-    private val soundManager: SoundManager
+    private val soundManager: SoundManager,
+    private val notificationService: NotificationService
 ) : ViewModel() {
 
     val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
@@ -43,8 +45,13 @@ class TaskViewModel @Inject constructor(
 
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()
-        soundManager.playAlertSound()
-        // Here you could also show a notification, etc.
+        // soundManager.playAlertSound() // Sound disabled for testing
+        notificationService.sendTaskFinishedNotification(task.title)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
     }
 
     fun addTask(

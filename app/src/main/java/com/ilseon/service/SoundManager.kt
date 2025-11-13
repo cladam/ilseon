@@ -2,6 +2,7 @@ package com.ilseon.service
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.util.Log
 import androidx.annotation.RawRes
 import com.ilseon.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -11,12 +12,15 @@ import javax.inject.Singleton
 interface SoundManager {
     fun playWarningSound()
     fun playAlertSound()
+    fun release()
 }
 
 @Singleton
 class SoundManagerImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : SoundManager {
+
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun playWarningSound() {
         playSound(R.raw.mid_block_warning)
@@ -27,14 +31,23 @@ class SoundManagerImpl @Inject constructor(
     }
 
     private fun playSound(@RawRes soundResId: Int) {
+        // Release any existing media player
+        release()
+
         try {
-            val mediaPlayer = MediaPlayer.create(context, soundResId)
-            mediaPlayer.setOnCompletionListener { it.release() }
-            mediaPlayer.start()
+            mediaPlayer = MediaPlayer.create(context, soundResId)
+            mediaPlayer?.setOnCompletionListener {
+                release()
+            }
+            mediaPlayer?.start()
         } catch (e: Exception) {
-            // Could fail if the resource doesn't exist.
-            // Or if MediaPlayer fails for some other reason.
-            e.printStackTrace()
+            Log.e("SoundManager", "Error playing sound", e)
+            release()
         }
+    }
+
+    override fun release() {
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }

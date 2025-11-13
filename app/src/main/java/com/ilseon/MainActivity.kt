@@ -188,7 +188,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onTaskTimerFinished = { task ->
                                         viewModel.onTaskTimerFinished(task)
-.                                    },
+                                    },
                                     activeFocusBlock = activeFocusBlock,
                                 )
                             }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,10 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,6 +79,9 @@ fun QuickCaptureSheet(
     val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+
+    val focusManager = LocalFocusManager.current
+    val descriptionFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(contexts) {
         if (selectedContextId == null) {
@@ -131,7 +140,16 @@ fun QuickCaptureSheet(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
             ),
-            maxLines = 1
+            maxLines = 1,
+            keyboardOptions = KeyboardOptions.Default.copy(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    descriptionFocusRequester.requestFocus()
+                }
+            )
         )
 
         Spacer(Modifier.height(16.dp))
@@ -140,7 +158,9 @@ fun QuickCaptureSheet(
             value = description,
             onValueChange = { description = it },
             label = { Text("Description (Optional)") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(descriptionFocusRequester),
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = MaterialTheme.colorScheme.secondary,

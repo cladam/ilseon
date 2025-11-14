@@ -77,17 +77,20 @@ jobs:
           echo "VERSION_CODE=$(grep VERSION_CODE version_output.txt | cut -d '=' -f2)" >> $GITHUB_ENV
           echo "VERSION_NAME=$(grep VERSION_NAME version_output.txt | cut -d '=' -f2)" >> $GITHUB_ENV
 
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_JKS_BASE64 }}" | base64 --decode > ${{ github.workspace }}/keystore.jks
+
       - name: Build Release App Bundle
         run: ./gradlew bundleRelease
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_STORE_FILE_PATH: ${{ secrets.SIGNING_STORE_FILE_PATH }}
+          SIGNING_STORE_FILE_PATH: ${{ github.workspace }}/keystore.jks
 
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-release-${{ env.VERSION_NAME }}
           path: app/build/outputs/bundle/release/app-release.aab
-          retention-days: 90
+          retention-days: 9

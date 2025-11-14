@@ -82,7 +82,7 @@ class TaskRepository @Inject constructor(
         }
 
         // Rule 2: Task with a Scheduled Start & End Time
-        if (task.startTime != null && task.dueTime != null) {
+        if (task.startTime != null && task.endTime != null) {
             reminderManager.scheduleTimedTaskReminders(task)
         }
         // Rule 3: A duration task that is running has its reminders set when started.

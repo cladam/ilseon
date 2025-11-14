@@ -111,31 +111,3 @@ private fun NoteItem(task: Task) {
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun NotesScreenPreview() {
-    IlseonTheme {
-        val previewTasks = listOf(
-            Task(
-                id = UUID.randomUUID(),
-                title = "Finish the design mockups",
-                contextId = UUID.randomUUID(),
-                priority = TaskPriority.High,
-                isComplete = true,
-                completedAt = System.currentTimeMillis() - 86400000, // 1 day ago
-                completionReflection = "This went really well. I was in a good flow state."
-            ),
-            Task(
-                id = UUID.randomUUID(),
-                title = "Call the dentist",
-                contextId = UUID.randomUUID(),
-                priority = TaskPriority.Mid,
-                isComplete = true,
-                completedAt = System.currentTimeMillis() - 172800000, // 2 days ago
-                completionReflection = "I procrastinated a bit on this, but I'm glad I did it."
-            )
-        )
-        NotesScreenContent(notes = previewTasks)
-    }
-}

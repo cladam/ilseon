@@ -25,7 +25,7 @@ class ReminderManager @Inject constructor(
     fun scheduleTimedTaskReminders(task: Task) {
         // Rule 2: Task with a Scheduled Start/End Time
         val startTime = task.startTime ?: return
-        val dueTime = task.dueTime ?: return
+        val endTime = task.endTime ?: return
 
         // Cancel any existing reminders for this task to avoid duplicates
         cancelReminder(task)
@@ -52,7 +52,7 @@ class ReminderManager @Inject constructor(
         }
 
         // 2. Mid-Block Warning (5 minutes before end time)
-        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        val preBlockWarningTime = endTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
         if (preBlockWarningTime > System.currentTimeMillis()) {
             scheduleAlarm(
                 task,
@@ -62,7 +62,7 @@ class ReminderManager @Inject constructor(
         }
 
         // 3. End Time Overdue (1 minute after end time)
-        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
+        val overdueTime = endTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
         scheduleAlarm(
             task,
             overdueTime,

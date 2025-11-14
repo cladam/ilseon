@@ -171,7 +171,7 @@ fun QuickCaptureSheet(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
             ),
-            maxLines = 3
+            maxLines = 5
         )
 
         Spacer(Modifier.height(16.dp))
@@ -182,7 +182,7 @@ fun QuickCaptureSheet(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SchedulingType.values().forEach { type ->
+            SchedulingType.entries.forEach { type ->
                 Row(
                     Modifier
                         .selectable(

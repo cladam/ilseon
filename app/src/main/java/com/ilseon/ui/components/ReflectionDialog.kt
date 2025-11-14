@@ -1,6 +1,7 @@
 package com.ilseon.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -14,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardCapitalization
 
 @Composable
 fun ReflectionDialog(
@@ -42,7 +44,10 @@ fun ReflectionDialog(
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
                 ),
-                maxLines = 5
+                maxLines = 5,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    capitalization = KeyboardCapitalization.Sentences,
+                ),
             )
         },
         confirmButton = {

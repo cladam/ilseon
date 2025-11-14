@@ -3,6 +3,7 @@ package com.ilseon.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -143,27 +144,42 @@ fun CurrentPriorityTask(
                         fontWeight = FontWeight.SemiBold
                     )
                     task.description?.let {
-                        Spacer(Modifier.height(4.dp))
+                        if (it.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = it,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(task.priority.toColor(), CircleShape)
+                        )
                         Text(
-                            text = it,
+                            text = contextName,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontSize = 12.sp
+                        )
+                    }
+                    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+                    if (task.startTime != null && task.endTime != null && timerState != TimerState.Running) {
+                        Spacer(Modifier.height(4.dp))
+                        val startTimeStr = timeFormat.format(Date(task.startTime))
+                        val endTimeStr = timeFormat.format(Date(task.endTime))
+                        Text(
+                            text = "Time Block: $startTimeStr - $endTimeStr",
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 14.sp
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
-                    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-                    val subText = if (task.startTime != null && task.endTime != null && timerState != TimerState.Running) {
-                        val startTimeStr = timeFormat.format(Date(task.startTime))
-                        val endTimeStr = timeFormat.format(Date(task.endTime))
-                        "Time Block: $startTimeStr - $endTimeStr"
-                    } else {
-                        contextName
-                    }
-                    Text(
-                        text = subText,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 14.sp
-                    )
                 }
                 Spacer(Modifier.width(16.dp))
 

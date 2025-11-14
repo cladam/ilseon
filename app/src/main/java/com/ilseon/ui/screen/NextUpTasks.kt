@@ -23,11 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
+import com.ilseon.ui.components.TaskDetailsDialog
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -57,26 +56,13 @@ fun NextUpTasks(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
-    var taskToShowDescription by remember { mutableStateOf<Task?>(null) }
+    var taskToShowDetails by remember { mutableStateOf<Task?>(null) }
 
-    taskToShowDescription?.let { task ->
-        val dialogText = buildString {
-            if (!task.description.isNullOrBlank()) {
-                append(task.description)
-                append("\n\n")
-            }
-            append(contextMap[task.contextId]?.name ?: "General")
-        }
-
-        AlertDialog(
-            onDismissRequest = { taskToShowDescription = null },
-            title = { Text(task.title) },
-            text = { Text(text = dialogText) },
-            confirmButton = {
-                TextButton(onClick = { taskToShowDescription = null }) {
-                    Text("Close")
-                }
-            }
+    taskToShowDetails?.let { task ->
+        TaskDetailsDialog(
+            task = task,
+            context = contextMap[task.contextId],
+            onDismiss = { taskToShowDetails = null }
         )
     }
 
@@ -123,7 +109,7 @@ fun NextUpTasks(
                                 .combinedClickable(
                                     onClick = {},
                                     onLongClick = {
-                                        taskToShowDescription = it
+                                        taskToShowDetails = it
                                     }
                                 )
                                 .padding(vertical = 8.dp),

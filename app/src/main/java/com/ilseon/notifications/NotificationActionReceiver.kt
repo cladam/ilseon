@@ -1,8 +1,11 @@
 package com.ilseon.notifications
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,20 +38,28 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                         notificationManager.cancel(taskIdString.hashCode())
                     }
+
                     "com.ilseon.ACTION_START_TASK" -> {
-                        val updatedTask = task.copy(timerState = TimerState.Running, timerStartTime = System.currentTimeMillis())
+                        val updatedTask =
+                            task.copy(timerState = TimerState.Running, timerStartTime = System.currentTimeMillis())
                         taskRepository.updateTask(updatedTask)
 
                         val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
                         val tier = tierName?.let { NotificationTier.valueOf(it) } ?: NotificationTier.CriticalDecision
 
-                        notificationHelper.showReminderNotification(
-                            updatedTask.id.toString(),
-                            updatedTask.title,
-                            updatedTask.description,
-                            tier,
-                            updatedTask.timerState
-                        )
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationHelper.showReminderNotification(
+                                updatedTask.id.toString(),
+                                updatedTask.title,
+                                updatedTask.description,
+                                tier,
+                                updatedTask.timerState
+                            )
+                        }
                     }
                 }
             }

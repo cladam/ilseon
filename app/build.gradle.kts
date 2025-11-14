@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,6 +13,25 @@ android {
     namespace = "com.ilseon"
     compileSdk {
         version = release(36)
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            } else {
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                storeFile = file(System.getenv("SIGNING_STORE_FILE_PATH"))
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            }
+        }
     }
 
     defaultConfig {
@@ -29,6 +51,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -41,6 +64,10 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+ksp {
+    arg("room.schemaDirectory", "$projectDir/schemas")
 }
 
 tasks.register("printVersionCodeAndName") {
@@ -70,16 +97,16 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Splash Screen
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.core:core-splashscreen:1.2.0")
 
     // ** Hilt (Dependency Injection) **
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-compiler:2.51.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    ksp("com.google.dagger:hilt-compiler:2.57.2")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 
 
     // ** 1. ROOM (Database Persistence) **
-    val roomVersion = "2.6.1" // Updated to a more recent stable version
+    val roomVersion = "2.8.3" // Updated to a more recent stable version
     implementation("androidx.room:room-runtime:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
@@ -88,10 +115,10 @@ dependencies {
 
     // ** 2. LIFECYCLE & COROUTINES **
     // For ViewModel and Coroutine Scope
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0") // Updated to a more recent stable version
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4") // Updated to a more recent stable version
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // ** 3. NAVIGATION **
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.9.6")
 }

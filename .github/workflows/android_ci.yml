@@ -3,6 +3,8 @@ name: Android CI
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ "main" ]
 
@@ -14,10 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'temurin'
           cache: gradle
 
@@ -35,6 +37,9 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
+      - name: Run lint
+        run: ./gradlew lintDebug
+
       - name: Build with Gradle
         run: ./gradlew assembleDebug
 
@@ -44,3 +49,45 @@ jobs:
           name: app-debug-${{ env.VERSION_NAME }}
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 2
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Extract versionCode and versionName
+        id: get_versions
+        run: |
+          ./gradlew -q printVersionCodeAndName > version_output.txt
+          cat version_output.txt
+          echo "VERSION_CODE=$(grep VERSION_CODE version_output.txt | cut -d '=' -f2)" >> $GITHUB_ENV
+          echo "VERSION_NAME=$(grep VERSION_NAME version_output.txt | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - name: Build Release App Bundle
+        run: ./gradlew bundleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_STORE_FILE_PATH: ${{ secrets.SIGNING_STORE_FILE_PATH }}
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ env.VERSION_NAME }}
+          path: app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90

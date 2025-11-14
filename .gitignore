@@ -24,8 +24,10 @@ Project Specification-1.0.md
 
 # Local properties (sensitive data)
 local.properties
+keystore.properties
 
 # Keystore files (very sensitive)
+app/ilseon-keystore.jks
 *.jks
 *.keystore
 

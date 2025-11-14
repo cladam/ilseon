@@ -171,7 +171,10 @@ fun QuickCaptureSheet(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
             ),
-            maxLines = 5
+            maxLines = 5,
+            keyboardOptions = KeyboardOptions.Default.copy(
+                capitalization = KeyboardCapitalization.Sentences,
+            ),
         )
 
         Spacer(Modifier.height(16.dp))

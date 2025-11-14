@@ -167,7 +167,7 @@ fun CurrentPriorityTask(
                 }
                 Spacer(Modifier.width(16.dp))
 
-                if (task.timerState == TimerState.NotStarted || task.timerState == TimerState.Paused) {
+                if (task.totalTimeInMinutes != null && (task.timerState == TimerState.NotStarted || task.timerState == TimerState.Paused)) {
                     IconButton(onClick = { onStartTask(task) }) {
                         Icon(
                             Icons.Filled.PlayArrow,
@@ -178,7 +178,7 @@ fun CurrentPriorityTask(
                     }
                 }
 
-                if (task.timerState == TimerState.Running) {
+                if (task.totalTimeInMinutes != null && task.timerState == TimerState.Running) {
                     IconButton(onClick = { onPauseTask(task) }) {
                         Icon(
                             Icons.Filled.Pause,

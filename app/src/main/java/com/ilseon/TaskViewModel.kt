@@ -159,13 +159,14 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun completeTask(task: Task) {
+    fun completeTask(task: Task, completionReflection: String) {
         viewModelScope.launch {
             hapticManager.performSuccess()
             taskRepository.updateTask(
                 task.copy(
                     isComplete = true,
-                    completedAt = System.currentTimeMillis()
+                    completedAt = System.currentTimeMillis(),
+                    completionReflection = completionReflection
                 )
             )
         }

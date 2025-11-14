@@ -52,6 +52,7 @@ data class Task(
     val location: String? = null,
     val isComplete: Boolean = false,
     val completedAt: Long? = null,
+    val completionReflection: String? = null,
     val reminderType: ReminderType = ReminderType.Time,
     val createdAt: Long = System.currentTimeMillis()
 )

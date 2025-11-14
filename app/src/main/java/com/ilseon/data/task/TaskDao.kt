@@ -41,6 +41,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isComplete = 1 ORDER BY createdAt DESC")
     fun getCompletedTasks(): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL ORDER BY completedAt DESC")
+    fun getTasksWithReflections(): Flow<List<Task>>
+
     @Query("SELECT * FROM tasks WHERE isComplete = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
 

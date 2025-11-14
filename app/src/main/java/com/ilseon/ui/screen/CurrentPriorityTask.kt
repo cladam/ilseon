@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
+import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.VisualCountdownTimer
 import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
@@ -50,7 +51,7 @@ import kotlin.math.max
 fun CurrentPriorityTask(
     task: Task,
     contextName: String,
-    onComplete: (Task) -> Unit,
+    onComplete: (Task, String) -> Unit,
     onTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
@@ -60,6 +61,18 @@ fun CurrentPriorityTask(
     val timerState = task.timerState
     val isInFocusBlock = focusContextName != null
     var isOverdue by remember { mutableStateOf(false) }
+    var showReflectionDialog by remember { mutableStateOf(false) }
+
+    if (showReflectionDialog) {
+        ReflectionDialog(
+            taskTitle = task.title,
+            onDismiss = { showReflectionDialog = false },
+            onSave = { reflection ->
+                onComplete(task, reflection)
+                showReflectionDialog = false
+            }
+        )
+    }
 
     LaunchedEffect(key1 = task) {
         isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
@@ -211,7 +224,7 @@ fun CurrentPriorityTask(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondary)
-                        .clickable { onComplete(task) },
+                        .clickable { showReflectionDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

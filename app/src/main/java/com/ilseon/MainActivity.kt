@@ -52,6 +52,7 @@ import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
+import com.ilseon.ui.screen.NotesScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
@@ -102,6 +103,14 @@ class MainActivity : ComponentActivity() {
                                 selected = currentRoute == Screen.DailyDashboard.route,
                                 onClick = {
                                     navController.navigate(Screen.DailyDashboard.route)
+                                    scope.launch { drawerState.close() }
+                                }
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Notes") },
+                                selected = currentRoute == Screen.Notes.route,
+                                onClick = {
+                                    navController.navigate(Screen.Notes.route)
                                     scope.launch { drawerState.close() }
                                 }
                             )
@@ -183,8 +192,8 @@ class MainActivity : ComponentActivity() {
                                     onAnimateComplete = { task ->
                                         completedTaskIds = completedTaskIds + task.id
                                     },
-                                    onTaskComplete = { task ->
-                                        viewModel.completeTask(task)
+                                    onTaskComplete = { task, reflection ->
+                                        viewModel.completeTask(task, reflection)
                                     },
                                     onTaskTimerFinished = { task ->
                                         viewModel.onTaskTimerFinished(task)
@@ -197,6 +206,9 @@ class MainActivity : ComponentActivity() {
                                     },
                                     activeFocusBlock = activeFocusBlock,
                                 )
+                            }
+                            composable(Screen.Notes.route) {
+                                NotesScreen()
                             }
                             composable(Screen.Settings.route) {
                                 SettingsScreen(

@@ -31,6 +31,10 @@ class TaskRepository @Inject constructor(
         return taskDao.getCompletedTasks()
     }
 
+    fun getTasksWithReflections(): Flow<List<Task>> {
+        return taskDao.getTasksWithReflections()
+    }
+
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
     suspend fun insertTask(task: Task) {

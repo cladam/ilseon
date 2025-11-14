@@ -32,7 +32,7 @@ fun DashboardScreen(
     tasks: List<Task>,
     completedTaskIds: Set<UUID>,
     onAnimateComplete: (Task) -> Unit,
-    onTaskComplete: (Task) -> Unit,
+    onTaskComplete: (Task, String) -> Unit,
     onTaskTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,

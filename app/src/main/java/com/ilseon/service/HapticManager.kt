@@ -14,6 +14,7 @@ interface HapticManager {
     fun performNudge()
     fun performWarning()
     fun performAlert()
+    fun performSuccess()
 }
 
 @Singleton
@@ -50,6 +51,10 @@ class HapticManagerImpl @Inject constructor(
     // Tier 3
     override fun performAlert() {
         vibrate(alertPattern)
+    }
+
+    override fun performSuccess() {
+        vibrate(successPattern)
     }
 
     private fun vibrate(pattern: LongArray) {

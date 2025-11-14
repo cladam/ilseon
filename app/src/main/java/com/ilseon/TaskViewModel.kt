@@ -161,6 +161,7 @@ class TaskViewModel @Inject constructor(
 
     fun completeTask(task: Task) {
         viewModelScope.launch {
+            hapticManager.performSuccess()
             taskRepository.updateTask(
                 task.copy(
                     isComplete = true,

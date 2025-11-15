@@ -6,8 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -85,14 +83,12 @@ fun AnalyticsScreen(
                 }
             }
 
-            // 2. Focus Distribution (Pie Chart Simulation)
             item {
                 AnalyticsCard(title = "Focus Distribution") {
                     FocusDistributionChart(data.focusDistribution)
                 }
             }
 
-            // 3. Average Focus Time Insight (Time Blindness Check)
             item {
                 AnalyticsCard(title = "Average Time Block") {
                     Text(

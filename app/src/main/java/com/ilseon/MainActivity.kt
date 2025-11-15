@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
@@ -64,10 +63,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ilseon.data.task.TaskRepository
-import com.ilseon.ui.screen.AnalyticsScreen
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
+import com.ilseon.ui.screen.AnalyticsScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
@@ -181,7 +180,12 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     drawerContent = {
                         ModalDrawerSheet {
-                            NavigationDrawerHeader()
+                            NavigationDrawerHeader(
+                                onSettingsClick = {
+                                    navController.navigate(Screen.Settings.route)
+                                    scope.launch { drawerState.close() }
+                                }
+                            )
                             HorizontalDivider()
                             DrawerContent(
                                 currentRoute = currentRoute,
@@ -264,11 +268,11 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(Screen.Settings.route) {
                                 SettingsScreen(
-                                    onManageContextsClick = {
-                                        navController.navigate("context_management")
-                                    },
                                     onCompletedTasksClick = {
                                         navController.navigate("completed_tasks")
+                                    },
+                                    onAboutClick = {
+                                        navController.navigate(Screen.About.route)
                                     }
                                 )
                             }
@@ -284,7 +288,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToCompletedTasks = { navController.navigate("completed_tasks") }
                                 )
                             }
-                            composable("context_management") {
+                            composable(Screen.ContextManagement.route) {
                                 ContextManagementScreen()
                             }
                             composable("completed_tasks") {
@@ -320,9 +324,8 @@ private fun DrawerContent(
     val navigationItems = listOf(
         "Dashboard" to Screen.DailyDashboard.route,
         "Notes" to Screen.Notes.route,
-        "Settings" to Screen.Settings.route,
-        "Analytics" to Screen.Analytics.route,
-        "About" to Screen.About.route
+        "Contexts" to Screen.ContextManagement.route,
+        "Analytics" to Screen.Analytics.route
     )
 
     navigationItems.forEach { (title, route) ->

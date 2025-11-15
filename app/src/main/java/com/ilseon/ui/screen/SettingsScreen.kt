@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -35,15 +35,15 @@ import com.ilseon.ui.theme.IlseonTheme
 
 @Composable
 fun SettingsScreen(
-    onManageContextsClick: () -> Unit,
     onCompletedTasksClick: () -> Unit,
+    onAboutClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
 
     SettingsScreenContent(
-        onManageContextsClick = onManageContextsClick,
         onCompletedTasksClick = onCompletedTasksClick,
+        onAboutClick = onAboutClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled
     )
@@ -51,8 +51,8 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsScreenContent(
-    onManageContextsClick: () -> Unit,
     onCompletedTasksClick: () -> Unit,
+    onAboutClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit
 ) {
@@ -69,8 +69,12 @@ private fun SettingsScreenContent(
         }
         item {
             DataManagementCard(
-                onManageContextsClick = onManageContextsClick,
                 onCompletedTasksClick = onCompletedTasksClick
+            )
+        }
+        item {
+            AboutCard(
+                onAboutClick = onAboutClick
             )
         }
     }
@@ -102,7 +106,6 @@ private fun NotificationSettingsCard(
 
 @Composable
 private fun DataManagementCard(
-    onManageContextsClick: () -> Unit,
     onCompletedTasksClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -114,16 +117,32 @@ private fun DataManagementCard(
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SettingsItem(
-                icon = Icons.Default.Category,
-                title = "Manage Contexts",
-                subtitle = "Add or remove task contexts",
-                onClick = onManageContextsClick
-            )
-            SettingsItem(
                 icon = Icons.Default.History,
                 title = "Completed Tasks",
                 subtitle = "Review your accomplishments",
                 onClick = onCompletedTasksClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutCard(
+    onAboutClick: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsItem(
+                icon = Icons.Default.Info,
+                title = "About Ilseon",
+                subtitle = "Learn more about the app",
+                onClick = onAboutClick
             )
         }
     }
@@ -198,8 +217,8 @@ private fun SettingsSwitchItem(
 fun SettingsScreenPreview() {
     IlseonTheme {
         SettingsScreenContent(
-            onManageContextsClick = {},
             onCompletedTasksClick = {},
+            onAboutClick = {},
             nudgeNotificationsEnabled = true,
             onNudgeNotificationsChange = {}
         )

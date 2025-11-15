@@ -54,7 +54,7 @@ fun ReflectionDialog(
             Button(onClick = {
                 onSave(reflectionText)
             }) {
-                Text("Save & Close Focus")
+                Text("Save & Close")
             }
         }
     )

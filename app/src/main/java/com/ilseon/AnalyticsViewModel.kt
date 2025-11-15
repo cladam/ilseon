@@ -17,7 +17,7 @@ class AnalyticsViewModel : ViewModel() {
             "Health" to 0.10f,
             "Personal" to 0.10f
         ),
-        averageTimeBlockMinutes = 52,
+        averageTimeBlockMinutes = 230,
         averageDurationMinutes = 120,
         topKeywords = listOf(
             "Distracted" to 12,

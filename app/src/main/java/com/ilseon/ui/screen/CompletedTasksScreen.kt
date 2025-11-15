@@ -3,21 +3,28 @@ package com.ilseon.ui.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,11 +44,17 @@ fun CompletedTasksScreen(
     viewModel: CompletedTasksViewModel = hiltViewModel()
 ) {
     val completedTasks by viewModel.completedTasks.collectAsState()
-    CompletedTasksScreenContent(tasks = completedTasks)
+    CompletedTasksScreenContent(
+        tasks = completedTasks,
+        onDeleteTask = { viewModel.deleteCompletedTask(it) }
+    )
 }
 
 @Composable
-private fun CompletedTasksScreenContent(tasks: List<Task>) {
+private fun CompletedTasksScreenContent(
+    tasks: List<Task>,
+    onDeleteTask: (Task) -> Unit
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -72,14 +85,20 @@ private fun CompletedTasksScreenContent(tasks: List<Task>) {
             }
         } else {
             items(tasks, key = { it.id }) { task ->
-                CompletedTaskItem(task = task)
+                CompletedTaskItem(
+                    task = task,
+                    onDelete = { onDeleteTask(task) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CompletedTaskItem(task: Task) {
+private fun CompletedTaskItem(
+    task: Task,
+    onDelete: () -> Unit
+) {
     val dateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
@@ -89,18 +108,33 @@ private fun CompletedTaskItem(task: Task) {
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Completed on $completedDate",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Completed on $completedDate",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete task",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -127,6 +161,9 @@ fun CompletedTasksScreenPreview() {
                 completedAt = System.currentTimeMillis() - 172800000 // 2 days ago
             )
         )
-        CompletedTasksScreenContent(tasks = previewTasks)
+        CompletedTasksScreenContent(
+            tasks = previewTasks,
+            onDeleteTask = {}
+        )
     }
 }

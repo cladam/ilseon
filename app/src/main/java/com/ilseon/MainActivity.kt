@@ -27,6 +27,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
@@ -63,6 +64,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.ui.screen.AnalyticsScreen
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
@@ -180,7 +182,7 @@ class MainActivity : ComponentActivity() {
                     drawerContent = {
                         ModalDrawerSheet {
                             NavigationDrawerHeader()
-                            Divider()
+                            HorizontalDivider()
                             DrawerContent(
                                 currentRoute = currentRoute,
                                 onNavigate = { route ->
@@ -273,6 +275,15 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.About.route) {
                                 AboutScreen()
                             }
+                            composable(Screen.Analytics.route) {
+                                val analyticsViewModel: AnalyticsViewModel by viewModels()
+                                val analyticsData by analyticsViewModel.analyticsData.collectAsState()
+                                AnalyticsScreen(
+                                    data = analyticsData,
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToCompletedTasks = { navController.navigate("completed_tasks") }
+                                )
+                            }
                             composable("context_management") {
                                 ContextManagementScreen()
                             }
@@ -310,6 +321,7 @@ private fun DrawerContent(
         "Dashboard" to Screen.DailyDashboard.route,
         "Notes" to Screen.Notes.route,
         "Settings" to Screen.Settings.route,
+        "Analytics" to Screen.Analytics.route,
         "About" to Screen.About.route
     )
 

@@ -55,7 +55,11 @@ jobs:
 
     steps:
       - name: Show GitHub context
-        run: echo "github.ref=${{ github.ref }}, github.repository=${{ github.repository }}"
+        run: |
+          echo "github.ref=${{ github.ref }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.event_name=${{ github.event_name }}"
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -99,6 +103,6 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.ilseon
+          packageName: com.${{ github.repository_owner }}.ilseon
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: internal

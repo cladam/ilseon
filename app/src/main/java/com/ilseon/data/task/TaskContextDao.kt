@@ -12,6 +12,9 @@ interface TaskContextDao {
     @Query("SELECT * FROM task_contexts ORDER BY displayOrder ASC")
     fun getContexts(): Flow<List<TaskContext>>
 
+    @Query("SELECT * FROM task_contexts WHERE id = :id")
+    suspend fun getContext(id: UUID): TaskContext?
+
     @Insert
     suspend fun insertContext(context: TaskContext)
 

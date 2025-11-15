@@ -54,6 +54,19 @@ class TaskContextViewModel @Inject constructor(
         }
     }
 
+    fun updateContext(
+        id: UUID,
+        name: String,
+        description: String?,
+        startTime: String?,
+        endTime: String?,
+        repeatDays: List<Int>?
+    ) {
+        viewModelScope.launch {
+            taskContextRepository.updateContext(id, name, description, startTime, endTime, repeatDays)
+        }
+    }
+
     fun deleteContext(id: UUID) {
         viewModelScope.launch {
             taskContextRepository.deleteContext(id)

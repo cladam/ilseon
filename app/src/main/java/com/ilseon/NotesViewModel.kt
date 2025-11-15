@@ -23,6 +23,12 @@ class NotesViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    fun updateNote(task: Task) {
+        viewModelScope.launch {
+            taskRepository.updateTask(task)
+        }
+    }
+
     fun deleteNote(task: Task) {
         viewModelScope.launch {
             val updatedTask = task.copy(completionReflection = null)

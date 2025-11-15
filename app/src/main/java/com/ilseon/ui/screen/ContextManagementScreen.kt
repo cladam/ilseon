@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -36,6 +37,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,10 +76,39 @@ fun ContextManagementScreen(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var newRepeatDays by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var editingContext by remember { mutableStateOf<ContextWithFocusBlock?>(null) }
+    val isEditing = editingContext != null
 
     val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+
+    fun resetForm() {
+        newContextName = ""
+        newContextDescription = ""
+        startTime = ""
+        endTime = ""
+        focusBlockEnabled = false
+        newRepeatDays = emptyList()
+        editingContext = null
+    }
+
+    LaunchedEffect(editingContext) {
+        editingContext?.let { contextToEdit ->
+            newContextName = contextToEdit.context.name
+            newContextDescription = contextToEdit.context.description ?: ""
+            focusBlockEnabled = contextToEdit.focusBlock != null
+            if (contextToEdit.focusBlock != null) {
+                startTime = contextToEdit.focusBlock.startTime
+                endTime = contextToEdit.focusBlock.endTime
+                newRepeatDays = contextToEdit.focusBlock.repeatDays
+            } else {
+                startTime = ""
+                endTime = ""
+                newRepeatDays = emptyList()
+            }
+        }
+    }
 
 
     if (showStartTimePicker) {
@@ -123,7 +154,7 @@ fun ContextManagementScreen(
             OutlinedTextField(
                 value = newContextName,
                 onValueChange = { newContextName = it },
-                label = { Text("New context name") },
+                label = { Text(if (isEditing) "Context name" else "New context name") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -277,32 +308,59 @@ fun ContextManagementScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    if (newContextName.isNotBlank()) {
-                        val st = if (focusBlockEnabled) startTime else null
-                        val et = if (focusBlockEnabled) endTime else null
-                        val desc = newContextDescription.ifBlank { null }
-                        val days = if (focusBlockEnabled) newRepeatDays else null
-                        viewModel.addContext(newContextName, desc, st, et, days)
-                        newContextName = ""
-                        newContextDescription = ""
-                        startTime = ""
-                        endTime = ""
-                        focusBlockEnabled = false
-                        newRepeatDays = emptyList()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                enabled = newContextName.isNotBlank()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Add Context", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Button(
+                    onClick = {
+                        if (newContextName.isNotBlank()) {
+                            val st = if (focusBlockEnabled) startTime else null
+                            val et = if (focusBlockEnabled) endTime else null
+                            val desc = newContextDescription.ifBlank { null }
+                            val days = if (focusBlockEnabled) newRepeatDays else null
+                            if (isEditing) {
+                                editingContext?.let {
+                                    viewModel.updateContext(
+                                        it.context.id,
+                                        newContextName,
+                                        desc,
+                                        st,
+                                        et,
+                                        days
+                                    )
+                                }
+                            } else {
+                                viewModel.addContext(newContextName, desc, st, et, days)
+                            }
+                            resetForm()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    ),
+                    enabled = newContextName.isNotBlank()
+                ) {
+                    Text(if (isEditing) "Update" else "Add Context", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                }
+                if (isEditing) {
+                    Button(
+                        onClick = { resetForm() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                    ) {
+                        Text("Cancel", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 
@@ -337,7 +395,8 @@ fun ContextManagementScreen(
                 items(contextsWithFocusBlock, key = { it.context.id }) { item ->
                     ContextItem(
                         contextWithFocusBlock = item,
-                        onDelete = { viewModel.deleteContext(item.context.id) }
+                        onDelete = { viewModel.deleteContext(item.context.id) },
+                        onEdit = { editingContext = item }
                     )
                 }
             }
@@ -382,7 +441,8 @@ fun DayPicker(
 @Composable
 private fun ContextItem(
     contextWithFocusBlock: ContextWithFocusBlock,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val context = contextWithFocusBlock.context
     val focusBlock = contextWithFocusBlock.focusBlock
@@ -433,6 +493,14 @@ private fun ContextItem(
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+            IconButton(onClick = { onEdit() }) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit context",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
             }
             IconButton(onClick = { onDelete() }) {
                 Icon(

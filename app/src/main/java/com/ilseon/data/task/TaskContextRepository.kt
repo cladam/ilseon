@@ -34,6 +34,45 @@ class TaskContextRepository @Inject constructor(
         }
     }
 
+    suspend fun updateContext(
+        id: UUID,
+        name: String,
+        description: String?,
+        startTime: String?,
+        endTime: String?,
+        repeatDays: List<Int>?
+    ) {
+        val context = taskContextDao.getContext(id)
+        if (context != null) {
+            val updatedContext = context.copy(name = name, description = description)
+            taskContextDao.updateContext(updatedContext)
+
+            val focusBlock = focusBlockDao.getFocusBlockForContext(id)
+            if (startTime != null && endTime != null && startTime.isNotBlank() && endTime.isNotBlank()) {
+                if (focusBlock != null) {
+                    val updatedFocusBlock = focusBlock.copy(
+                        startTime = startTime,
+                        endTime = endTime,
+                        repeatDays = repeatDays ?: emptyList()
+                    )
+                    focusBlockDao.update(updatedFocusBlock)
+                } else {
+                    val newFocusBlock = FocusBlock(
+                        contextId = id,
+                        startTime = startTime,
+                        endTime = endTime,
+                        repeatDays = repeatDays ?: emptyList()
+                    )
+                    focusBlockDao.insert(newFocusBlock)
+                }
+            } else {
+                if (focusBlock != null) {
+                    focusBlockDao.delete(focusBlock)
+                }
+            }
+        }
+    }
+
     suspend fun deleteContext(id: UUID) {
         taskContextDao.deleteContext(id)
     }

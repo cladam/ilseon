@@ -40,10 +40,16 @@ class TaskContextViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    fun addContext(name: String, description: String?, startTime: String?, endTime: String?) {
+    fun addContext(
+        name: String,
+        description: String?,
+        startTime: String?,
+        endTime: String?,
+        repeatDays: List<Int>?
+    ) {
         viewModelScope.launch {
             if (name.isNotBlank()) {
-                taskContextRepository.addContext(name, description, startTime, endTime)
+                taskContextRepository.addContext(name, description, startTime, endTime, repeatDays)
             }
         }
     }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -97,14 +98,17 @@ class TaskRepository @Inject constructor(
     }
 
     fun getActiveFocusBlock(): Flow<FocusBlock?> {
-        return focusBlockDao.getFocusBlocks().map { workBlocks ->
-            val currentTime = LocalTime.now()
+        return focusBlockDao.getFocusBlocks().map { focusBlocks ->
+            val now = LocalTime.now()
+            val today = LocalDate.now().dayOfWeek.value
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
 
-            workBlocks.find {
+            focusBlocks.find {
                 val startTime = LocalTime.parse(it.startTime, formatter)
                 val endTime = LocalTime.parse(it.endTime, formatter)
-                !currentTime.isBefore(startTime) && currentTime.isBefore(endTime)
+                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(today)
+
+                !now.isBefore(startTime) && now.isBefore(endTime) && isTodayInRepeatDays
             }
         }
     }

@@ -23,5 +23,6 @@ data class FocusBlock(
     val id: UUID = UUID.randomUUID(),
     val contextId: UUID,
     val startTime: String, // Represented as "HH:mm"
-    val endTime: String // Represented as "HH:mm"
+    val endTime: String, // Represented as "HH:mm"
+    val repeatDays: List<Int> = emptyList()
 )

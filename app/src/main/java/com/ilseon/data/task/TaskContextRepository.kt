@@ -13,7 +13,13 @@ class TaskContextRepository @Inject constructor(
 
     fun getContexts(): Flow<List<TaskContext>> = taskContextDao.getContexts()
 
-    suspend fun addContext(name: String, description: String?, startTime: String?, endTime: String?) {
+    suspend fun addContext(
+        name: String,
+        description: String?,
+        startTime: String?,
+        endTime: String?,
+        repeatDays: List<Int>?
+    ) {
         val newContext = TaskContext(name = name, description = description)
         taskContextDao.insertContext(newContext)
 
@@ -21,7 +27,8 @@ class TaskContextRepository @Inject constructor(
             val focusBlock = FocusBlock(
                 contextId = newContext.id,
                 startTime = startTime,
-                endTime = endTime
+                endTime = endTime,
+                repeatDays = repeatDays ?: emptyList()
             )
             focusBlockDao.insert(focusBlock)
         }

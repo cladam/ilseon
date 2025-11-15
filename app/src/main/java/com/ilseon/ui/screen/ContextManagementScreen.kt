@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -50,8 +52,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
-import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.TimePickerDialog
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +70,7 @@ fun ContextManagementScreen(
     var focusBlockEnabled by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
+    var newRepeatDays by remember { mutableStateOf<List<Int>>(emptyList()) }
 
     val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
@@ -171,62 +176,92 @@ fun ContextManagementScreen(
             Spacer(Modifier.height(16.dp))
 
             AnimatedVisibility(visible = focusBlockEnabled) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = startTime,
-                            onValueChange = {},
-                            label = { Text("Start Time") },
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                cursorColor = MaterialTheme.colorScheme.secondary,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            ),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showStartTimePicker = true }
-                        )
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = startTime,
+                                onValueChange = {},
+                                label = { Text("Start Time") },
+                                modifier = Modifier.fillMaxWidth(),
+                                readOnly = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    cursorColor = MaterialTheme.colorScheme.secondary,
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.3f
+                                    ),
+                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.7f
+                                    ),
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.7f
+                                    )
+                                ),
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showStartTimePicker = true }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = endTime,
+                                onValueChange = {},
+                                label = { Text("End Time") },
+                                modifier = Modifier.fillMaxWidth(),
+                                readOnly = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    cursorColor = MaterialTheme.colorScheme.secondary,
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.3f
+                                    ),
+                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.7f
+                                    ),
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.7f
+                                    )
+                                ),
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showEndTimePicker = true }
+                            )
+                        }
                     }
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = endTime,
-                            onValueChange = {},
-                            label = { Text("End Time") },
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                cursorColor = MaterialTheme.colorScheme.secondary,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            ),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showEndTimePicker = true }
-                        )
-                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Repeat Days",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                    )
+                    DayPicker(
+                        selectedDays = newRepeatDays,
+                        onDaySelected = { day ->
+                            newRepeatDays = if (newRepeatDays.contains(day)) {
+                                newRepeatDays.filter { it != day }
+                            } else {
+                                newRepeatDays + day
+                            }
+                        }
+                    )
                 }
             }
 
@@ -237,12 +272,14 @@ fun ContextManagementScreen(
                         val st = if (focusBlockEnabled) startTime else null
                         val et = if (focusBlockEnabled) endTime else null
                         val desc = newContextDescription.ifBlank { null }
-                        viewModel.addContext(newContextName, desc, st, et)
+                        val days = if (focusBlockEnabled) newRepeatDays else null
+                        viewModel.addContext(newContextName, desc, st, et, days)
                         newContextName = ""
                         newContextDescription = ""
                         startTime = ""
                         endTime = ""
                         focusBlockEnabled = false
+                        newRepeatDays = emptyList()
                     }
                 },
                 modifier = Modifier
@@ -289,7 +326,7 @@ fun ContextManagementScreen(
                 items(contextsWithFocusBlock, key = { it.context.id }) { item ->
                     ContextItem(
                         contextWithFocusBlock = item,
-                        onDelete = { viewModel.deleteContext(it.context.id) }
+                        onDelete = { viewModel.deleteContext(item.context.id) }
                     )
                 }
             }
@@ -298,9 +335,43 @@ fun ContextManagementScreen(
 }
 
 @Composable
+fun DayPicker(
+    selectedDays: List<Int>,
+    onDaySelected: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        val days = DayOfWeek.values()
+        days.forEach { day ->
+            val isSelected = selectedDays.contains(day.value)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Gray.copy(
+                            alpha = 0.2f
+                        ),
+                        shape = CircleShape
+                    )
+                    .clickable { onDaySelected(day.value) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ContextItem(
     contextWithFocusBlock: ContextWithFocusBlock,
-    onDelete: (ContextWithFocusBlock) -> Unit
+    onDelete: () -> Unit
 ) {
     val context = contextWithFocusBlock.context
     val focusBlock = contextWithFocusBlock.focusBlock
@@ -308,7 +379,11 @@ private fun ContextItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                RoundedCornerShape(16.dp)
+            )
     ) {
         Row(
             modifier = Modifier
@@ -333,15 +408,22 @@ private fun ContextItem(
                 }
                 focusBlock?.let {
                     Spacer(modifier = Modifier.height(4.dp))
+                    val days = if (it.repeatDays.isNotEmpty()) {
+                        it.repeatDays.sorted().joinToString(", ") { dayOfWeek ->
+                            DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                        }
+                    } else {
+                        "Not repeating"
+                    }
                     Text(
-                        text = "Focus: ${it.startTime} - ${it.endTime}",
+                        text = "Focus: ${it.startTime} - ${it.endTime} ($days)",
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
-            IconButton(onClick = { onDelete(contextWithFocusBlock) }) {
+            IconButton(onClick = { onDelete() }) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete context",

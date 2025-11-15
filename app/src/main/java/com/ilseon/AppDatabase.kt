@@ -23,7 +23,7 @@ import java.util.UUID
 import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 9, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 10, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -65,6 +65,16 @@ abstract class AppDatabase : RoomDatabase() {
 
         @TypeConverter
         fun toTimerState(value: String): TimerState = TimerState.valueOf(value)
+
+        @TypeConverter
+        fun fromString(value: String?): List<Int> {
+            return value?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+        }
+
+        @TypeConverter
+        fun fromList(list: List<Int>?): String {
+            return list?.joinToString(",") ?: ""
+        }
     }
 
     companion object {
@@ -96,7 +106,8 @@ abstract class AppDatabase : RoomDatabase() {
                                         id = UUID.randomUUID(),
                                         contextId = workContextId,
                                         startTime = "09:00",
-                                        endTime = "16:00"
+                                        endTime = "16:00",
+                                        repeatDays = listOf(1,2,3,4,5)
                                     ))
 
                                     val healthContext = TaskContext(id = UUID.randomUUID(), name = "Health", description = "Fix back pain", displayOrder = 0)

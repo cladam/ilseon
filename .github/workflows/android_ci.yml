@@ -95,7 +95,7 @@ jobs:
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
-         name: app-release-${{ env.VERSION_NAME }}
+          name: app-release-${{ env.VERSION_NAME }}
           path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 9
 

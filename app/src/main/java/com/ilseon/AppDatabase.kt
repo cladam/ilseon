@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.data.task.ReminderType
 import com.ilseon.data.task.Task
@@ -143,9 +144,17 @@ abstract class AppDatabase : RoomDatabase() {
                     // This is not suitable for production, at all....!
                     // TODO: Add proper migration strategy.
                     .fallbackToDestructiveMigration()
+                    //.addMigrations(MIGRATION_9_10)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Since there were no schema changes between version 9 and 10, there is no need to execute any SQL queries here.
+                // If you were to add a new column to the Task table, you would do it like this:
+                // db.execSQL("ALTER TABLE task ADD COLUMN new_column INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

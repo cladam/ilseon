@@ -14,10 +14,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
@@ -36,11 +35,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,8 +51,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -62,6 +63,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
@@ -177,35 +179,12 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     drawerContent = {
                         ModalDrawerSheet {
-                            NavigationDrawerItem(
-                                label = { Text("Dashboard") },
-                                selected = currentRoute == Screen.DailyDashboard.route,
-                                onClick = {
-                                    navController.navigate(Screen.DailyDashboard.route)
-                                    scope.launch { drawerState.close() }
-                                }
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Notes") },
-                                selected = currentRoute == Screen.Notes.route,
-                                onClick = {
-                                    navController.navigate(Screen.Notes.route)
-                                    scope.launch { drawerState.close() }
-                                }
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Settings") },
-                                selected = currentRoute == Screen.Settings.route,
-                                onClick = {
-                                    navController.navigate(Screen.Settings.route)
-                                    scope.launch { drawerState.close() }
-                                }
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("About") },
-                                selected = currentRoute == Screen.About.route,
-                                onClick = {
-                                    navController.navigate(Screen.About.route)
+                            NavigationDrawerHeader()
+                            Divider()
+                            DrawerContent(
+                                currentRoute = currentRoute,
+                                onNavigate = { route ->
+                                    navController.navigate(route)
                                     scope.launch { drawerState.close() }
                                 }
                             )
@@ -220,14 +199,6 @@ class MainActivity : ComponentActivity() {
                                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                         Icon(Icons.Filled.Menu, contentDescription = "Menu")
                                     }
-                                },
-                                actions = {
-                                    Text("Ilseon")
-                                    Image(
-                                        painter = painterResource(id = R.drawable.img),
-                                        contentDescription = "App Logo",
-                                        modifier = Modifier.height(32.dp)
-                                    )
                                 }
                             )
                         },
@@ -327,5 +298,29 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DrawerContent(
+    currentRoute: String?,
+    onNavigate: (String) -> Unit
+) {
+    val navigationItems = listOf(
+        "Dashboard" to Screen.DailyDashboard.route,
+        "Notes" to Screen.Notes.route,
+        "Settings" to Screen.Settings.route,
+        "About" to Screen.About.route
+    )
+
+    navigationItems.forEach { (title, route) ->
+        NavigationDrawerItem(
+            label = { Text(title) },
+            selected = currentRoute == route,
+            onClick = { onNavigate(route) },
+            colors = NavigationDrawerItemDefaults.colors(
+                selectedContainerColor = Color.DarkGray
+            )
+        )
     }
 }

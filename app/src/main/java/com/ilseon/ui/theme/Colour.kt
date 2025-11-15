@@ -3,6 +3,8 @@ package com.ilseon.ui.theme
 import androidx.compose.ui.graphics.Color
 import com.ilseon.data.task.TaskPriority
 
+val TealAccent = Color(0xFF00BFA5)
+
 // Dark, low-saturation palette
 val AccentRed = Color(0xFF8B0000) // Accent for FAB, as per mockup
 val Teal = Color(0xFF03DAC5) // A subtle secondary accent

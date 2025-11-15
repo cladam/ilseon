@@ -95,7 +95,7 @@ jobs:
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-${{ env.VERSION_NAME }}
+         name: app-release-${{ env.VERSION_NAME }}
           path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 9
 
@@ -103,6 +103,6 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.ilseon
-          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          packageName: com.cladam.ilseon
+          releaseFiles: app/build/oiutputs/bundle/release/app-release.aab
           track: internal

@@ -5,9 +5,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,17 +22,25 @@ class ReminderManager @Inject constructor(
         const val END_TIME_OVERDUE_MINUTES = 1
     }
 
-    fun scheduleTimedTaskReminders(task: Task) {
-        // Rule 2: Task with a Scheduled Start/End Time
-        val startTime = task.startTime ?: return
-        val endTime = task.endTime ?: return
-
-        // Cancel any existing reminders for this task to avoid duplicates
+    fun rescheduleReminders(task: Task) {
         cancelReminder(task)
+        when (task.schedulingType) {
+            SchedulingType.TimeBlock -> scheduleTimedTaskReminders(task)
+            SchedulingType.Duration -> scheduleDurationTaskReminders(task)
+            SchedulingType.None -> {
+                // No reminders for unscheduled tasks
+            }
+        }
+    }
+
+    fun scheduleTimedTaskReminders(task: Task) {
+        val now = System.currentTimeMillis()
+        val startTime = task.startTime ?: return
+        val dueTime = task.dueTime ?: task.endTime ?: return
 
         // 0. Pre-start warning
         val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
-        if (preStartTime > System.currentTimeMillis()) {
+        if (preStartTime > now) {
             scheduleAlarm(
                 task,
                 preStartTime,
@@ -42,7 +50,7 @@ class ReminderManager @Inject constructor(
         }
 
         // 1. Start Time Alert
-        if (startTime > System.currentTimeMillis()) {
+        if (startTime > now) {
             scheduleAlarm(
                 task,
                 startTime,
@@ -51,9 +59,9 @@ class ReminderManager @Inject constructor(
             )
         }
 
-        // 2. Mid-Block Warning (5 minutes before end time)
-        val preBlockWarningTime = endTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
-        if (preBlockWarningTime > System.currentTimeMillis()) {
+        // 2. Mid-Block Warning (5 minutes before due time)
+        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        if (preBlockWarningTime > now) {
             scheduleAlarm(
                 task,
                 preBlockWarningTime,
@@ -61,8 +69,8 @@ class ReminderManager @Inject constructor(
             )
         }
 
-        // 3. End Time Overdue (1 minute after end time)
-        val overdueTime = endTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
+        // 3. End Time Overdue (1 minute after due time)
+        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
         scheduleAlarm(
             task,
             overdueTime,
@@ -71,29 +79,24 @@ class ReminderManager @Inject constructor(
     }
 
     fun scheduleDurationTaskReminders(task: Task) {
-        // Rule 3: Task with a Duration
-        if (task.totalTimeInMinutes == null || task.totalTimeInMinutes <= 0) return
-
-        cancelReminder(task)
-
+        if (task.remainingTimeInSeconds <= 0) return
         val now = System.currentTimeMillis()
-        val durationMillis = task.totalTimeInMinutes * 60 * 1000L
-
-        // Subtle Anchor (every 5-15 minutes, let's start with 10 for now)
-        // TODO: Implement repeating alarm for Subtle Anchor
+        val remainingMillis = task.remainingTimeInSeconds * 1000L
 
         // Mid-Block Warning (5 minutes before the end)
-        if (durationMillis > PRE_BLOCK_WARNING_MINUTES * 60 * 1000) {
-            val preBlockWarningTime = now + durationMillis - (PRE_BLOCK_WARNING_MINUTES * 60 * 1000)
-            scheduleAlarm(
-                task,
-                preBlockWarningTime,
-                NotificationTier.PreBlockWarning
-            )
+        if (remainingMillis > PRE_BLOCK_WARNING_MINUTES * 60 * 1000) {
+            val preBlockWarningTime = now + remainingMillis - (PRE_BLOCK_WARNING_MINUTES * 60 * 1000)
+            if (preBlockWarningTime > now) {
+                scheduleAlarm(
+                    task,
+                    preBlockWarningTime,
+                    NotificationTier.PreBlockWarning
+                )
+            }
         }
 
         // End Time Overdue (1 minute after duration expires)
-        val overdueTime = now + durationMillis + (END_TIME_OVERDUE_MINUTES * 60 * 1000)
+        val overdueTime = now + remainingMillis + (END_TIME_OVERDUE_MINUTES * 60 * 1000)
         scheduleAlarm(
             task,
             overdueTime,

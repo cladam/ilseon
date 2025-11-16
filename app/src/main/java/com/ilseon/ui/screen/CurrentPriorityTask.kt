@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
 import com.ilseon.ui.components.ReflectionDialog
@@ -196,7 +197,10 @@ fun CurrentPriorityTask(
                 }
                 Spacer(Modifier.width(16.dp))
 
-                if (task.totalTimeInMinutes != null && (task.timerState == TimerState.NotStarted || task.timerState == TimerState.Paused)) {
+                val showPlayButton = task.totalTimeInMinutes != null &&
+                        (task.timerState == TimerState.Paused || (task.timerState == TimerState.NotStarted && task.schedulingType != SchedulingType.TimeBlock))
+
+                if (showPlayButton) {
                     IconButton(onClick = { onStartTask(task) }) {
                         Icon(
                             Icons.Filled.PlayArrow,

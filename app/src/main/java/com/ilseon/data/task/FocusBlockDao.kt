@@ -15,6 +15,9 @@ interface FocusBlockDao {
     @Query("SELECT * FROM focus_blocks")
     fun getFocusBlocks(): Flow<List<FocusBlock>>
 
+    @Query("SELECT * FROM focus_blocks")
+    suspend fun getAllFocusBlocks(): List<FocusBlock>
+
     @Query("SELECT * FROM focus_blocks WHERE contextId = :contextId")
     suspend fun getFocusBlockForContext(contextId: UUID): FocusBlock?
 

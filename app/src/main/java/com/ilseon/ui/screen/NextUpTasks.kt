@@ -35,9 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.TaskViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
@@ -53,7 +55,8 @@ fun NextUpTasks(
     completedTaskIds: Set<UUID>,
     onComplete: (Task, String) -> Unit,
     onAnimationFinished: (Task) -> Unit,
-    contextMap: Map<UUID, TaskContext>
+    contextMap: Map<UUID, TaskContext>,
+    viewModel: TaskViewModel
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
@@ -111,6 +114,8 @@ fun NextUpTasks(
                     .verticalScroll(rememberScrollState())
             ) {
                 tasks.forEach { task ->
+                    val isOverdue = viewModel.isTaskOverdue(task)
+                    val borderColor = if (isOverdue) Color.Red else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
@@ -146,7 +151,7 @@ fun NextUpTasks(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
-                                    .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f), CircleShape)
+                                    .border(1.dp, borderColor, CircleShape)
                                     .clickable { taskForReflection = it },
                                 contentAlignment = Alignment.Center
                             ) {

@@ -16,6 +16,7 @@ import javax.inject.Singleton
 class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
     private val focusBlockDao: FocusBlockDao,
+    private val taskContextDao: TaskContextDao,
     private val reminderManager: ReminderManager
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> {
@@ -28,6 +29,10 @@ class TaskRepository @Inject constructor(
         }
     }
 
+    suspend fun getContextById(id: UUID): TaskContext? {
+        return taskContextDao.getContext(id)
+    }
+
     fun getCompletedTasks(): Flow<List<Task>> {
         return taskDao.getCompletedTasks()
     }
@@ -37,6 +42,10 @@ class TaskRepository @Inject constructor(
     }
 
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
+
+    suspend fun getAllFocusBlocks(): List<FocusBlock> {
+        return focusBlockDao.getAllFocusBlocks()
+    }
 
     suspend fun insertTask(task: Task) {
         taskDao.insert(task)
@@ -55,6 +64,10 @@ class TaskRepository @Inject constructor(
 
     suspend fun getTaskById(id: UUID): Task? {
         return taskDao.getTaskById(id)
+    }
+
+    suspend fun getRunningTasks(): List<Task> {
+        return taskDao.getRunningTasks()
     }
 
     suspend fun startDurationTask(taskId: UUID) {

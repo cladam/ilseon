@@ -15,10 +15,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
@@ -47,18 +50,117 @@ class TaskViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    private val notifiedFocusBlocksStartingSoon = mutableSetOf<UUID>()
+    private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
+    private val notifiedTasksStartingSoon = mutableSetOf<UUID>()
+
     init {
         viewModelScope.launch {
+            restoreRunningTasksState()
+            monitorFocusBlockChanges()
             while (isActive) {
-                val now = System.currentTimeMillis()
-                tasks.value.forEach { task ->
-                    if (task.timerState == TimerState.NotStarted && task.startTime != null) {
-                        if (task.startTime <= now && (task.endTime == null || now < task.endTime)) {
-                            startTask(task)
-                        }
+                checkTasks()
+                checkFocusBlocks()
+                delay(1000) // Check every second
+            }
+        }
+    }
+
+    fun isTaskOverdue(task: Task): Boolean {
+        if (task.isComplete) return false
+        val due = task.dueTime ?: task.endTime ?: return false
+        return System.currentTimeMillis() > due
+    }
+
+    private fun monitorFocusBlockChanges() {
+        viewModelScope.launch {
+            activeFocusBlock.collect { focusBlock ->
+                focusBlock?.let {
+                    val context = taskRepository.getContextById(it.contextId)
+                    context?.let {
+                        notificationService.sendFocusBlockStartedNotification(it.name)
+                        hapticManager.performSuccess()
                     }
                 }
-                delay(1000) // Check every second
+            }
+        }
+    }
+
+    private suspend fun checkTasks() {
+        val now = System.currentTimeMillis()
+        tasks.value.forEach { task ->
+            if (task.timerState == TimerState.NotStarted && task.startTime != null) {
+                if (task.startTime <= now && (task.endTime == null || now < task.endTime)) {
+                    startTask(task)
+                }
+
+                val fiveMinutesInMillis = 5 * 60 * 1000
+                if (task.startTime > now && task.startTime - now < fiveMinutesInMillis && !notifiedTasksStartingSoon.contains(task.id)) {
+                    notificationService.sendTaskStartingSoonNotification(task.title, 5)
+                    hapticManager.performNudge()
+                    notifiedTasksStartingSoon.add(task.id)
+                }
+            }
+        }
+    }
+
+    private suspend fun checkFocusBlocks() {
+        val now = LocalTime.now()
+        val allFocusBlocks = taskRepository.getAllFocusBlocks()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+
+        allFocusBlocks.forEach { focusBlock ->
+            val context = taskRepository.getContextById(focusBlock.contextId)
+            context?.let {
+                val startTime = LocalTime.parse(focusBlock.startTime, formatter)
+                val endTime = LocalTime.parse(focusBlock.endTime, formatter)
+                val fiveMinutes = 5L
+
+                // Starting soon notification
+                if (now.isBefore(startTime) && now.plusMinutes(fiveMinutes).isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(focusBlock.id)) {
+                    notificationService.sendFocusBlockStartingSoonNotification(it.name, 5)
+                    hapticManager.performNudge()
+                    notifiedFocusBlocksStartingSoon.add(focusBlock.id)
+                }
+
+                // Ending soon notification
+                if (now.isBefore(endTime) && now.plusMinutes(fiveMinutes).isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(focusBlock.id)) {
+                    notificationService.sendFocusBlockEndingSoonNotification(it.name, 5)
+                    hapticManager.performNudge()
+                    notifiedFocusBlocksEndingSoon.add(focusBlock.id)
+                }
+            }
+        }
+    }
+
+    private fun restoreRunningTasksState() {
+        viewModelScope.launch {
+            val runningTasks = taskRepository.getRunningTasks()
+            val now = System.currentTimeMillis()
+            runningTasks.forEach { task ->
+                if (task.timerStartTime != null) {
+                    val elapsedTimeInSeconds = (now - task.timerStartTime) / 1000
+                    val newRemainingTime = task.remainingTimeInSeconds - elapsedTimeInSeconds
+                    if (newRemainingTime > 0) {
+                        taskRepository.updateTask(
+                            task.copy(
+                                remainingTimeInSeconds = newRemainingTime,
+                                timerState = TimerState.Running // Keep it running
+                            )
+                        )
+                    } else {
+                        // Timer finished while app was closed
+                        onTaskTimerFinished(task)
+                        taskRepository.updateTask(
+                            task.copy(
+                                remainingTimeInSeconds = 0,
+                                timerState = TimerState.NotStarted,
+                                isComplete = true,
+                                completedAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -71,7 +173,6 @@ class TaskViewModel @Inject constructor(
 
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()
-        // soundManager.playAlertSound() // Sound disabled for testing
         notificationService.sendTaskFinishedNotification(task.title)
     }
 
@@ -96,11 +197,13 @@ class TaskViewModel @Inject constructor(
                 var duration: Int? = null
                 var timerState = TimerState.NotStarted
                 var schedulingType = SchedulingType.None
+                var dueTime: Long? = null
 
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
                     val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
                     startTime = st
                     endTime = et
+                    dueTime = et
                     duration = dur
                     schedulingType = SchedulingType.TimeBlock
                 } else if (durationInMinutes != null) {
@@ -117,6 +220,7 @@ class TaskViewModel @Inject constructor(
                         schedulingType = schedulingType,
                         startTime = startTime,
                         endTime = endTime,
+                        dueTime = dueTime,
                         totalTimeInMinutes = duration,
                         timerState = timerState
                     )
@@ -146,7 +250,6 @@ class TaskViewModel @Inject constructor(
             endCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
 
             if (endCal.timeInMillis <= startCal.timeInMillis) {
-                // Handle overnight or invalid case if necessary
                 return Triple(null, null, null)
             }
 
@@ -156,7 +259,6 @@ class TaskViewModel @Inject constructor(
 
             return Triple(startTime, endTime, duration)
         } catch (e: Exception) {
-            // Handle parsing exception
             return Triple(null, null, null)
         }
     }
@@ -176,10 +278,17 @@ class TaskViewModel @Inject constructor(
 
     fun startTaskTimer(task: Task) {
         viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            var dueTime = task.dueTime
+            if (task.schedulingType == SchedulingType.Duration && dueTime == null) {
+                dueTime = now + (task.remainingTimeInSeconds * 1000)
+            }
+
             taskRepository.updateTask(
                 task.copy(
                     timerState = TimerState.Running,
-                    timerStartTime = System.currentTimeMillis()
+                    timerStartTime = now,
+                    dueTime = dueTime
                 )
             )
         }
@@ -191,10 +300,16 @@ class TaskViewModel @Inject constructor(
                 val now = System.currentTimeMillis()
                 val elapsed = now - (task.timerStartTime ?: now)
                 val newRemaining = task.remainingTimeInSeconds - (elapsed / 1000)
+                var newDueTime = task.dueTime
+                if (task.schedulingType == SchedulingType.Duration && newDueTime != null) {
+                    newDueTime += elapsed
+                }
+
                 taskRepository.updateTask(
                     task.copy(
                         timerState = TimerState.Paused,
-                        remainingTimeInSeconds = max(0, newRemaining)
+                        remainingTimeInSeconds = max(0, newRemaining),
+                        dueTime = newDueTime
                     )
                 )
             }

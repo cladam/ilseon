@@ -48,9 +48,10 @@ object AppModule {
     fun provideTaskRepository(
         taskDao: TaskDao,
         focusBlockDao: FocusBlockDao,
+        taskContextDao: TaskContextDao,
         reminderManager: ReminderManager
     ): TaskRepository {
-        return TaskRepository(taskDao, focusBlockDao, reminderManager)
+        return TaskRepository(taskDao, focusBlockDao, taskContextDao, reminderManager)
     }
 
     @Provides

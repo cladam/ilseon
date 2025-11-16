@@ -83,6 +83,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getTaskById(id: UUID): Task?
 
+    @Query("SELECT * FROM tasks WHERE timerState = 'Running'")
+    suspend fun getRunningTasks(): List<Task>
+
     // --- Analytics Queries ---
 
     @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime GROUP BY contextId")

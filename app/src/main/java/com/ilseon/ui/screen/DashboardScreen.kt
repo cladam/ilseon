@@ -20,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
+import com.ilseon.TaskViewModel
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
@@ -37,6 +37,7 @@ fun DashboardScreen(
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
     activeFocusBlock: FocusBlock?,
+    taskViewModel: TaskViewModel = hiltViewModel(),
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
     val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
@@ -123,7 +124,8 @@ fun DashboardScreen(
                             completedTaskIds = completedTaskIds,
                             onComplete = onTaskComplete,
                             onAnimationFinished = onAnimateComplete,
-                            contextMap = contextMap
+                            contextMap = contextMap,
+                            viewModel = taskViewModel
                         )
                     }
                 }

@@ -15,6 +15,9 @@ interface NotificationService {
     fun createNotificationChannel()
     fun sendTaskFinishedNotification(taskTitle: String)
     fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int)
+    fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int)
+    fun sendFocusBlockStartedNotification(focusBlockName: String)
+    fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int)
 }
 
 @Singleton
@@ -64,6 +67,36 @@ class NotificationServiceImpl @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
 
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Focus Block Starting Soon")
+            .setContentText("'$focusBlockName' is starting in $minutesUntilStart minutes.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun sendFocusBlockStartedNotification(focusBlockName: String) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Focus Block Started")
+            .setContentText("'$focusBlockName' has now started.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Focus Block Ending Soon")
+            .setContentText("'$focusBlockName' is ending in $minutesUntilEnd minutes.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 }

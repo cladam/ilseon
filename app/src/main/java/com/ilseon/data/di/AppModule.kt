@@ -40,7 +40,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideWorkBlockDao(appDatabase: AppDatabase): FocusBlockDao {
-        return appDatabase.FocusBlockDao()
+        return appDatabase.focusBlockDao()
     }
 
     @Provides

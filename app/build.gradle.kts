@@ -72,6 +72,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Exclude all JUnit license files to prevent packaging conflicts
+            excludes += "META-INF/LICENSE*"
         }
     }
 }
@@ -138,4 +140,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("app.cash.turbine:turbine:1.1.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
 }

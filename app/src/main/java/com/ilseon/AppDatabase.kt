@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun taskContextDao(): TaskContextDao
 
-    abstract fun FocusBlockDao(): FocusBlockDao
+    abstract fun focusBlockDao(): FocusBlockDao
 
 
 
@@ -97,7 +97,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 CoroutineScope(Dispatchers.IO).launch {
                                     val taskContextDao = database.taskContextDao()
                                     val taskDao = database.taskDao()
-                                    val focusBlockDao = database.FocusBlockDao()
+                                    val focusBlockDao = database.focusBlockDao()
 
                                     // Pre-populate with default contexts
                                     val workContextId = UUID.randomUUID()

@@ -24,7 +24,7 @@ import java.util.UUID
 import javax.inject.Provider
 
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 10, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 11, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -155,6 +155,12 @@ abstract class AppDatabase : RoomDatabase() {
                 // Since there were no schema changes between version 9 and 10, there is no need to execute any SQL queries here.
                 // If you were to add a new column to the Task table, you would do it like this:
                 // db.execSQL("ALTER TABLE task ADD COLUMN new_column INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // I forgot to do the migration for the new column.
+                // db.execSQL("ALTER TABLE task ADD COLUMN schedulingType INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

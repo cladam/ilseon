@@ -3,6 +3,7 @@ package com.ilseon
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
@@ -94,17 +95,17 @@ class TaskViewModel @Inject constructor(
                 var endTime: Long? = null
                 var duration: Int? = null
                 var timerState = TimerState.NotStarted
+                var schedulingType = SchedulingType.None
 
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
                     val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
                     startTime = st
                     endTime = et
                     duration = dur
+                    schedulingType = SchedulingType.TimeBlock
                 } else if (durationInMinutes != null) {
-                    startTime = System.currentTimeMillis()
-                    endTime = startTime + durationInMinutes * 60 * 1000
                     duration = durationInMinutes
-                    timerState = TimerState.Running
+                    schedulingType = SchedulingType.Duration
                 }
 
                 taskRepository.insertTask(
@@ -113,6 +114,7 @@ class TaskViewModel @Inject constructor(
                         description = description,
                         contextId = contextId,
                         priority = priority,
+                        schedulingType = schedulingType,
                         startTime = startTime,
                         endTime = endTime,
                         totalTimeInMinutes = duration,

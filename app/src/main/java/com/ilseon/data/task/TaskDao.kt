@@ -9,6 +9,12 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
+// Data class for the result of the focus distribution query
+data class FocusDistribution(
+    val contextId: UUID,
+    val count: Int
+)
+
 /**
  * This is the DAO (Data Access Object) as specified in the brief.
  * It defines all the database operations (CRUD).
@@ -76,4 +82,21 @@ interface TaskDao {
      */
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getTaskById(id: UUID): Task?
+
+    // --- Analytics Queries ---
+
+    @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime GROUP BY contextId")
+    suspend fun getFocusDistribution(startTime: Long, endTime: Long): List<FocusDistribution>
+
+    @Query("SELECT AVG(endTime - startTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND endTime IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    suspend fun getAverageTimeBlockMillis(startTime: Long, endTime: Long): Double?
+
+    @Query("SELECT AVG(completedAt - timerStartTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'Duration' AND timerStartTime IS NOT NULL AND completedAt IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    suspend fun getAverageDurationMillis(startTime: Long, endTime: Long): Double?
+
+    @Query("SELECT completionReflection FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    suspend fun getCompletionReflections(startTime: Long, endTime: Long): List<String>
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND endTime IS NOT NULL AND completedAt > endTime AND completedAt BETWEEN :startTime AND :endTime")
+    suspend fun getOverdueTasksCount(startTime: Long, endTime: Long): Int
 }

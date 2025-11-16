@@ -280,11 +280,7 @@ class MainActivity : ComponentActivity() {
                                 AboutScreen()
                             }
                             composable(Screen.Analytics.route) {
-                                val analyticsViewModel: AnalyticsViewModel by viewModels()
-                                val analyticsData by analyticsViewModel.analyticsData.collectAsState()
                                 AnalyticsScreen(
-                                    data = analyticsData,
-                                    onNavigateBack = { navController.popBackStack() },
                                     onNavigateToCompletedTasks = { navController.navigate("completed_tasks") }
                                 )
                             }

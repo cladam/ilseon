@@ -1,4 +1,4 @@
-package com.ilseon.data
+package com.ilseon.data.task
 
 import android.content.Context
 import android.content.SharedPreferences

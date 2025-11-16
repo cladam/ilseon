@@ -2,7 +2,7 @@ package com.ilseon.data.task
 
 import com.ilseon.TimeInterval
 import com.ilseon.ui.screen.AnalyticsData
-import com.ilseon.util.stopWords
+import com.ilseon.util.allStopWords
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,7 +38,7 @@ class AnalyticsRepository @Inject constructor(
         val topKeywords = reflections
             .flatMap { it.split(Regex("[\\s.,!?]+")) }
             .map { it.trim().lowercase() }
-            .filter { it.isNotBlank() && it !in stopWords }
+            .filter { it.isNotBlank() && it !in allStopWords }
             .groupingBy { it }
             .eachCount()
             .toList()

@@ -16,6 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -40,6 +41,7 @@ class TaskViewModel @Inject constructor(
 ) : ViewModel() {
 
     val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
+        .distinctUntilChanged()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -57,6 +59,10 @@ class TaskViewModel @Inject constructor(
     private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
     private val notifiedTasksStartingSoon = mutableSetOf<UUID>()
     private val taskPauseTimes = ConcurrentHashMap<UUID, Long>()
+
+    // State for tracking focus block notifications
+    private var hasSeenFirstFocusBlock = false
+    private var lastNotifiedFocusBlockId: UUID? = null
 
     init {
         viewModelScope.launch {
@@ -89,12 +95,30 @@ class TaskViewModel @Inject constructor(
     private fun monitorFocusBlockChanges() {
         viewModelScope.launch {
             activeFocusBlock.collect { focusBlock ->
-                focusBlock?.let {
-                    val context = taskRepository.getContextById(it.contextId)
-                    context?.let {
-                        notificationService.sendFocusBlockStartedNotification(it.name)
-                        hapticManager.performSuccess()
+                val currentId = focusBlock?.id
+
+                // If it's the first non-null block we've seen since the app started,
+                // treat it as the initial state and don't notify. This prevents
+                // notifications for already-active blocks on app launch.
+                if (currentId != null && !hasSeenFirstFocusBlock) {
+                    hasSeenFirstFocusBlock = true
+                    lastNotifiedFocusBlockId = currentId
+                    return@collect
+                }
+
+                // If the state changes *after* the initial state has been seen...
+                if (currentId != lastNotifiedFocusBlockId) {
+                    // ...and the new state is a valid block (i.e., a block has started)...
+                    focusBlock?.let {
+                        //...then send the notification.
+                        val context = taskRepository.getContextById(it.contextId)
+                        context?.let {
+                            notificationService.sendFocusBlockStartedNotification(it.name)
+                            hapticManager.performSuccess()
+                        }
                     }
+                    // Update the state for the next change.
+                    lastNotifiedFocusBlockId = currentId
                 }
             }
         }
@@ -312,10 +336,11 @@ class TaskViewModel @Inject constructor(
     fun completeTask(task: Task, completionReflection: String) {
         viewModelScope.launch {
             hapticManager.performSuccess()
+            val reflectionToSave = if (completionReflection.isBlank()) null else completionReflection
             val updatedTask = task.copy(
                 isComplete = true,
                 completedAt = System.currentTimeMillis(),
-                completionReflection = completionReflection
+                completionReflection = reflectionToSave
             )
             taskRepository.updateTask(updatedTask)
             reminderManager.cancelReminder(updatedTask)

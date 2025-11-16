@@ -54,7 +54,6 @@ private fun AboutScreenContent(versionName: String?) {
     ) {
         item { AppInfoCard(versionName = versionName) }
         item { DeveloperInfoCard() }
-        item { AcknowledgementsCard() }
     }
 }
 
@@ -152,13 +151,5 @@ private fun InfoRow(icon: ImageVector, text: String, onClick: (() -> Unit)? = nu
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = text, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AboutScreenPreview() {
-    IlseonTheme {
-        AboutScreenContent(versionName = "0.1.0 (Preview)")
     }
 }

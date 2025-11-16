@@ -132,7 +132,7 @@ abstract class AppDatabase : RoomDatabase() {
                                         Task(
                                             title = "Read from a book",
                                             contextId = workContextId,
-                                            priority = TaskPriority.Mid,
+                                            priority = TaskPriority.Medium,
                                             totalTimeInMinutes = 15,
                                             description = "15-min task. Reading is good for you ❤️"
                                         )

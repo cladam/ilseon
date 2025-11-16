@@ -67,7 +67,7 @@ fun QuickCaptureSheet(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
-    var priority by remember { mutableStateOf(TaskPriority.Mid) }
+    var priority by remember { mutableStateOf(TaskPriority.Medium) }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }

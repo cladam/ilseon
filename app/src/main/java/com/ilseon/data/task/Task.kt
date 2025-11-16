@@ -6,7 +6,7 @@ import java.util.UUID
 
 enum class TaskPriority {
     High,
-    Mid,
+    Medium,
     Low
 }
 

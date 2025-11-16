@@ -26,7 +26,7 @@ val PriorityLow = TextSecondary
 fun TaskPriority.toColor(): Color {
     return when(this) {
         TaskPriority.High -> PriorityHigh
-        TaskPriority.Mid -> PriorityMedium
+        TaskPriority.Medium -> PriorityMedium
         TaskPriority.Low -> PriorityLow
     }
 }

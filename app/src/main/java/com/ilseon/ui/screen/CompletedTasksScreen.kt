@@ -156,7 +156,7 @@ fun CompletedTasksScreenPreview() {
                 id = UUID.randomUUID(),
                 title = "Call the dentist",
                 contextId = UUID.randomUUID(),
-                priority = TaskPriority.Mid,
+                priority = TaskPriority.Medium,
                 isComplete = true,
                 completedAt = System.currentTimeMillis() - 172800000 // 2 days ago
             )

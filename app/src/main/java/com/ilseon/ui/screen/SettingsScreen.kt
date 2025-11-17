@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,6 +39,8 @@ import com.ilseon.ui.theme.IlseonTheme
 fun SettingsScreen(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onExportClick: () -> Unit,
+    onImportClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
@@ -44,6 +48,7 @@ fun SettingsScreen(
     SettingsScreenContent(
         onCompletedTasksClick = onCompletedTasksClick,
         onAboutClick = onAboutClick,
+        onExportClick = onExportClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled
     )
@@ -53,6 +58,7 @@ fun SettingsScreen(
 private fun SettingsScreenContent(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onExportClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit
 ) {
@@ -69,7 +75,8 @@ private fun SettingsScreenContent(
         }
         item {
             DataManagementCard(
-                onCompletedTasksClick = onCompletedTasksClick
+                onCompletedTasksClick = onCompletedTasksClick,
+                onExportClick = onExportClick
             )
         }
         item {
@@ -106,7 +113,8 @@ private fun NotificationSettingsCard(
 
 @Composable
 private fun DataManagementCard(
-    onCompletedTasksClick: () -> Unit
+    onCompletedTasksClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -121,6 +129,12 @@ private fun DataManagementCard(
                 title = "Completed Tasks",
                 subtitle = "Review your accomplishments",
                 onClick = onCompletedTasksClick
+            )
+            SettingsItem(
+                icon = Icons.Default.Download,
+                title = "Export Data",
+                subtitle = "Save your data to a file",
+                onClick = onExportClick
             )
         }
     }
@@ -209,18 +223,5 @@ private fun SettingsSwitchItem(
             )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SettingsScreenPreview() {
-    IlseonTheme {
-        SettingsScreenContent(
-            onCompletedTasksClick = {},
-            onAboutClick = {},
-            nudgeNotificationsEnabled = true,
-            onNudgeNotificationsChange = {}
-        )
     }
 }

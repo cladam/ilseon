@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("com.google.devtools.ksp") version "2.2.20-2.0.3"
     id("dagger.hilt.android.plugin")
 }
@@ -134,6 +135,9 @@ dependencies {
 
     // ** 3. NAVIGATION **
     implementation(libs.androidx.navigation.compose)
+
+    // ** 4. KOTLINX SERIALIZATION **
+    implementation(libs.kotlinx.serialization.json)
 
     // ** Test Dependencies **
     testImplementation(libs.kotlinx.coroutines.test)

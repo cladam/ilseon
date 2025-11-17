@@ -76,6 +76,10 @@ import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.io.OutputStreamWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -86,6 +90,7 @@ class MainActivity : ComponentActivity() {
     lateinit var taskRepository: TaskRepository
 
     private val viewModel: TaskViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -173,8 +178,22 @@ class MainActivity : ComponentActivity() {
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
 
-                // This would be loaded from user preferences
                 val isRightHanded by remember { mutableStateOf(true) }
+
+                val createFileLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("text/plain"),
+                    onResult = { uri: Uri? ->
+                        uri?.let {
+                            settingsViewModel.exportNotes { exportedData ->
+                                context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                                    OutputStreamWriter(outputStream).use { writer ->
+                                        writer.write(exportedData)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -227,7 +246,7 @@ class MainActivity : ComponentActivity() {
                                             contentDescription = "Quick Capture"
                                         )
                                         Text(
-                                            text = "QUICK CAPTURE",
+                                            text = "QUICK CAPTTURE",
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                             fontSize = 10.sp
                                         )
@@ -273,7 +292,13 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onAboutClick = {
                                         navController.navigate(Screen.About.route)
-                                    }
+                                    },
+                                    onExportClick = {
+                                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                        val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
+                                        createFileLauncher.launch(fileName)
+                                    },
+                                    onImportClick = { /* TODO */ }
                                 )
                             }
                             composable(Screen.About.route) {

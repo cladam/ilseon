@@ -2,16 +2,21 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.task.NoteExporter
 import com.ilseon.data.task.SettingsRepository
+import com.ilseon.data.task.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val taskRepository: TaskRepository,
+    private val noteExporter: NoteExporter
 ) : ViewModel() {
 
     val nudgeNotificationsEnabled = settingsRepository.nudgeNotificationsEnabled
@@ -24,6 +29,14 @@ class SettingsViewModel @Inject constructor(
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)
+        }
+    }
+
+    fun exportNotes(onExported: (String) -> Unit) {
+        viewModelScope.launch {
+            val tasks = taskRepository.getTasksWithReflections().first()
+            val exportedData = noteExporter.exportNotes(tasks)
+            onExported(exportedData)
         }
     }
 }

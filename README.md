@@ -1,5 +1,5 @@
 <p align="center">
-<img src="app/src/main/ic_launcher-playstore.png" alt="Ilseon App Icon" width="200" height="200">
+<img src="app/src/main/ilseon-banner.png" alt="Ilseon App Icon" width="200" height="200">
 </p>
 
 <h1 align="center">ilseon</h1>

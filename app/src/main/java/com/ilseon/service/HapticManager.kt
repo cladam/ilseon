@@ -19,7 +19,7 @@ interface HapticManager {
 
 @Singleton
 class HapticManagerImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : HapticManager {
 
     private val vibrator: Vibrator by lazy {

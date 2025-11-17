@@ -153,7 +153,7 @@ abstract class AppDatabase : RoomDatabase() {
                     })
                     // This is not suitable for production, at all....!
                     // TODO: Add proper migration strategy.
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     //.addMigrations(MIGRATION_9_10)
                     .build()
                 INSTANCE = instance

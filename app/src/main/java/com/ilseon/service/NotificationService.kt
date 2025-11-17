@@ -22,7 +22,7 @@ interface NotificationService {
 
 @Singleton
 class NotificationServiceImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : NotificationService {
 
     companion object {

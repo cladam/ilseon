@@ -12,12 +12,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
@@ -108,5 +111,74 @@ class TaskRepositoryTest {
 
         assertEquals(1, incompleteTasks.size)
         assertEquals("Incomplete", incompleteTasks[0].title)
+    }
+
+    @Test
+    fun getCompletedTasks_returnsOnlyFinishedTasks() = runBlocking {
+        val incompleteTask = Task(title = "Incomplete", contextId = UUID.randomUUID(), priority = TaskPriority.High)
+        val completedTask = Task(title = "Completed", contextId = UUID.randomUUID(), priority = TaskPriority.Low, isComplete = true)
+
+        repository.insertTask(incompleteTask)
+        repository.insertTask(completedTask)
+
+        val completedTasks = repository.getCompletedTasks().first()
+
+        assertEquals(1, completedTasks.size)
+        assertEquals("Completed", completedTasks[0].title)
+    }
+
+    @Test
+    fun getTasksWithReflections_returnsOnlyTasksWithReflections() = runBlocking {
+        val contextId = UUID.randomUUID()
+        val taskWithReflection = Task(title = "With Reflection", contextId = contextId, priority = TaskPriority.High, isComplete = true, completionReflection = "Done.")
+        val taskWithoutReflection = Task(title = "No Reflection", contextId = contextId, priority = TaskPriority.Low, isComplete = true, completionReflection = null)
+        val incompleteTask = Task(title = "Incomplete", contextId = contextId, priority = TaskPriority.Medium)
+
+        repository.insertTask(taskWithReflection)
+        repository.insertTask(taskWithoutReflection)
+        repository.insertTask(incompleteTask)
+
+        val tasksWithReflections = repository.getTasksWithReflections().first()
+
+        assertEquals(1, tasksWithReflections.size)
+        assertEquals("With Reflection", tasksWithReflections[0].title)
+        assertNotNull(tasksWithReflections[0].completionReflection)
+    }
+
+    @Test
+    fun getIncompleteTasks_withActiveFocusBlock_returnsFilteredTasksAndHighPriorityTasks() = runBlocking {
+        // 1. Setup Contexts and Focus Block
+        val workContext = TaskContext(name = "Work")
+        val personalContext = TaskContext(name = "Personal")
+        taskContextDao.insertContext(workContext)
+        taskContextDao.insertContext(personalContext)
+
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        val now = LocalTime.now()
+        val activeBlock = FocusBlock(
+            contextId = workContext.id,
+            startTime = now.minusHours(1).format(formatter),
+            endTime = now.plusHours(1).format(formatter),
+            repeatDays = emptyList()
+        )
+        focusBlockDao.insert(activeBlock)
+
+        // 2. Setup Tasks
+        val workTask = Task(title = "Work Task", contextId = workContext.id, priority = TaskPriority.Medium)
+        val personalTask = Task(title = "Personal Task", contextId = personalContext.id, priority = TaskPriority.Medium)
+        val highPriorityPersonalTask = Task(title = "High Priority Personal", contextId = personalContext.id, priority = TaskPriority.High)
+        val completedWorkTask = Task(title = "Completed Work", contextId = workContext.id, priority = TaskPriority.Medium, isComplete = true)
+
+        repository.insertTask(workTask)
+        repository.insertTask(personalTask)
+        repository.insertTask(highPriorityPersonalTask)
+        repository.insertTask(completedWorkTask)
+
+        // 3. Act and Assert
+        val filteredTasks = repository.getIncompleteTasks().first()
+        
+        assertEquals(2, filteredTasks.size)
+        assertTrue(filteredTasks.any { it.title == "Work Task" })
+        assertTrue(filteredTasks.any { it.title == "High Priority Personal" })
     }
 }

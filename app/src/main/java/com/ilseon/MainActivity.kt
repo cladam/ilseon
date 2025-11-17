@@ -297,8 +297,7 @@ class MainActivity : ComponentActivity() {
                                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                         val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
                                         createFileLauncher.launch(fileName)
-                                    },
-                                    onImportClick = { /* TODO */ }
+                                    }
                                 )
                             }
                             composable(Screen.About.route) {

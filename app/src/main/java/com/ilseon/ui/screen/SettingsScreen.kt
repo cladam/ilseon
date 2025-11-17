@@ -40,7 +40,6 @@ fun SettingsScreen(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()

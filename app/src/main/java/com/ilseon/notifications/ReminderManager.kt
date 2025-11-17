@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -111,7 +112,7 @@ class ReminderManager @Inject constructor(
         titleOverride: String? = null
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            // TODO: Handle case where exact alarms are not permitted.
+            Log.w("ReminderManager", "Cannot schedule exact alarms. Please grant the permission.")
             return
         }
 

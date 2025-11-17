@@ -111,26 +111,6 @@ private fun DeveloperInfoCard() {
 }
 
 @Composable
-private fun AcknowledgementsCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Acknowledgements",
-                style = MaterialTheme.typography.titleLarge
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-            InfoRow(
-                icon = Icons.AutoMirrored.Filled.Notes,
-                text = "View Open Source Licenses",
-                onClick = {
-                    // TODO: Implement navigation to a dedicated licenses screen
-                }
-            )
-        }
-    }
-}
-
-@Composable
 private fun InfoRow(icon: ImageVector, text: String, onClick: (() -> Unit)? = null) {
     val rowModifier = if (onClick != null) {
         Modifier.clickable(onClick = onClick)

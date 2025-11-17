@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
+import com.ilseon.ui.components.HtmlText
 import com.ilseon.ui.components.TimePickerDialog
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -471,10 +472,8 @@ private fun ContextItem(
                 )
                 context.description?.let {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 14.sp
+                    HtmlText(
+                        html = it
                     )
                 }
                 focusBlock?.let {

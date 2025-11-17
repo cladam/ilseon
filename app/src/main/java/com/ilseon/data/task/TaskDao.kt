@@ -94,7 +94,7 @@ interface TaskDao {
     @Query("SELECT AVG(endTime - startTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND endTime IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
     suspend fun getAverageTimeBlockMillis(startTime: Long, endTime: Long): Double?
 
-    @Query("SELECT AVG(completedAt - timerStartTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'Duration' AND timerStartTime IS NOT NULL AND completedAt IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    @Query("SELECT AVG(totalTimeInMinutes * 60000.0) FROM tasks WHERE isComplete = 1 AND schedulingType = 'Duration' AND totalTimeInMinutes IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
     suspend fun getAverageDurationMillis(startTime: Long, endTime: Long): Double?
 
     @Query("SELECT completionReflection FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")

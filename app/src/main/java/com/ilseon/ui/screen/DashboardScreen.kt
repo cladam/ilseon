@@ -24,6 +24,7 @@ import com.ilseon.TaskContextViewModel
 import com.ilseon.TaskViewModel
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskPriority
 import com.ilseon.ui.components.AnimatedTaskItem
 import java.util.UUID
 
@@ -49,23 +50,26 @@ fun DashboardScreen(
         val now = System.currentTimeMillis()
 
         val sortedTasks = tasks.sortedWith(
-            // Primary sort key: task "status"
             compareBy<Task> {
-                when {
-                    it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> 1 // Active
-                    it.startTime != null && now < it.startTime -> 2 // Upcoming
-                    it.dueTime != null -> 3 // Due soon
-                    else -> 4 + it.priority.ordinal // Everything else, by priority
-                }
+                // Highest priority: currently active tasks
+                val isActive = it.startTime != null && it.endTime != null && now in it.startTime..it.endTime
+                if (isActive) 0 else 1
             }
-                // Secondary sort key: time for timed tasks, creation for others
+                // Next highest priority: tasks explicitly marked as High priority
                 .thenBy {
-                    when {
-                        it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> it.endTime
-                        it.startTime != null && now < it.startTime -> it.startTime
-                        it.dueTime != null -> it.dueTime
-                        else -> it.createdAt
-                    }
+                    if (it.priority == TaskPriority.High) 0 else 1
+                }
+                // Then, upcoming scheduled tasks
+                .thenBy {
+                    if (it.startTime != null && now < it.startTime) it.startTime else Long.MAX_VALUE
+                }
+                // Then, by due date
+                .thenBy {
+                    it.dueTime ?: Long.MAX_VALUE
+                }
+                // Finally, by creation date for all other tasks
+                .thenBy {
+                    it.createdAt
                 }
         )
 

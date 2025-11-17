@@ -3,6 +3,7 @@ package com.ilseon.data.task
 import com.ilseon.TimeInterval
 import com.ilseon.ui.screen.AnalyticsData
 import com.ilseon.util.allStopWords
+import com.ilseon.util.cleanTextForAnalysis
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,14 +37,13 @@ class AnalyticsRepository @Inject constructor(
 
         val reflections = taskDao.getCompletionReflections(startTime, endTime)
         val topKeywords = reflections
-            .flatMap { it.split(Regex("[\\s.,!?]+")) }
-            .map { it.trim().lowercase() }
+            .flatMap { cleanTextForAnalysis(it).split(Regex("\\s+")) }
             .filter { it.isNotBlank() && it !in allStopWords }
             .groupingBy { it }
             .eachCount()
             .toList()
             .sortedByDescending { it.second }
-            .take(15)
+            .take(9) // Just show top 9 words
 
         return AnalyticsData(
             focusDistribution = focusDistribution,

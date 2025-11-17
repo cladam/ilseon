@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
+import com.ilseon.ui.components.HtmlText
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.VisualCountdownTimer
 import com.ilseon.ui.theme.QuietAmber
@@ -160,11 +161,7 @@ fun CurrentPriorityTask(
                     task.description?.let {
                         if (it.isNotBlank()) {
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = it,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                fontSize = 14.sp
-                            )
+                            HtmlText(html = it)
                         }
                     }
                     Spacer(Modifier.height(8.dp))

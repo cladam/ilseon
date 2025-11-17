@@ -55,10 +55,8 @@ fun TaskDetailsDialog(
                 Spacer(Modifier.height(8.dp))
                 task.description?.let {
                     if (it.isNotBlank()) {
-                        Text(
-                            text = it,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            fontSize = 16.sp
+                        HtmlText(
+                            html = it
                         )
                         Spacer(Modifier.height(16.dp))
                     }

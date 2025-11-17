@@ -9,6 +9,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.data.task.ReminderType
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextDao
@@ -32,8 +33,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskContextDao(): TaskContextDao
 
     abstract fun focusBlockDao(): FocusBlockDao
-
-
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.
@@ -99,42 +98,53 @@ abstract class AppDatabase : RoomDatabase() {
                                     val taskDao = database.taskDao()
                                     val focusBlockDao = database.focusBlockDao()
 
-                                    // Pre-populate with default contexts
-                                    val workContextId = UUID.randomUUID()
-                                    val workContext = TaskContext(id = workContextId, name = "Work", displayOrder = 0)
-                                    taskContextDao.insertContext(workContext)
-                                    focusBlockDao.insert(FocusBlock(
-                                        id = UUID.randomUUID(),
-                                        contextId = workContextId,
-                                        startTime = "09:00",
-                                        endTime = "16:00",
-                                        repeatDays = listOf(1,2,3,4,5)
-                                    ))
-
-                                    val healthContext = TaskContext(id = UUID.randomUUID(), name = "Health", description = "Fix back pain", displayOrder = 0)
-                                    taskContextDao.insertContext(healthContext)
-                                    taskContextDao.insertContext(TaskContext(name = "Family", displayOrder = 1))
-                                    taskContextDao.insertContext(TaskContext(name = "Personal", displayOrder = 2))
-
-                                    // --- TEST DATA ---
-                                    // Task as a Simple Note (no alarms)
+                                    // Pre-populate with ilseon contexts and tasks
+                                    val ilseonContextId = UUID.randomUUID()
+                                    val ilseonContext = TaskContext(id = ilseonContextId, name = "Ilseon", description = "Ilseon Context", displayOrder = 4)
+                                    taskContextDao.insertContext(ilseonContext)
                                     taskDao.insert(
                                         Task(
-                                            title = "Buy milk",
-                                            contextId = workContextId,
-                                            priority = TaskPriority.Low,
-                                            description = "This is a simple note and should not trigger any alarms."
+                                            title = "Welcome to Ilseon!",
+                                            contextId = ilseonContextId,
+                                            priority = TaskPriority.High,
+                                            description = "This is a regular task, click the checkbox to complete it. If you add a reflection of how the task went it will show up in Notes."
                                         )
                                     )
-
-                                    // Task with a Duration (alarms only after manual start)
                                     taskDao.insert(
                                         Task(
-                                            title = "Read from a book",
-                                            contextId = workContextId,
+                                            title = "Create a new context",
+                                            contextId = ilseonContextId,
+                                            priority = TaskPriority.High,
+                                            description = "Contexts are powerful tools to group your tasks. You can create contexts for work, home, or any project you're working on. Just go to the Contexts screen and add a context, with or without a <b>Focus Block</b>."
+                                        )
+                                    )
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Schedule a task with a time block",
+                                            contextId = ilseonContextId,
                                             priority = TaskPriority.Medium,
-                                            totalTimeInMinutes = 15,
-                                            description = "15-min task. Reading is good for you ❤️"
+                                            description = "This task is scheduled for a specific time block.",
+                                            schedulingType = SchedulingType.TimeBlock,
+                                            startTime = System.currentTimeMillis() + 3600000, // 1 hour from now
+                                            endTime = System.currentTimeMillis() + 7200000 // 2 hours from now
+                                        )
+                                    )
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Schedule a task with a duration",
+                                            contextId = ilseonContextId,
+                                            priority = TaskPriority.Medium,
+                                            description = "This task has a duration of 1 hour.",
+                                            schedulingType = SchedulingType.Duration,
+                                            totalTimeInMinutes = 25
+                                        )
+                                    )
+                                    taskDao.insert(
+                                        Task(
+                                            title = "Check your patterns",
+                                            contextId = ilseonContextId,
+                                            priority = TaskPriority.Low,
+                                            description = "Make sure to check the Analytics screen to see your patterns and how you're spending your time."
                                         )
                                     )
                                  }

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.NotesViewModel
 import com.ilseon.data.task.Task
+import com.ilseon.ui.components.HtmlText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -179,9 +180,8 @@ private fun NoteItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 task.completionReflection?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
+                    HtmlText(
+                        html = it,
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

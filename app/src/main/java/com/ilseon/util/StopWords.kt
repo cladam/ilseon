@@ -52,3 +52,9 @@ val stopWords_SE = setOf(
 )
 
 val allStopWords = stopWords_EN + stopWords_SE
+
+fun cleanTextForAnalysis(text: String): String {
+    val textWithoutHtml = text.replace(Regex("<.*?>"), " ")
+    val alphanumericText = textWithoutHtml.replace(Regex("[^\\p{L}\\p{N} ]"), "")
+    return alphanumericText.lowercase()
+}

@@ -38,6 +38,12 @@ jobs:
       - name: Run lint
         run: ./gradlew lintDebug
 
+      - name: Run instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          script: ./gradlew connectedDebugAndroidTest
+
       - name: Build with Gradle
         run: ./gradlew assembleDebug
 

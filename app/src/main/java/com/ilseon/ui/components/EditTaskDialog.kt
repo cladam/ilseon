@@ -1,41 +1,39 @@
 package com.ilseon.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.ilseon.data.task.Task
-import com.ilseon.data.task.TaskContext
-import com.ilseon.ui.theme.toColor
 
 @Composable
-fun TaskDetailsDialog(
+fun EditTaskDialog(
     task: Task,
-    context: TaskContext?,
     onDismiss: () -> Unit,
-    onEdit: () -> Unit
+    onSave: (Task) -> Unit
 ) {
+    var title by remember { mutableStateOf(task.title) }
+    var description by remember { mutableStateOf(task.description ?: "") }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -49,49 +47,42 @@ fun TaskDetailsDialog(
                     .padding(24.dp)
             ) {
                 Text(
-                    text = task.title,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Edit Task",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
-                task.description?.let {
-                    if (it.isNotBlank()) {
-                        HtmlText(
-                            html = it
-                        )
-                        Spacer(Modifier.height(16.dp))
-                    }
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(task.priority.toColor(), CircleShape)
-                    )
-                    Text(
-                        text = context?.name ?: "General",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp
-                    )
-                }
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
                 Spacer(Modifier.height(24.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Close")
+                        Text("Cancel")
                     }
                     Spacer(Modifier.width(8.dp))
                     TextButton(onClick = {
+                        val updatedTask = task.copy(
+                            title = title,
+                            description = description
+                        )
+                        onSave(updatedTask)
                         onDismiss()
-                        onEdit()
                     }) {
-                        Text("Edit")
+                        Text("Save")
                     }
                 }
             }

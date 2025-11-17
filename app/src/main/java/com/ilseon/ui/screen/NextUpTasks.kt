@@ -43,6 +43,7 @@ import com.ilseon.TaskViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
+import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.TaskDetailsDialog
 import com.ilseon.ui.theme.toColor
@@ -62,12 +63,25 @@ fun NextUpTasks(
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
     var taskToShowDetails by remember { mutableStateOf<Task?>(null) }
     var taskForReflection by remember { mutableStateOf<Task?>(null) }
+    var taskToEdit by remember { mutableStateOf<Task?>(null) }
 
     taskToShowDetails?.let { task ->
         TaskDetailsDialog(
             task = task,
             context = contextMap[task.contextId],
-            onDismiss = { taskToShowDetails = null }
+            onDismiss = { taskToShowDetails = null },
+            onEdit = { taskToEdit = task }
+        )
+    }
+
+    taskToEdit?.let { task ->
+        EditTaskDialog(
+            task = task,
+            onDismiss = { taskToEdit = null },
+            onSave = {
+                viewModel.updateTask(it)
+                taskToEdit = null
+            }
         )
     }
 

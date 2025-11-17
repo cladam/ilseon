@@ -112,6 +112,7 @@ fun DashboardScreen(
                             onTimerFinished = onTaskTimerFinished,
                             onStartTask = onStartTask,
                             onPauseTask = onPauseTask,
+                            onUpdate = taskViewModel::updateTask,
                             focusContextName = focusContextName
                         )
                     }

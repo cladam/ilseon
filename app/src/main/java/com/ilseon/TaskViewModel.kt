@@ -347,6 +347,16 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            taskRepository.updateTask(task)
+            // If the task has a due date, we might need to reschedule reminders
+            if (task.dueTime != null || task.startTime != null) {
+                reminderManager.rescheduleReminders(task)
+            }
+        }
+    }
+
     fun startTaskTimer(task: Task) {
         viewModelScope.launch {
             if (task.schedulingType == SchedulingType.TimeBlock && task.timerState == TimerState.NotStarted) {

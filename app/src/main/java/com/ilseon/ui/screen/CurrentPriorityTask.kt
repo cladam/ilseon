@@ -1,8 +1,10 @@
 package com.ilseon.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
+import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.HtmlText
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.VisualCountdownTimer
@@ -49,6 +52,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.max
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CurrentPriorityTask(
     task: Task,
@@ -57,6 +61,7 @@ fun CurrentPriorityTask(
     onTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
+    onUpdate: (Task) -> Unit,
     focusContextName: String?
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
@@ -64,6 +69,7 @@ fun CurrentPriorityTask(
     val isInFocusBlock = focusContextName != null
     var isOverdue by remember { mutableStateOf(false) }
     var showReflectionDialog by remember { mutableStateOf(false) }
+    var taskToEdit by remember { mutableStateOf<Task?>(null) }
 
     if (showReflectionDialog) {
         ReflectionDialog(
@@ -72,6 +78,17 @@ fun CurrentPriorityTask(
             onSave = { reflection ->
                 onComplete(task, reflection)
                 showReflectionDialog = false
+            }
+        )
+    }
+
+    taskToEdit?.let {
+        EditTaskDialog(
+            task = it,
+            onDismiss = { taskToEdit = null },
+            onSave = { updatedTask ->
+                onUpdate(updatedTask)
+                taskToEdit = null
             }
         )
     }
@@ -122,6 +139,11 @@ fun CurrentPriorityTask(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { taskToEdit = task }
+                )
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 .border(
                     width = 1.dp,

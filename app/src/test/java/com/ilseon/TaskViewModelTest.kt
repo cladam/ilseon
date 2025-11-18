@@ -3,6 +3,7 @@ package com.ilseon
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
@@ -20,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -43,6 +45,7 @@ class TaskViewModelTest {
     private lateinit var soundManager: SoundManager
     private lateinit var notificationService: NotificationService
     private lateinit var reminderManager: ReminderManager
+    private lateinit var settingsRepository: SettingsRepository
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -55,11 +58,13 @@ class TaskViewModelTest {
         soundManager = mockk(relaxed = true)
         notificationService = mockk(relaxed = true)
         reminderManager = mockk(relaxed = true)
+        settingsRepository = mockk(relaxed = true)
 
         coEvery { taskRepository.getActiveFocusBlock() } returns MutableStateFlow<FocusBlock?>(null)
         coEvery { taskRepository.getIncompleteTasks() } returns MutableStateFlow<List<Task>>(emptyList())
         coEvery { taskRepository.getAllFocusBlocks() } returns emptyList()
         coEvery { taskRepository.getRunningTasks() } returns emptyList()
+        coEvery { settingsRepository.naggingNotificationsEnabled } returns flowOf(false)
     }
 
     @After
@@ -69,7 +74,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with time block creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager)
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -94,7 +99,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with duration creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager)
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -118,7 +123,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with basic info creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager)
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -145,7 +150,7 @@ class TaskViewModelTest {
 
     @Test
     fun `completeTask updates task to complete and sets reflection`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager)
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.updateTask(capture(taskSlot)) } just runs
 

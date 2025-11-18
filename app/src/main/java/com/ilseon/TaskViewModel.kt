@@ -84,7 +84,7 @@ class TaskViewModel @Inject constructor(
     private var lastNotifiedFocusBlockId: UUID? = null
 
     companion object {
-        val NAGGING_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(10)
+        val NAGGING_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(30)
     }
 
     init {
@@ -179,7 +179,7 @@ class TaskViewModel @Inject constructor(
                     val lastNagTime = taskNagTimes[task.id]
                     if (lastNagTime == null || (now - lastNagTime > NAGGING_INTERVAL_MILLIS)) {
                         notificationService.sendNaggingNotification(task)
-                        hapticManager.performAlert()
+                        hapticManager.performNudge()
                         taskNagTimes[task.id] = now
                     }
                 }

@@ -15,6 +15,7 @@ interface HapticManager {
     fun performWarning()
     fun performAlert()
     fun performSuccess()
+    fun performNagging()
 }
 
 @Singleton
@@ -35,6 +36,7 @@ class HapticManagerImpl @Inject constructor(
 
     private val successPattern = longArrayOf(0, 120, 10, 50)
     private val nudgePattern = longArrayOf(0, 40)
+    private val naggingPattern = longArrayOf(0, 100, 300, 100, 300, 100)
     private val warningPattern = longArrayOf(0, 80, 100, 80)
     private val alertPattern = longArrayOf(0, 50, 100, 50, 100, 50, 100, 50)
 
@@ -55,6 +57,10 @@ class HapticManagerImpl @Inject constructor(
 
     override fun performSuccess() {
         vibrate(successPattern)
+    }
+
+    override fun performNagging() {
+        vibrate(naggingPattern)
     }
 
     private fun vibrate(pattern: LongArray) {

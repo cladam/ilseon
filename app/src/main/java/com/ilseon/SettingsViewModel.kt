@@ -26,9 +26,35 @@ class SettingsViewModel @Inject constructor(
             initialValue = true
         )
 
+    val bluetoothSstEnabled = settingsRepository.bluetoothSstEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    val sstLanguage = settingsRepository.sstLanguage
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "en-GB"
+        )
+
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)
+        }
+    }
+
+    fun setBluetoothSstEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setBluetoothSstEnabled(enabled)
+        }
+    }
+
+    fun setSstLanguage(language: String) {
+        viewModelScope.launch {
+            settingsRepository.setSstLanguage(language)
         }
     }
 

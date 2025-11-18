@@ -12,28 +12,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.SettingsViewModel
-import com.ilseon.ui.theme.IlseonTheme
+import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -43,13 +49,19 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
+    val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
+    val sstLanguage by viewModel.sstLanguage.collectAsState()
 
     SettingsScreenContent(
         onCompletedTasksClick = onCompletedTasksClick,
         onAboutClick = onAboutClick,
         onExportClick = onExportClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
-        onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled
+        onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
+        bluetoothSstEnabled = bluetoothSstEnabled,
+        onBluetoothSstEnabledChange = viewModel::setBluetoothSstEnabled,
+        sstLanguage = sstLanguage,
+        onSstLanguageChange = viewModel::setSstLanguage
     )
 }
 
@@ -59,8 +71,25 @@ private fun SettingsScreenContent(
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
-    onNudgeNotificationsChange: (Boolean) -> Unit
+    onNudgeNotificationsChange: (Boolean) -> Unit,
+    bluetoothSstEnabled: Boolean,
+    onBluetoothSstEnabledChange: (Boolean) -> Unit,
+    sstLanguage: String,
+    onSstLanguageChange: (String) -> Unit
 ) {
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            currentLanguage = sstLanguage,
+            onLanguageSelected = {
+                onSstLanguageChange(it)
+                showLanguageDialog = false
+            },
+            onDismiss = { showLanguageDialog = false }
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -70,6 +99,14 @@ private fun SettingsScreenContent(
             NotificationSettingsCard(
                 nudgeNotificationsEnabled = nudgeNotificationsEnabled,
                 onNudgeNotificationsChange = onNudgeNotificationsChange
+            )
+        }
+        item {
+            SpeechToTextSettingsCard(
+                bluetoothSstEnabled = bluetoothSstEnabled,
+                onBluetoothSstEnabledChange = onBluetoothSstEnabledChange,
+                sstLanguage = sstLanguage,
+                onLanguageClick = { showLanguageDialog = true }
             )
         }
         item {
@@ -84,6 +121,39 @@ private fun SettingsScreenContent(
             )
         }
     }
+}
+
+@Composable
+private fun LanguageSelectionDialog(
+    currentLanguage: String,
+    onLanguageSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val languages = listOf("en-GB" to "British English", "sv-SE" to "Swedish")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Language") },
+        text = {
+            Column {
+                languages.forEach { (code, name) ->
+                    Text(
+                        text = name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLanguageSelected(code) }
+                            .padding(vertical = 12.dp),
+                        color = if (code == currentLanguage) MaterialTheme.colorScheme.primary else Color.Unspecified
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -105,6 +175,38 @@ private fun NotificationSettingsCard(
                 subtitle = "Receive a reminder before a task starts",
                 checked = nudgeNotificationsEnabled,
                 onCheckedChange = onNudgeNotificationsChange
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeechToTextSettingsCard(
+    bluetoothSstEnabled: Boolean,
+    onBluetoothSstEnabledChange: (Boolean) -> Unit,
+    sstLanguage: String,
+    onLanguageClick: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Speech to Text",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsSwitchItem(
+                icon = Icons.Default.Bluetooth,
+                title = "Bluetooth speech-to-text",
+                subtitle = "Use speech-to-text while on Bluetooth",
+                checked = bluetoothSstEnabled,
+                onCheckedChange = onBluetoothSstEnabledChange
+            )
+            SettingsItem(
+                icon = Icons.Default.Language,
+                title = "Language",
+                subtitle = Locale(sstLanguage.split("-")[0], sstLanguage.split("-")[1]).displayName,
+                onClick = onLanguageClick
             )
         }
     }

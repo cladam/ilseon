@@ -15,9 +15,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -60,7 +64,8 @@ fun QuickCaptureSheet(
     onSave: (String, String?, UUID?, TaskPriority, String, String, Int?) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
-    initialDescription: String = ""
+    initialDescription: String = "",
+    onDescriptionVttClick: () -> Unit
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
     val contexts = remember(contextsWithFocusBlock) {
@@ -88,6 +93,12 @@ fun QuickCaptureSheet(
     LaunchedEffect(contexts) {
         if (selectedContextId == null) {
             selectedContextId = contexts.firstOrNull()?.id
+        }
+    }
+
+    LaunchedEffect(initialDescription) {
+        if (initialDescription.isNotEmpty()) {
+            description = initialDescription
         }
     }
 
@@ -177,6 +188,14 @@ fun QuickCaptureSheet(
             keyboardOptions = KeyboardOptions.Default.copy(
                 capitalization = KeyboardCapitalization.Sentences,
             ),
+            trailingIcon = {
+                IconButton(onClick = onDescriptionVttClick) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Voice To Text"
+                    )
+                }
+            }
         )
 
         Spacer(Modifier.height(16.dp))

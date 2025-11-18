@@ -13,6 +13,12 @@ import javax.inject.Singleton
 interface SettingsRepository {
     val nudgeNotificationsEnabled: Flow<Boolean>
     suspend fun setNudgeNotificationsEnabled(enabled: Boolean)
+
+    val bluetoothSstEnabled: Flow<Boolean>
+    suspend fun setBluetoothSstEnabled(enabled: Boolean)
+
+    val sstLanguage: Flow<String>
+    suspend fun setSstLanguage(language: String)
 }
 
 @Singleton
@@ -25,6 +31,8 @@ class SettingsRepositoryImpl @Inject constructor(
 
     companion object {
         const val KEY_NUDGE_NOTIFICATIONS = "nudge_notifications_enabled"
+        const val KEY_BLUETOOTH_SST_ENABLED = "bluetooth_sst_enabled"
+        const val KEY_SST_LANGUAGE = "sst_language"
     }
 
     override val nudgeNotificationsEnabled: Flow<Boolean> = callbackFlow {
@@ -42,6 +50,40 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setNudgeNotificationsEnabled(enabled: Boolean) {
         prefs.edit {
             putBoolean(KEY_NUDGE_NOTIFICATIONS, enabled)
+        }
+    }
+
+    override val bluetoothSstEnabled: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_BLUETOOTH_SST_ENABLED) {
+                trySend(prefs.getBoolean(KEY_BLUETOOTH_SST_ENABLED, false))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_BLUETOOTH_SST_ENABLED, false))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setBluetoothSstEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_BLUETOOTH_SST_ENABLED, enabled)
+        }
+    }
+
+    override val sstLanguage: Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_SST_LANGUAGE) {
+                trySend(prefs.getString(KEY_SST_LANGUAGE, "en-GB") ?: "en-GB")
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString(KEY_SST_LANGUAGE, "en-GB") ?: "en-GB")
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setSstLanguage(language: String) {
+        prefs.edit {
+            putString(KEY_SST_LANGUAGE, language)
         }
     }
 }

@@ -210,7 +210,10 @@ class MainActivity : ComponentActivity() {
                 val tasks by viewModel.tasks.collectAsState()
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
-                var vttResult by remember { mutableStateOf("") }
+                var vttTitleResult by remember { mutableStateOf("") }
+                var vttDescriptionResult by remember { mutableStateOf("") }
+                var vttTarget by remember { mutableStateOf("title") }
+
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
@@ -219,13 +222,31 @@ class MainActivity : ComponentActivity() {
                         val data: Intent? = result.data
                         val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                         results?.firstOrNull()?.let { text ->
-                            vttResult = text
-                            scope.launch { sheetState.show() }
+                            if (vttTarget == "title") {
+                                vttTitleResult = text
+                                scope.launch { sheetState.show() }
+                            } else {
+                                vttDescriptionResult = text
+                            }
                         }
                     }
                 }
 
                 val bluetoothChecker = remember { BluetoothChecker(context) }
+                val bluetoothSstEnabled by settingsViewModel.bluetoothSstEnabled.collectAsState()
+                val sstLanguage by settingsViewModel.sstLanguage.collectAsState()
+
+                val startVtt = {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(
+                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                        )
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, sstLanguage)
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+                    }
+                    speechRecognizerLauncher.launch(intent)
+                }
 
                 val isRightHanded by remember { mutableStateOf(true) }
 
@@ -281,16 +302,9 @@ class MainActivity : ComponentActivity() {
                             if (currentRoute == Screen.DailyDashboard.route) {
                                 LargeFloatingActionButton(
                                     onClick = {
-                                        if (bluetoothChecker.isHeadsetConnected()) {
-                                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                                putExtra(
-                                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                                )
-                                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
-                                            }
-                                            speechRecognizerLauncher.launch(intent)
+                                        vttTarget = "title"
+                                        if (bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()) {
+                                            startVtt()
                                         } else {
                                             scope.launch { sheetState.show() }
                                         }
@@ -384,7 +398,8 @@ class MainActivity : ComponentActivity() {
                 if (sheetState.isVisible) {
                     ModalBottomSheet(
                         onDismissRequest = {
-                            vttResult = ""
+                            vttTitleResult = ""
+                            vttDescriptionResult = ""
                             scope.launch { sheetState.hide() }
                          },
                         sheetState = sheetState
@@ -393,9 +408,15 @@ class MainActivity : ComponentActivity() {
                             onSave = { title, description, contextId, priority, startTime, endTime, duration ->
                                 viewModel.addTask(title, description, contextId, priority, startTime, endTime, duration)
                                 scope.launch { sheetState.hide() }
-                                vttResult = ""
+                                vttTitleResult = ""
+                                vttDescriptionResult = ""
                             },
-                            initialTitle = vttResult
+                            initialTitle = vttTitleResult,
+                            initialDescription = vttDescriptionResult,
+                            onDescriptionVttClick = {
+                                vttTarget = "description"
+                                startVtt()
+                            }
                         )
                     }
                 }

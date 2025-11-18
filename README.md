@@ -1,5 +1,5 @@
 <p align="center">
-<img src="app/src/main/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
+<img src="images/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
 </p>
 
 <h1 align="center">ilseon</h1>

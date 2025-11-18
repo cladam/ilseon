@@ -1,6 +1,7 @@
 package com.ilseon.data.bluetooth
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
@@ -16,6 +17,7 @@ class BluetoothChecker(private val context: Context) {
 
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
 
+    @SuppressLint("WrongConstant")
     fun isHeadsetConnected(): Boolean {
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             return false

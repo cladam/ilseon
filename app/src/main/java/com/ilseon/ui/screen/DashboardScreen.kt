@@ -46,31 +46,8 @@ fun DashboardScreen(
     }
 
     val (priorityTask, nextUpTasks) = remember(tasks) {
-        val now = System.currentTimeMillis()
-
-        val sortedTasks = tasks.sortedWith(
-            // Primary sort key: task "status"
-            compareBy<Task> {
-                when {
-                    it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> 1 // Active
-                    it.startTime != null && now < it.startTime -> 2 // Upcoming
-                    it.dueTime != null -> 3 // Due soon
-                    else -> 4 + it.priority.ordinal // Everything else, by priority
-                }
-            }
-                // Secondary sort key: time for timed tasks, creation for others
-                .thenBy {
-                    when {
-                        it.startTime != null && it.endTime != null && now in it.startTime..it.endTime -> it.endTime
-                        it.startTime != null && now < it.startTime -> it.startTime
-                        it.dueTime != null -> it.dueTime
-                        else -> it.createdAt
-                    }
-                }
-        )
-
-        val priorityTask = sortedTasks.firstOrNull()
-        val nextUp = sortedTasks.drop(1)
+        val priorityTask = tasks.firstOrNull()
+        val nextUp = tasks.drop(1)
         priorityTask to nextUp
     }
 

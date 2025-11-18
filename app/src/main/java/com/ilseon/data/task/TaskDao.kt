@@ -27,17 +27,18 @@ interface TaskDao {
 
     /**
      * Gets a reactive flow of all incomplete tasks,
-     * ordered by priority (High, Mid, Low) and then by creation time.
+     * ordered by priority (High, Medium, Low) and then by creation time.
      * This will power the main dashboard.
      */
     @Query("""
         SELECT * FROM tasks
         WHERE isComplete = 0
         ORDER BY
+            isCurrentPriority DESC,
             CASE priority
-                WHEN 'High' THEN 1
-                WHEN 'Mid'  THEN 2
-                WHEN 'Low'  THEN 3
+                WHEN 'High'   THEN 1
+                WHEN 'Medium' THEN 2
+                WHEN 'Low'    THEN 3
                 ELSE 4
             END,
             createdAt ASC
@@ -52,6 +53,9 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE isComplete = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks")
+    suspend fun getAllTasksForDebug(): List<Task>
 
     /**
      * Inserts a new task.

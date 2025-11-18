@@ -1,6 +1,7 @@
 package com.ilseon
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -107,7 +108,8 @@ abstract class AppDatabase : RoomDatabase() {
                                             title = "Welcome to Ilseon!",
                                             contextId = ilseonContextId,
                                             priority = TaskPriority.High,
-                                            description = "This is a regular task, click the checkbox to complete it. If you add a reflection of how the task went it will show up in Notes."
+                                            description = "This is a regular task, click the checkbox to complete it. If you add a reflection of how the task went it will show up in Notes.",
+                                            isCurrentPriority = true
                                         )
                                     )
                                     taskDao.insert(
@@ -147,6 +149,11 @@ abstract class AppDatabase : RoomDatabase() {
                                             description = "Make sure to check the Analytics screen to see your patterns and how you're spending your time."
                                         )
                                     )
+
+                                    // loop through all tasks and log data attributes
+                                    taskDao.getAllTasksForDebug().forEach { task ->
+                                        Log.d("TaskData", task.toString())
+                                    }
                                  }
                             }
                         }

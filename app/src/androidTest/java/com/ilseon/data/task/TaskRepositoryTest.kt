@@ -176,6 +176,10 @@ class TaskRepositoryTest {
 
         // 3. Act and Assert
         val filteredTasks = repository.getIncompleteTasks().first()
+        for (task in filteredTasks) {
+            println("Task: ${task.title}, Priority: ${task.priority}")
+            println(task)
+        }
         
         assertEquals(2, filteredTasks.size)
         assertTrue(filteredTasks.any { it.title == "Work Task" })

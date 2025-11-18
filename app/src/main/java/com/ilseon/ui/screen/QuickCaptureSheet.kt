@@ -58,14 +58,16 @@ import java.util.UUID
 @Composable
 fun QuickCaptureSheet(
     onSave: (String, String?, UUID?, TaskPriority, String, String, Int?) -> Unit,
-    viewModel: TaskContextViewModel = hiltViewModel()
+    viewModel: TaskContextViewModel = hiltViewModel(),
+    initialTitle: String = "",
+    initialDescription: String = ""
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
     val contexts = remember(contextsWithFocusBlock) {
         contextsWithFocusBlock.map { it.context }
     }
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(initialTitle) }
+    var description by remember { mutableStateOf(initialDescription) }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Medium) }
     var startTime by remember { mutableStateOf("") }

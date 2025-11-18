@@ -1,6 +1,7 @@
 package com.ilseon
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -62,6 +64,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.navigation.Screen
@@ -116,18 +119,48 @@ class MainActivity : ComponentActivity() {
                         mutableStateOf(true)
                     }
                 }
+                var hasRecordAudioPermission by remember {
+                    mutableStateOf(
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                    )
+                }
+                var hasBluetoothConnectPermission by remember {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        mutableStateOf(
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.BLUETOOTH_CONNECT
+                            ) == PackageManager.PERMISSION_GRANTED
+                        )
+                    } else {
+                        mutableStateOf(true)
+                    }
+                }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.RequestPermission(),
-                    onResult = { isGranted ->
-                        hasNotificationPermission = isGranted
+                    contract = ActivityResultContracts.RequestMultiplePermissions(),
+                    onResult = { permissions ->
+                        hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: hasNotificationPermission
+                        hasRecordAudioPermission = permissions[Manifest.permission.RECORD_AUDIO] ?: hasRecordAudioPermission
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            hasBluetoothConnectPermission = permissions[Manifest.permission.BLUETOOTH_CONNECT] ?: hasBluetoothConnectPermission
+                        }
                     }
                 )
 
                 LaunchedEffect(Unit) {
+                    val permissionsToRequest = mutableListOf<String>()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
                     }
+                    permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        permissionsToRequest.add(Manifest.permission.BLUETOOTH_CONNECT)
+                    }
+                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
                 }
 
                 var showExactAlarmPermissionDialog by remember { mutableStateOf(false) }
@@ -177,6 +210,22 @@ class MainActivity : ComponentActivity() {
                 val tasks by viewModel.tasks.collectAsState()
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
+                var vttResult by remember { mutableStateOf("") }
+
+                val speechRecognizerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    if (result.resultCode == Activity.RESULT_OK) {
+                        val data: Intent? = result.data
+                        val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                        results?.firstOrNull()?.let { text ->
+                            vttResult = text
+                            scope.launch { sheetState.show() }
+                        }
+                    }
+                }
+
+                val bluetoothChecker = remember { BluetoothChecker(context) }
 
                 val isRightHanded by remember { mutableStateOf(true) }
 
@@ -231,7 +280,21 @@ class MainActivity : ComponentActivity() {
                         floatingActionButton = {
                             if (currentRoute == Screen.DailyDashboard.route) {
                                 LargeFloatingActionButton(
-                                    onClick = { scope.launch { sheetState.show() } },
+                                    onClick = {
+                                        if (bluetoothChecker.isHeadsetConnected()) {
+                                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                                putExtra(
+                                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                                )
+                                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+                                            }
+                                            speechRecognizerLauncher.launch(intent)
+                                        } else {
+                                            scope.launch { sheetState.show() }
+                                        }
+                                    },
                                     shape = CircleShape,
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     modifier = Modifier.border(
@@ -298,7 +361,7 @@ class MainActivity : ComponentActivity() {
                                         val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
                                         createFileLauncher.launch(fileName)
                                     }
-                                )
+                                 )
                             }
                             composable(Screen.About.route) {
                                 AboutScreen()
@@ -320,14 +383,19 @@ class MainActivity : ComponentActivity() {
 
                 if (sheetState.isVisible) {
                     ModalBottomSheet(
-                        onDismissRequest = { scope.launch { sheetState.hide() } },
+                        onDismissRequest = {
+                            vttResult = ""
+                            scope.launch { sheetState.hide() }
+                         },
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
                             onSave = { title, description, contextId, priority, startTime, endTime, duration ->
                                 viewModel.addTask(title, description, contextId, priority, startTime, endTime, duration)
                                 scope.launch { sheetState.hide() }
-                            }
+                                vttResult = ""
+                            },
+                            initialTitle = vttResult
                         )
                     }
                 }

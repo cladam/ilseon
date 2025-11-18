@@ -1,4 +1,4 @@
-package com.ilseon.data.di
+package com.ilseon.di
 
 import com.ilseon.data.task.NoteExporter
 import dagger.Module

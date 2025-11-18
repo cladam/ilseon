@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.TimerState
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -18,14 +19,16 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
     lateinit var notificationHelper: NotificationHelper
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != "com.ilseon.REMINDER") {
+            return
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // Cannot show notification because permission is not granted.
-                // The permission should be requested from an activity.
                 return
             }
         }
@@ -34,12 +37,14 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         val description = intent.getStringExtra("EXTRA_TASK_DESCRIPTION")
         val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
         val timerStateName = intent.getStringExtra("EXTRA_TIMER_STATE")
+        val schedulingTypeName = intent.getStringExtra("EXTRA_SCHEDULING_TYPE")
 
         val tier = tierName?.let { NotificationTier.valueOf(it) } ?: NotificationTier.PreBlockWarning
         val timerState = timerStateName?.let { TimerState.valueOf(it) } ?: TimerState.NotStarted
+        val schedulingType = schedulingTypeName?.let { SchedulingType.valueOf(it) } ?: SchedulingType.None
 
         if (taskId != null && title != null) {
-            notificationHelper.showReminderNotification(taskId, title, description, tier, timerState)
+            notificationHelper.showReminderNotification(taskId, title, description, tier, timerState, schedulingType)
         }
     }
 }

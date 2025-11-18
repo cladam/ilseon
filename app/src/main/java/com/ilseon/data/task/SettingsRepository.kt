@@ -14,6 +14,9 @@ interface SettingsRepository {
     val nudgeNotificationsEnabled: Flow<Boolean>
     suspend fun setNudgeNotificationsEnabled(enabled: Boolean)
 
+    val naggingNotificationsEnabled: Flow<Boolean>
+    suspend fun setNaggingNotificationsEnabled(enabled: Boolean)
+
     val bluetoothSstEnabled: Flow<Boolean>
     suspend fun setBluetoothSstEnabled(enabled: Boolean)
 
@@ -31,6 +34,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
     companion object {
         const val KEY_NUDGE_NOTIFICATIONS = "nudge_notifications_enabled"
+        const val KEY_NAGGING_NOTIFICATIONS = "nagging_notifications_enabled"
         const val KEY_BLUETOOTH_SST_ENABLED = "bluetooth_sst_enabled"
         const val KEY_SST_LANGUAGE = "sst_language"
     }
@@ -50,6 +54,23 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setNudgeNotificationsEnabled(enabled: Boolean) {
         prefs.edit {
             putBoolean(KEY_NUDGE_NOTIFICATIONS, enabled)
+        }
+    }
+
+    override val naggingNotificationsEnabled: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_NAGGING_NOTIFICATIONS) {
+                trySend(prefs.getBoolean(KEY_NAGGING_NOTIFICATIONS, false))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_NAGGING_NOTIFICATIONS, false))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setNaggingNotificationsEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_NAGGING_NOTIFICATIONS, enabled)
         }
     }
 

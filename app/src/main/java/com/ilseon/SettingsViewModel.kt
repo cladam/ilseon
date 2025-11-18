@@ -26,6 +26,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = true
         )
 
+    val naggingNotificationsEnabled = settingsRepository.naggingNotificationsEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
     val bluetoothSstEnabled = settingsRepository.bluetoothSstEnabled
         .stateIn(
             scope = viewModelScope,
@@ -43,6 +50,12 @@ class SettingsViewModel @Inject constructor(
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)
+        }
+    }
+
+    fun setNaggingNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNaggingNotificationsEnabled(enabled)
         }
     }
 

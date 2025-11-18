@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.SchedulingType
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
@@ -16,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -37,7 +39,8 @@ class TaskViewModel @Inject constructor(
     private val hapticManager: HapticManager,
     private val soundManager: SoundManager,
     private val notificationService: NotificationService,
-    private val reminderManager: ReminderManager
+    private val reminderManager: ReminderManager,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
@@ -59,10 +62,15 @@ class TaskViewModel @Inject constructor(
     private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
     private val notifiedTasksStartingSoon = mutableSetOf<UUID>()
     private val taskPauseTimes = ConcurrentHashMap<UUID, Long>()
+    private val taskNagTimes = ConcurrentHashMap<UUID, Long>()
 
     // State for tracking focus block notifications
     private var hasSeenFirstFocusBlock = false
     private var lastNotifiedFocusBlockId: UUID? = null
+
+    companion object {
+        val NAGGING_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(10)
+    }
 
     init {
         viewModelScope.launch {
@@ -126,7 +134,10 @@ class TaskViewModel @Inject constructor(
 
     private suspend fun checkTasks() {
         val now = System.currentTimeMillis()
+        val naggingEnabled = settingsRepository.naggingNotificationsEnabled.first()
+
         tasks.value.forEach { task ->
+            // --- Standard Task Checks ---
             if (task.timerState == TimerState.NotStarted && task.startTime != null) {
                 if (task.startTime <= now && (task.endTime == null || now < task.endTime)) {
                     startTask(task)
@@ -143,8 +154,24 @@ class TaskViewModel @Inject constructor(
                     notifiedTasksStartingSoon.add(task.id)
                 }
             }
+
+            // --- Nagging Logic ---
+            if (naggingEnabled && task.priority == TaskPriority.High && !task.isComplete) {
+                val isOverdue = task.dueTime?.let { it < now } ?: false
+                val isUnscheduledAndOld = task.schedulingType == SchedulingType.None && (now - task.createdAt > NAGGING_INTERVAL_MILLIS)
+
+                if (isOverdue || isUnscheduledAndOld) {
+                    val lastNagTime = taskNagTimes[task.id]
+                    if (lastNagTime == null || (now - lastNagTime > NAGGING_INTERVAL_MILLIS)) {
+                        notificationService.sendNaggingNotification(task)
+                        hapticManager.performAlert()
+                        taskNagTimes[task.id] = now
+                    }
+                }
+            }
         }
     }
+
 
     private suspend fun checkFocusBlocks() {
         val now = LocalTime.now()
@@ -340,7 +367,8 @@ class TaskViewModel @Inject constructor(
             val updatedTask = task.copy(
                 isComplete = true,
                 completedAt = System.currentTimeMillis(),
-                completionReflection = reflectionToSave
+                completionReflection = reflectionToSave,
+                timerState = TimerState.Finished
             )
             taskRepository.updateTask(updatedTask)
             reminderManager.cancelReminder(updatedTask)

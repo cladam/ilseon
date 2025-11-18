@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -49,6 +50,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
+    val naggingNotificationsEnabled by viewModel.naggingNotificationsEnabled.collectAsState()
     val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
 
@@ -58,6 +60,8 @@ fun SettingsScreen(
         onExportClick = onExportClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
+        naggingNotificationsEnabled = naggingNotificationsEnabled,
+        onNaggingNotificationsChange = viewModel::setNaggingNotificationsEnabled,
         bluetoothSstEnabled = bluetoothSstEnabled,
         onBluetoothSstEnabledChange = viewModel::setBluetoothSstEnabled,
         sstLanguage = sstLanguage,
@@ -72,6 +76,8 @@ private fun SettingsScreenContent(
     onExportClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit,
+    naggingNotificationsEnabled: Boolean,
+    onNaggingNotificationsChange: (Boolean) -> Unit,
     bluetoothSstEnabled: Boolean,
     onBluetoothSstEnabledChange: (Boolean) -> Unit,
     sstLanguage: String,
@@ -98,7 +104,9 @@ private fun SettingsScreenContent(
         item {
             NotificationSettingsCard(
                 nudgeNotificationsEnabled = nudgeNotificationsEnabled,
-                onNudgeNotificationsChange = onNudgeNotificationsChange
+                onNudgeNotificationsChange = onNudgeNotificationsChange,
+                naggingNotificationsEnabled = naggingNotificationsEnabled,
+                onNaggingNotificationsChange = onNaggingNotificationsChange
             )
         }
         item {
@@ -159,7 +167,9 @@ private fun LanguageSelectionDialog(
 @Composable
 private fun NotificationSettingsCard(
     nudgeNotificationsEnabled: Boolean,
-    onNudgeNotificationsChange: (Boolean) -> Unit
+    onNudgeNotificationsChange: (Boolean) -> Unit,
+    naggingNotificationsEnabled: Boolean,
+    onNaggingNotificationsChange: (Boolean) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -175,6 +185,13 @@ private fun NotificationSettingsCard(
                 subtitle = "Receive a reminder before a task starts",
                 checked = nudgeNotificationsEnabled,
                 onCheckedChange = onNudgeNotificationsChange
+            )
+            SettingsSwitchItem(
+                icon = Icons.Default.Repeat,
+                title = "Nagging Notifications",
+                subtitle = "Repeat high-priority task reminders",
+                checked = naggingNotificationsEnabled,
+                onCheckedChange = onNaggingNotificationsChange
             )
         }
     }

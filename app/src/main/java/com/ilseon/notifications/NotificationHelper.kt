@@ -12,13 +12,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.ilseon.MainActivity
 import com.ilseon.R
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.TimerState
+import com.ilseon.service.HapticManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NotificationHelper @Inject constructor(@param:ApplicationContext private val context: Context) {
+class NotificationHelper @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+    private val hapticManager: HapticManager
+) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
@@ -101,18 +106,19 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         title: String,
         description: String?,
         tier: NotificationTier,
-        timerState: TimerState
+        timerState: TimerState,
+        schedulingType: SchedulingType
     ) {
+        when (tier) {
+            NotificationTier.CriticalDecision -> hapticManager.performAlert()
+            NotificationTier.PreBlockWarning -> hapticManager.performWarning()
+            NotificationTier.SubtleAnchor -> hapticManager.performNudge()
+        }
+
         val channelId = when (tier) {
             NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
             NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
             NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
-        }
-
-        val vibrationPattern = when (tier) {
-            NotificationTier.CriticalDecision -> CRITICAL_VIBRATION_PATTERN
-            NotificationTier.PreBlockWarning -> WARNING_VIBRATION_PATTERN
-            NotificationTier.SubtleAnchor -> ANCHOR_VIBRATION_PATTERN
         }
 
         val priority = when (tier) {
@@ -126,12 +132,11 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             .setContentTitle(title)
             .setContentText(description)
             .setPriority(priority)
-            .setVibrate(vibrationPattern) // Set vibration pattern for pre-Oreo
             .setAutoCancel(true)
 
         if (tier == NotificationTier.CriticalDecision) {
-            if (timerState == TimerState.NotStarted) {
-                // Action to start the task
+            // Only show "Start" action for tasks that can be started
+            if (timerState == TimerState.NotStarted && schedulingType != SchedulingType.None) {
                 val startIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                     action = "com.ilseon.ACTION_START_TASK"
                     putExtra("EXTRA_TASK_ID", taskId)
@@ -144,8 +149,8 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 builder.addAction(R.drawable.ic_launcher_foreground, "Start", startPendingIntent)
-            } else if (timerState == TimerState.Running) {
-                // Action to complete the task
+            } else {
+                // For all other critical notifications (running, overdue, unscheduled), show "Complete"
                 val completeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                     action = "com.ilseon.ACTION_COMPLETE_TASK"
                     putExtra("EXTRA_TASK_ID", taskId)
@@ -171,11 +176,10 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         }
         val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        // TODO: Implement PendingIntents for "Extend Focus" and "Complete Task" actions
-        val extendIntent = Intent() // Replace with your BroadcastReceiver or Service Intent
+        val extendIntent = Intent()
         val extendPendingIntent = PendingIntent.getBroadcast(context, 1, extendIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val completeIntent = Intent() // Replace with your BroadcastReceiver or Service Intent
+        val completeIntent = Intent()
         val completePendingIntent = PendingIntent.getBroadcast(context, 2, completeIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, FOCUS_CHANNEL_ID)
@@ -183,13 +187,11 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             .setContentTitle("Focusing on: $taskName")
             .setContentText("Your focus session is in progress.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setOngoing(true) // Makes the notification persistent
+            .setOngoing(true)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_launcher_foreground, "Extend Focus", extendPendingIntent)
             .addAction(R.drawable.ic_launcher_foreground, "Complete Task", completePendingIntent)
 
-
-        // The ID for this notification should be unique and constant for the focus session
         notificationManager.notify(1, builder.build())
     }
 }

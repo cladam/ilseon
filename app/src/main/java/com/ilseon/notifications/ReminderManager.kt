@@ -8,7 +8,9 @@ import android.os.Build
 import android.util.Log
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskPriority
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +23,7 @@ class ReminderManager @Inject constructor(
     companion object {
         const val PRE_BLOCK_WARNING_MINUTES = 5
         const val END_TIME_OVERDUE_MINUTES = 1
+        val NAGGING_INTERVAL_MINUTES = TimeUnit.MINUTES.toMillis(10)
     }
 
     fun rescheduleReminders(task: Task) {
@@ -105,6 +108,16 @@ class ReminderManager @Inject constructor(
         )
     }
 
+    fun scheduleNaggingReminder(task: Task) {
+        val triggerAtMillis = System.currentTimeMillis() + NAGGING_INTERVAL_MINUTES
+        scheduleAlarm(
+            task,
+            triggerAtMillis,
+            NotificationTier.CriticalDecision,
+            "NAGGING: ${task.title}"
+        )
+    }
+
     private fun scheduleAlarm(
         task: Task,
         triggerAtMillis: Long,
@@ -146,6 +159,8 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TASK_DESCRIPTION", task.description)
             putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
             putExtra("EXTRA_TIMER_STATE", task.timerState.name)
+            putExtra("EXTRA_TASK_PRIORITY", task.priority.name)
+            putExtra("EXTRA_SCHEDULING_TYPE", task.schedulingType.name)
         }
 
         // To make each PendingIntent unique for a task and tier, we use a unique request code.

@@ -1,102 +1,111 @@
 package com.ilseon.service
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import android.Manifest
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.core.app.NotificationCompat
-import com.ilseon.R
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.ilseon.data.task.SchedulingType
+import com.ilseon.data.task.Task
+import com.ilseon.data.task.TimerState
+import com.ilseon.notifications.NotificationHelper
+import com.ilseon.notifications.NotificationTier
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface NotificationService {
-    fun createNotificationChannel()
     fun sendTaskFinishedNotification(taskTitle: String)
     fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int)
     fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int)
     fun sendFocusBlockStartedNotification(focusBlockName: String)
     fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int)
+    fun sendNaggingNotification(task: Task)
 }
 
 @Singleton
 class NotificationServiceImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val notificationHelper: NotificationHelper
 ) : NotificationService {
 
-    companion object {
-        const val CHANNEL_ID = "task_alerts_channel"
-        const val CHANNEL_NAME = "Task Alerts"
-    }
-
-    private val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Notifications for when tasks are finished"
-            // Sound is disabled by default (uses system default).
-            // We can explicitly set it to null if needed, but we will leave it for now.
-            enableVibration(true)
+    private fun sendNotification(
+        title: String,
+        content: String,
+        tier: NotificationTier,
+        schedulingType: SchedulingType = SchedulingType.None // Default to None
+    ) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationHelper.showReminderNotification(
+                UUID.randomUUID().toString(),
+                title,
+                content,
+                tier,
+                TimerState.NotStarted, // Timer state is not relevant for these general notifications
+                schedulingType
+            )
         }
-        notificationManager.createNotificationChannel(channel)
     }
 
     override fun sendTaskFinishedNotification(taskTitle: String) {
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with a real icon
-            .setContentTitle("Task Finished")
-            .setContentText("Your task '$taskTitle' has completed.")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        sendNotification(
+            "Task Finished",
+            "Your task '$taskTitle' has completed.",
+            NotificationTier.CriticalDecision
+        )
     }
 
     override fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int) {
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with a real icon
-            .setContentTitle("Task Starting Soon")
-            .setContentText("Your task '$taskTitle' is starting in $minutesUntilStart minutes.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        sendNotification(
+            "Task Starting Soon",
+            "Your task '$taskTitle' is starting in $minutesUntilStart minutes.",
+            NotificationTier.PreBlockWarning,
+            SchedulingType.TimeBlock // Assuming this is for scheduled tasks
+        )
     }
 
     override fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int) {
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Focus Block Starting Soon")
-            .setContentText("'$focusBlockName' is starting in $minutesUntilStart minutes.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        sendNotification(
+            "Focus Block Starting Soon",
+            "'$focusBlockName' is starting in $minutesUntilStart minutes.",
+            NotificationTier.PreBlockWarning
+        )
     }
 
     override fun sendFocusBlockStartedNotification(focusBlockName: String) {
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Focus Block Started")
-            .setContentText("'$focusBlockName' has now started.")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        sendNotification(
+            "Focus Block Started",
+            "'$focusBlockName' has now started.",
+            NotificationTier.CriticalDecision
+        )
     }
 
     override fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int) {
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Focus Block Ending Soon")
-            .setContentText("'$focusBlockName' is ending in $minutesUntilEnd minutes.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        sendNotification(
+            "Focus Block Ending Soon",
+            "'$focusBlockName' is ending in $minutesUntilEnd minutes.",
+            NotificationTier.PreBlockWarning
+        )
+    }
+
+    override fun sendNaggingNotification(task: Task) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationHelper.showReminderNotification(
+                task.id.toString(),
+                "High-Priority Task Incomplete",
+                "Reminder: '${task.title}' is still waiting to be completed.",
+                NotificationTier.CriticalDecision,
+                task.timerState,
+                task.schedulingType
+            )
+        }
     }
 }

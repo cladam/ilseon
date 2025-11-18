@@ -21,11 +21,6 @@ abstract class ServiceModule {
     ): SoundManager
 
     @Binds
-    abstract fun bindHapticManager(
-        hapticManagerImpl: HapticManagerImpl
-    ): HapticManager
-
-    @Binds
     abstract fun bindNotificationService(
         notificationServiceImpl: NotificationServiceImpl
     ): NotificationService

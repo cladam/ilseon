@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
+import com.ilseon.service.HapticManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
 
+    @Inject
+    lateinit var hapticManager: HapticManager
+
     override fun onReceive(context: Context, intent: Intent) {
         val taskIdString = intent.getStringExtra("EXTRA_TASK_ID") ?: return
         val taskId = UUID.fromString(taskIdString)
@@ -33,7 +37,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
             if (task != null) {
                 when (intent.action) {
                     "com.ilseon.ACTION_COMPLETE_TASK" -> {
-                        taskRepository.updateTask(task.copy(isComplete = true))
+                        taskRepository.updateTask(task.copy(isComplete = true, timerState = TimerState.Finished))
+                        hapticManager.performSuccess()
                         // Dismiss the notification
                         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                         notificationManager.cancel(taskIdString.hashCode())
@@ -57,7 +62,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 updatedTask.title,
                                 updatedTask.description,
                                 tier,
-                                updatedTask.timerState
+                                updatedTask.timerState,
+                                updatedTask.schedulingType
                             )
                         }
                     }

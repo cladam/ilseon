@@ -67,6 +67,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.components.NavigationDrawerHeader
+import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.AnalyticsScreen
@@ -103,6 +104,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
         }
+
+        handleIntent(intent)
 
         setContent {
             IlseonTheme {
@@ -338,14 +341,28 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(paddingValues)
                         ) {
                             composable(Screen.DailyDashboard.route) {
+                                val taskForReflection by viewModel.taskForReflection.collectAsState()
+                                taskForReflection?.let { task ->
+                                    ReflectionDialog(
+                                        taskTitle = task.title,
+                                        onSave = { reflection ->
+                                            viewModel.completeTask(task, reflection)
+                                            viewModel.onReflectionDialogDismiss()
+                                        },
+                                        onDismiss = {
+                                            viewModel.onReflectionDialogDismiss()
+                                        }
+                                    )
+                                }
+
                                 DashboardScreen(
                                     tasks = tasks,
                                     completedTaskIds = completedTaskIds,
                                     onAnimateComplete = { task ->
                                         completedTaskIds = completedTaskIds + task.id
                                     },
-                                    onTaskComplete = { task, reflection ->
-                                        viewModel.completeTask(task, reflection)
+                                    onTaskComplete = { task ->
+                                        viewModel.onShowReflectionDialog(task.id)
                                     },
                                     onTaskTimerFinished = { task ->
                                         viewModel.onTaskTimerFinished(task)
@@ -420,6 +437,20 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
+            val taskIdString = intent.getStringExtra("EXTRA_TASK_ID")
+            if (taskIdString != null) {
+                viewModel.onShowReflectionDialog(UUID.fromString(taskIdString))
             }
         }
     }

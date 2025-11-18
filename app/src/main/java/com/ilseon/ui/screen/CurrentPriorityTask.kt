@@ -42,7 +42,6 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.HtmlText
-import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.VisualCountdownTimer
 import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
@@ -57,37 +56,25 @@ import kotlin.math.max
 fun CurrentPriorityTask(
     task: Task,
     contextName: String,
-    onComplete: (Task, String) -> Unit,
+    onComplete: (Task) -> Unit,
     onTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
-    onUpdate: (Task) -> Unit,
+    onUpdate: (Task, String) -> Unit,
     focusContextName: String?
 ) {
     var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
     val timerState = task.timerState
     val isInFocusBlock = focusContextName != null
     var isOverdue by remember { mutableStateOf(false) }
-    var showReflectionDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Task?>(null) }
-
-    if (showReflectionDialog) {
-        ReflectionDialog(
-            taskTitle = task.title,
-            onDismiss = { showReflectionDialog = false },
-            onSave = { reflection ->
-                onComplete(task, reflection)
-                showReflectionDialog = false
-            }
-        )
-    }
 
     taskToEdit?.let {
         EditTaskDialog(
             task = it,
             onDismiss = { taskToEdit = null },
             onSave = { updatedTask ->
-                onUpdate(updatedTask)
+                onUpdate(updatedTask, "manual update")
                 taskToEdit = null
             }
         )
@@ -247,7 +234,7 @@ fun CurrentPriorityTask(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondary)
-                        .clickable { showReflectionDialog = true },
+                        .clickable { onComplete(task) },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

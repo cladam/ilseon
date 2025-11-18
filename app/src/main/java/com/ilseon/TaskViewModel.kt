@@ -15,8 +15,10 @@ import com.ilseon.service.NotificationService
 import com.ilseon.service.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
@@ -42,6 +44,19 @@ class TaskViewModel @Inject constructor(
     private val reminderManager: ReminderManager,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    private val _taskForReflection = MutableStateFlow<Task?>(null)
+    val taskForReflection: StateFlow<Task?> = _taskForReflection.asStateFlow()
+
+    fun onShowReflectionDialog(taskId: UUID) {
+        viewModelScope.launch {
+            _taskForReflection.value = taskRepository.getTaskById(taskId)
+        }
+    }
+
+    fun onReflectionDialogDismiss() {
+        _taskForReflection.value = null
+    }
 
     val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
         .distinctUntilChanged()

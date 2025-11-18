@@ -32,7 +32,7 @@ fun DashboardScreen(
     tasks: List<Task>,
     completedTaskIds: Set<UUID>,
     onAnimateComplete: (Task) -> Unit,
-    onTaskComplete: (Task, String) -> Unit,
+    onTaskComplete: (Task) -> Unit,
     onTaskTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
@@ -85,11 +85,11 @@ fun DashboardScreen(
                         CurrentPriorityTask(
                             task = task,
                             contextName = contextMap[task.contextId]?.name ?: "General",
-                            onComplete = onTaskComplete,
+                            onComplete = { onTaskComplete(task) },
                             onTimerFinished = onTaskTimerFinished,
                             onStartTask = onStartTask,
                             onPauseTask = onPauseTask,
-                            onUpdate = taskViewModel::updateTask,
+                            onUpdate = { updatedTask, reason -> taskViewModel.updateTask(updatedTask) },
                             focusContextName = focusContextName
                         )
                     }
@@ -100,7 +100,7 @@ fun DashboardScreen(
                         NextUpTasks(
                             tasks = nextUpTasks,
                             completedTaskIds = completedTaskIds,
-                            onComplete = onTaskComplete,
+                            onComplete = { task, _ -> onTaskComplete(task) },
                             onAnimationFinished = onAnimateComplete,
                             contextMap = contextMap,
                             viewModel = taskViewModel

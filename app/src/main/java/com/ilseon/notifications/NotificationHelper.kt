@@ -150,12 +150,13 @@ class NotificationHelper @Inject constructor(
                 )
                 builder.addAction(R.drawable.ic_launcher_foreground, "Start", startPendingIntent)
             } else {
-                // For all other critical notifications (running, overdue, unscheduled), show "Complete"
-                val completeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                    action = "com.ilseon.ACTION_COMPLETE_TASK"
+                // For all other critical notifications, show "Complete"
+                val completeIntent = Intent(context, MainActivity::class.java).apply {
+                    action = "com.ilseon.ACTION_SHOW_REFLECTION"
                     putExtra("EXTRA_TASK_ID", taskId)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
-                val completePendingIntent = PendingIntent.getBroadcast(
+                val completePendingIntent = PendingIntent.getActivity(
                     context,
                     (taskId + "_complete").hashCode(),
                     completeIntent,

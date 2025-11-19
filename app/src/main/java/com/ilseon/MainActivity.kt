@@ -19,6 +19,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -322,11 +323,13 @@ class MainActivity : ComponentActivity() {
                                     },
                                     shape = CircleShape,
                                     containerColor = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.border(
-                                        2.dp,
-                                        MaterialTheme.colorScheme.primary,
-                                        CircleShape
-                                    )
+                                    modifier = Modifier
+                                        .size(112.dp)
+                                        .border(
+                                            3.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            CircleShape
+                                        )
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Icon(
@@ -334,9 +337,9 @@ class MainActivity : ComponentActivity() {
                                             contentDescription = "Quick Capture"
                                         )
                                         Text(
-                                            text = "QUICK CAPTTURE",
+                                            text = "QUICK CAPTURE",
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                            fontSize = 10.sp
+                                            fontSize = 12.sp
                                         )
                                     }
                                 }

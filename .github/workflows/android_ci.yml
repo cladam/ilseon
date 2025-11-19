@@ -44,8 +44,8 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-${{ env.VERSION_NAME }}
-          path: app/build/outputs/apk/release/app-release.apk
+          name: app-debug-${{ env.VERSION_NAME }}
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 2
 
 # Do a signed release
@@ -100,7 +100,7 @@ jobs:
         with:
           name: app-release-${{ env.VERSION_NAME }}
           path: app/build/outputs/bundle/release/app-release.aab
-          retention-days: 9
+          retention-days: 5
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1

@@ -69,11 +69,13 @@ import java.util.Locale
 fun ContextManagementScreen(
     viewModel: TaskContextViewModel = hiltViewModel(),
     onNewContextVttClick: () -> Unit,
-    onNewContextDescriptionVttClick: () -> Unit
+    onNewContextDescriptionVttClick: () -> Unit,
+    initialContextName: String = "",
+    initialContextDescription: String = ""
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
-    var newContextName by remember { mutableStateOf("") }
-    var newContextDescription by remember { mutableStateOf("") }
+    var newContextName by remember { mutableStateOf(initialContextName) }
+    var newContextDescription by remember { mutableStateOf(initialContextDescription) }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
     var focusBlockEnabled by remember { mutableStateOf(false) }
@@ -95,6 +97,14 @@ fun ContextManagementScreen(
         focusBlockEnabled = false
         newRepeatDays = emptyList()
         editingContext = null
+    }
+
+    LaunchedEffect(initialContextName) {
+        newContextName = initialContextName
+    }
+
+    LaunchedEffect(initialContextDescription) {
+        newContextDescription = initialContextDescription
     }
 
     LaunchedEffect(editingContext) {

@@ -215,7 +215,9 @@ class MainActivity : ComponentActivity() {
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
                 var vttTitleResult by remember { mutableStateOf("") }
                 var vttDescriptionResult by remember { mutableStateOf("") }
-                var vttTarget by remember { mutableStateOf("title") }
+                var vttContextNameResult by remember { mutableStateOf("") }
+                var vttContextDescriptionResult by remember { mutableStateOf("") }
+                var vttTarget by remember { mutableStateOf("quick_capture_title") }
 
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
@@ -225,11 +227,17 @@ class MainActivity : ComponentActivity() {
                         val data: Intent? = result.data
                         val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                         results?.firstOrNull()?.let { text ->
-                            if (vttTarget == "title") {
-                                vttTitleResult = text
-                                scope.launch { sheetState.show() }
-                            } else {
-                                vttDescriptionResult = text
+                            when (vttTarget) {
+                                "quick_capture_title" -> {
+                                    vttTitleResult = text
+                                    scope.launch { sheetState.show() }
+                                }
+                                "quick_capture_description" -> {
+                                    vttDescriptionResult = text
+                                    scope.launch { sheetState.show() }
+                                }
+                                "context_name" -> vttContextNameResult = text
+                                "context_description" -> vttContextDescriptionResult = text
                             }
                         }
                     }
@@ -305,7 +313,7 @@ class MainActivity : ComponentActivity() {
                             if (currentRoute == Screen.DailyDashboard.route) {
                                 LargeFloatingActionButton(
                                     onClick = {
-                                        vttTarget = "title"
+                                        vttTarget = "quick_capture_title"
                                         if (bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()) {
                                             startVtt()
                                         } else {
@@ -405,13 +413,15 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.ContextManagement.route) {
                                 ContextManagementScreen(
                                     onNewContextVttClick = {
-                                        vttTarget = "title"
+                                        vttTarget = "context_name"
                                         startVtt()
                                     },
                                     onNewContextDescriptionVttClick = {
-                                        vttTarget = "description"
+                                        vttTarget = "context_description"
                                         startVtt()
-                                    }
+                                    },
+                                    initialContextName = vttContextNameResult,
+                                    initialContextDescription = vttContextDescriptionResult
                                 )
                             }
                             composable("completed_tasks") {
@@ -440,11 +450,11 @@ class MainActivity : ComponentActivity() {
                             initialTitle = vttTitleResult,
                             initialDescription = vttDescriptionResult,
                             onTitleVttClick = {
-                                vttTarget = "title"
+                                vttTarget = "quick_capture_title"
                                 startVtt()
                             },
                             onDescriptionVttClick = {
-                                vttTarget = "description"
+                                vttTarget = "quick_capture_description"
                                 startVtt()
                             }
                         )

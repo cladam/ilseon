@@ -65,6 +65,7 @@ fun QuickCaptureSheet(
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
     initialDescription: String = "",
+    onTitleVttClick: () -> Unit,
     onDescriptionVttClick: () -> Unit
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
@@ -162,7 +163,15 @@ fun QuickCaptureSheet(
                 onNext = {
                     descriptionFocusRequester.requestFocus()
                 }
-            )
+            ),
+            trailingIcon = {
+                IconButton(onClick = onTitleVttClick) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Voice To Text"
+                    )
+                }
+            }
         )
 
         Spacer(Modifier.height(16.dp))

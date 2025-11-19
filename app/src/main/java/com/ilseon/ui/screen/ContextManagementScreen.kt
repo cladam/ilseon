@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -66,7 +67,9 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContextManagementScreen(
-    viewModel: TaskContextViewModel = hiltViewModel()
+    viewModel: TaskContextViewModel = hiltViewModel(),
+    onNewContextVttClick: () -> Unit,
+    onNewContextDescriptionVttClick: () -> Unit
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
     var newContextName by remember { mutableStateOf("") }
@@ -172,6 +175,14 @@ fun ContextManagementScreen(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next
                 ),
+                trailingIcon = {
+                    IconButton(onClick = onNewContextVttClick) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Voice To Text"
+                        )
+                    }
+                }
             )
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
@@ -193,6 +204,14 @@ fun ContextManagementScreen(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences,
                 ),
+                trailingIcon = {
+                    IconButton(onClick = onNewContextDescriptionVttClick) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Voice To Text"
+                        )
+                    }
+                }
             )
             Spacer(Modifier.height(16.dp))
             Row(

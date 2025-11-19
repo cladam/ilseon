@@ -403,7 +403,16 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable(Screen.ContextManagement.route) {
-                                ContextManagementScreen()
+                                ContextManagementScreen(
+                                    onNewContextVttClick = {
+                                        vttTarget = "title"
+                                        startVtt()
+                                    },
+                                    onNewContextDescriptionVttClick = {
+                                        vttTarget = "description"
+                                        startVtt()
+                                    }
+                                )
                             }
                             composable("completed_tasks") {
                                 CompletedTasksScreen()
@@ -430,6 +439,10 @@ class MainActivity : ComponentActivity() {
                             },
                             initialTitle = vttTitleResult,
                             initialDescription = vttDescriptionResult,
+                            onTitleVttClick = {
+                                vttTarget = "title"
+                                startVtt()
+                            },
                             onDescriptionVttClick = {
                                 vttTarget = "description"
                                 startVtt()

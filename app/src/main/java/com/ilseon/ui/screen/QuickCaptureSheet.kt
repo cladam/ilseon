@@ -97,6 +97,10 @@ fun QuickCaptureSheet(
         }
     }
 
+    LaunchedEffect(initialTitle) {
+        title = initialTitle
+    }
+
     LaunchedEffect(initialDescription) {
         if (initialDescription.isNotEmpty()) {
             description = initialDescription

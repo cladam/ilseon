@@ -38,16 +38,8 @@ jobs:
       - name: Run lint
         run: ./gradlew lintDebug
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_JKS_BASE64 }}" | base64 --decode > ${{ github.workspace }}/keystore.jks
-
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_STORE_FILE_PATH: ${{ github.workspace }}/keystore.jks
+        run: ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -55,6 +47,7 @@ jobs:
           name: app-release-${{ env.VERSION_NAME }}
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 2
+
 # Do a signed release
   release:
     needs: build

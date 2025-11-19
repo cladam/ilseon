@@ -2,7 +2,9 @@ package com.ilseon.di
 
 import android.app.AlarmManager
 import android.content.Context
+import androidx.room.Room
 import com.ilseon.AppDatabase
+import com.ilseon.DatabaseCallback
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
@@ -33,9 +35,16 @@ abstract class AppModule {
         @Singleton
         fun provideAppDatabase(
             @ApplicationContext context: Context,
-            taskContextDaoProvider: Provider<TaskContextDao>
+            callback: DatabaseCallback
         ): AppDatabase {
-            return AppDatabase.getDatabase(context, taskContextDaoProvider)
+            return Room.databaseBuilder(
+                context,
+                AppDatabase::class.java,
+                "ilseon_database"
+            )
+                .addCallback(callback)
+                .fallbackToDestructiveMigration(dropAllTables = true)
+                .build()
         }
 
         @Provides

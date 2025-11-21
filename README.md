@@ -46,3 +46,13 @@ so your attention stays anchored on what matters _right now_.
 **Ilseon** is a **cognitive offloading tool** designed for neurodivergent users who need less friction, not more features. 
 Its purpose is simple: help you reclaim your front line of focus, one context at a time.
 
+## Getting Ilseon**
+
+Ilseon is 100% **open source**, built for the community.
+
+| Resource | Link |
+| :---- | :---- |
+| **Download App (Android)** | [https://play.google.com/store/apps/details?id=com.ilseon](https://play.google.com/store/apps/details?id=com.ilseon) |
+| **Project Homepage** | [https://cladam.github.io/projects/ilseon/](https://cladam.github.io/projects/ilseon/) |
+| **Source Code (You Are Here)** | https://github.com/cladam/ilseon |
+

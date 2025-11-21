@@ -346,6 +346,12 @@ fun QuickCaptureSheet(
                         }
                     }
                 )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Task will recur every week on the selected days.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
         }
 

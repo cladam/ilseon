@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,12 +21,37 @@ class TaskRepository @Inject constructor(
     private val reminderManager: ReminderManager
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> {
-        return taskDao.getIncompleteTasks().combine(getActiveFocusBlock()) { tasks, activeFocusBlock ->
+        val endOfToday = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+
+        val tasksFlow = taskDao.getIncompleteTasks().map { tasks ->
+            tasks.filter { task ->
+                // A task is visible if it has no start time (is unscheduled)
+                // or if its start time is today or in the past.
+                task.startTime == null || task.startTime <= endOfToday
+            }
+        }
+
+        return tasksFlow.combine(getActiveFocusBlock()) { tasks, activeFocusBlock ->
             if (activeFocusBlock != null) {
                 tasks.filter { it.contextId == activeFocusBlock.contextId || it.priority == TaskPriority.High }
             } else {
                 tasks
             }
+        }
+    }
+
+    fun getActiveRecurringTasks(): Flow<List<Task>> {
+        return taskDao.getActiveRecurringTasks()
+    }
+
+    suspend fun archiveTaskSeries(task: Task) {
+        task.seriesId?.let {
+            taskDao.archiveTaskSeries(it)
         }
     }
 
@@ -39,6 +65,10 @@ class TaskRepository @Inject constructor(
 
     fun getTasksWithReflections(): Flow<List<Task>> {
         return taskDao.getTasksWithReflections()
+    }
+
+    suspend fun getAllTasksForDebug(): List<Task> {
+        return taskDao.getAllTasksForDebug()
     }
 
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
@@ -55,10 +85,85 @@ class TaskRepository @Inject constructor(
     suspend fun updateTask(task: Task) {
         taskDao.update(task)
         updateRemindersForTask(task)
+
+        if (task.isComplete && task.isRecurring && !task.isArchived) {
+            createNewRecurringInstance(task)
+        }
+    }
+
+    private suspend fun createNewRecurringInstance(task: Task) {
+        if (task.startTime == null || task.recurrenceDays.isNullOrBlank()) {
+            return
+        }
+
+        val recurrenceDayStrings = task.recurrenceDays
+            .replace("[", "").replace("]", "")
+            .split(',')
+            .map { it.trim().uppercase() }
+
+        val recurrenceDays = recurrenceDayStrings.mapNotNull { dayString ->
+            try {
+                when (java.time.DayOfWeek.valueOf(dayString)) {
+                    java.time.DayOfWeek.SUNDAY -> Calendar.SUNDAY
+                    java.time.DayOfWeek.MONDAY -> Calendar.MONDAY
+                    java.time.DayOfWeek.TUESDAY -> Calendar.TUESDAY
+                    java.time.DayOfWeek.WEDNESDAY -> Calendar.WEDNESDAY
+                    java.time.DayOfWeek.THURSDAY -> Calendar.THURSDAY
+                    java.time.DayOfWeek.FRIDAY -> Calendar.FRIDAY
+                    java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
+                }
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }.toSet()
+
+        if (recurrenceDays.isEmpty()) return
+
+        val nextStartTime = Calendar.getInstance().apply {
+            timeInMillis = task.startTime
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        var nextDayFound = false
+        for (i in 1..7) {
+            if (recurrenceDays.contains(nextStartTime.get(Calendar.DAY_OF_WEEK))) {
+                nextDayFound = true
+                break
+            }
+            nextStartTime.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        if (!nextDayFound) {
+            return
+        }
+
+        val duration = (task.endTime ?: task.startTime) - task.startTime
+        val nextEndTime = nextStartTime.timeInMillis + duration
+
+        val newTask = task.copy(
+            id = UUID.randomUUID(),
+            isComplete = false,
+            completedAt = null,
+            completionReflection = null,
+            timerState = TimerState.NotStarted,
+            timerStartTime = null,
+            remainingTimeInSeconds = task.totalTimeInMinutes?.times(60L) ?: 0,
+            startTime = nextStartTime.timeInMillis,
+            endTime = nextEndTime,
+            dueTime = nextEndTime,
+            seriesId = task.seriesId
+        )
+        taskDao.insert(newTask)
     }
 
     suspend fun deleteTask(task: Task) {
-        taskDao.delete(task)
+        if (task.isRecurring) {
+            task.seriesId?.let {
+                taskDao.archiveTaskSeries(it)
+            }
+        } else {
+            taskDao.delete(task)
+        }
         reminderManager.cancelReminder(task)
     }
 
@@ -95,17 +200,9 @@ class TaskRepository @Inject constructor(
             return
         }
 
-        // Rule 2: Task with a Scheduled Start & End Time
         if (task.startTime != null && task.endTime != null) {
             reminderManager.scheduleTimedTaskReminders(task)
-        }
-        // Rule 3: A duration task that is running has its reminders set when started.
-        // We don't need to reschedule them on every update unless properties change.
-        // For now, we assume startDurationTask is the only entry point for these reminders.
-
-        // Rule 1 & others: For any other case, cancel reminders to be safe.
-        // This includes simple notes and duration tasks that haven't been started.
-        else {
+        } else {
             reminderManager.cancelReminder(task)
         }
     }

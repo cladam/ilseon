@@ -2,6 +2,7 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.SettingsRepository
@@ -153,11 +154,12 @@ class TaskViewModel @Inject constructor(
 
         tasks.value.forEach { task ->
             // --- Standard Task Checks ---
-            if (task.timerState == TimerState.NotStarted && task.startTime != null) {
-                if (task.startTime <= now && (task.endTime == null || now < task.endTime)) {
-                    startTask(task)
-                }
+            val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
+            if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
+                startTask(task)
+            }
 
+            if (task.timerState == TimerState.NotStarted && task.startTime != null) {
                 val fiveMinutesInMillis = 5 * 60 * 1000
                 if (task.startTime > now && task.startTime - now < fiveMinutesInMillis && !notifiedTasksStartingSoon.contains(task.id)) {
                     val minutesUntilStart = TimeUnit.MILLISECONDS.toMinutes(task.startTime - now) + 1
@@ -186,7 +188,6 @@ class TaskViewModel @Inject constructor(
             }
         }
     }
-
 
     private suspend fun checkFocusBlocks() {
         val now = LocalTime.now()
@@ -300,7 +301,9 @@ class TaskViewModel @Inject constructor(
         priority: TaskPriority,
         startTimeStr: String,
         endTimeStr: String,
-        durationInMinutes: Int?
+        durationInMinutes: Int?,
+        isRecurring: Boolean,
+        recurrenceDays: Set<DayOfWeek>
     ) {
         viewModelScope.launch {
             if (title.isNotBlank() && contextId != null) {
@@ -310,6 +313,11 @@ class TaskViewModel @Inject constructor(
                 var timerState = TimerState.NotStarted
                 var schedulingType = SchedulingType.None
                 var dueTime: Long? = null
+                var recurrenceDaysString: String? = null
+
+                if (isRecurring) {
+                    recurrenceDaysString = recurrenceDays.sorted().joinToString(",") { it.name }
+                }
 
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
                     val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
@@ -323,7 +331,9 @@ class TaskViewModel @Inject constructor(
                     schedulingType = SchedulingType.Duration
                 }
 
+                val newId = UUID.randomUUID()
                 val newTask = Task(
+                    id = newId,
                     title = title,
                     description = description,
                     contextId = contextId,
@@ -333,7 +343,10 @@ class TaskViewModel @Inject constructor(
                     endTime = endTime,
                     dueTime = dueTime,
                     totalTimeInMinutes = duration,
-                    timerState = timerState
+                    timerState = timerState,
+                    isRecurring = isRecurring,
+                    recurrenceDays = recurrenceDaysString,
+                    seriesId = if (isRecurring) newId else null
                 )
                 taskRepository.insertTask(newTask)
                 reminderManager.rescheduleReminders(newTask)
@@ -359,7 +372,7 @@ class TaskViewModel @Inject constructor(
 
             val endCal = Calendar.getInstance()
             endCal.time = timeFormat.parse(endTimeStr) ?: return Triple(null, null, null)
-            endCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
+            endCal.set(today.get(Calendar::class.java.getField("YEAR").getInt(null)), today.get(Calendar::class.java.getField("MONTH").getInt(null)), today.get(Calendar::class.java.getField("DAY_OF_MONTH").getInt(null)))
 
             if (endCal.timeInMillis <= startCal.timeInMillis) {
                 return Triple(null, null, null)

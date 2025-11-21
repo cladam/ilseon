@@ -75,6 +75,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val tasks = taskRepository.getTasksWithReflections().first()
             val exportedData = noteExporter.exportNotes(tasks)
+            // Fetch ALL tasks for the debug export.
+            //val tasks = taskRepository.getAllTasksForDebug()
+            // Use the new debug export function.
+            //val exportedData = noteExporter.exportAllTasksForDebug(tasks)
             onExported(exportedData)
         }
     }

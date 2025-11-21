@@ -85,7 +85,9 @@ class TaskViewModelTest {
             priority = TaskPriority.High,
             startTimeStr = "10:00",
             endTimeStr = "11:00",
-            durationInMinutes = null
+            durationInMinutes = null,
+            isRecurring = false,
+            recurrenceDays = emptySet()
         )
         runCurrent()
 
@@ -110,7 +112,9 @@ class TaskViewModelTest {
             priority = TaskPriority.Medium,
             startTimeStr = "",
             endTimeStr = "",
-            durationInMinutes = 45
+            durationInMinutes = 45,
+            isRecurring = false,
+            recurrenceDays = emptySet()
         )
         runCurrent()
 
@@ -134,7 +138,9 @@ class TaskViewModelTest {
             priority = TaskPriority.Low,
             startTimeStr = "",
             endTimeStr = "",
-            durationInMinutes = null
+            durationInMinutes = null,
+            isRecurring = false,
+            recurrenceDays = emptySet()
         )
         runCurrent()
 

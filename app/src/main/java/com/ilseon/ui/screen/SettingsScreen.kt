@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
@@ -47,6 +48,7 @@ fun SettingsScreen(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
+    onArchiveClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
@@ -58,6 +60,7 @@ fun SettingsScreen(
         onCompletedTasksClick = onCompletedTasksClick,
         onAboutClick = onAboutClick,
         onExportClick = onExportClick,
+        onArchiveClick = onArchiveClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
         naggingNotificationsEnabled = naggingNotificationsEnabled,
@@ -74,6 +77,7 @@ private fun SettingsScreenContent(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
+    onArchiveClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit,
     naggingNotificationsEnabled: Boolean,
@@ -120,7 +124,8 @@ private fun SettingsScreenContent(
         item {
             DataManagementCard(
                 onCompletedTasksClick = onCompletedTasksClick,
-                onExportClick = onExportClick
+                onExportClick = onExportClick,
+                onArchiveClick = onArchiveClick
             )
         }
         item {
@@ -232,7 +237,8 @@ private fun SpeechToTextSettingsCard(
 @Composable
 private fun DataManagementCard(
     onCompletedTasksClick: () -> Unit,
-    onExportClick: () -> Unit
+    onExportClick: () -> Unit,
+    onArchiveClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -253,6 +259,12 @@ private fun DataManagementCard(
                 title = "Export Data",
                 subtitle = "Save your data to a file",
                 onClick = onExportClick
+            )
+            SettingsItem(
+                icon = Icons.Default.Archive,
+                title = "Archive Recurring Tasks",
+                subtitle = "Manage your recurring tasks",
+                onClick = onArchiveClick
             )
         }
     }

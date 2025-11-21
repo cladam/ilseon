@@ -3,6 +3,8 @@ package com.ilseon.di
 import android.app.AlarmManager
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.AppDatabase
 import com.ilseon.DatabaseCallback
 import com.ilseon.data.task.TaskContextDao
@@ -43,8 +45,27 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                 .build()
+        }
+
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN isRecurring INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE tasks ADD COLUMN recurrenceDays TEXT")
+            }
+        }
+
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+        
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN seriesId TEXT")
+            }
         }
 
         @Provides

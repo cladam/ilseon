@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -21,6 +22,7 @@ import org.junit.runner.RunWith
 import java.io.IOException
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
@@ -48,6 +50,114 @@ class TaskRepositoryTest {
     @Throws(IOException::class)
     fun closeDb() {
         db.close()
+    }
+
+    @Test
+    fun updateTask_whenRecurringTaskCompleted_createsNewInstanceOfNextDay() = runBlocking {
+        // Arrange
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.TUESDAY)
+        val originalStartTime = calendar.timeInMillis
+
+        val task = Task(
+            title = "Weekly Report",
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Medium,
+            isComplete = false,
+            isRecurring = true,
+            recurrenceDays = "TUESDAY,THURSDAY",
+            startTime = originalStartTime
+        )
+        repository.insertTask(task)
+
+        // Act: Complete the task
+        val completedTask = task.copy(isComplete = true)
+        repository.updateTask(completedTask)
+
+        // Assert
+        val allTasks = repository.getTasks().first()
+        val newInstance = allTasks.find { !it.isComplete }
+
+        assertNotNull("A new task instance should have been created", newInstance)
+        assertEquals("TUESDAY,THURSDAY", newInstance!!.recurrenceDays)
+        assertFalse(newInstance.isComplete)
+
+        val newCalendar = Calendar.getInstance().apply { timeInMillis = newInstance.startTime!! }
+        assertEquals(Calendar.THURSDAY, newCalendar.get(Calendar.DAY_OF_WEEK))
+
+        val daysDifference = (newInstance.startTime!! - originalStartTime) / (1000 * 60 * 60 * 24)
+        assertEquals(2, daysDifference)
+    }
+
+    @Test
+    fun updateTask_whenRecurringTaskCompletedOnLastDay_createsNewInstanceOfNextWeek() = runBlocking {
+        // Arrange
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.THURSDAY)
+        val originalStartTime = calendar.timeInMillis
+
+        val task = Task(
+            title = "Weekly Report",
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Medium,
+            isComplete = false,
+            isRecurring = true,
+            recurrenceDays = "TUESDAY,THURSDAY",
+            startTime = originalStartTime
+        )
+        repository.insertTask(task)
+
+        // Act: Complete the task
+        val completedTask = task.copy(isComplete = true)
+        repository.updateTask(completedTask)
+
+        // Assert
+        val allTasks = repository.getTasks().first()
+        val newInstance = allTasks.find { !it.isComplete }
+
+        assertNotNull("A new task instance should have been created", newInstance)
+        val newCalendar = Calendar.getInstance().apply { timeInMillis = newInstance!!.startTime!! }
+        assertEquals(Calendar.TUESDAY, newCalendar.get(Calendar.DAY_OF_WEEK))
+        
+        val daysDifference = (newInstance?.startTime!! - originalStartTime) / (1000 * 60 * 60 * 24)
+        assertEquals(5, daysDifference)
+    }
+
+    @Test
+    fun updateTask_whenRecurringTaskCompletedOnSameDay_createsInstanceForNextWeek() = runBlocking {
+        // Arrange
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.TUESDAY)
+        val originalStartTime = calendar.timeInMillis
+
+        val task = Task(
+            title = "Weekly Standup",
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.High,
+            isComplete = false,
+            isRecurring = true,
+            recurrenceDays = "TUESDAY", // Only recurs on Tuesday
+            startTime = originalStartTime
+        )
+        repository.insertTask(task)
+
+        // Act: Complete the task
+        val completedTask = task.copy(isComplete = true)
+        repository.updateTask(completedTask)
+
+        // Assert
+        val allTasks = repository.getTasks().first()
+        val newInstance = allTasks.find { !it.isComplete }
+
+        assertNotNull("A new task instance should have been created", newInstance)
+        val newCalendar = Calendar.getInstance().apply { timeInMillis = newInstance!!.startTime!! }
+        
+        // The new task should be on the Tuesday of the following week.
+        assertEquals(Calendar.TUESDAY, newCalendar.get(Calendar.DAY_OF_WEEK))
+        
+        // There should be exactly 7 days between the original and new start time.
+        val daysDifference = (newInstance?.startTime!! - originalStartTime) / (1000 * 60 * 60 * 24)
+        assertEquals(7, daysDifference)
     }
 
     @Test

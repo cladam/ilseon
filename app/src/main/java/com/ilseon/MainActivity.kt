@@ -72,6 +72,7 @@ import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.AnalyticsScreen
+import com.ilseon.ui.screen.ArchiveScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
@@ -402,8 +403,11 @@ class MainActivity : ComponentActivity() {
                                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                         val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
                                         createFileLauncher.launch(fileName)
+                                    },
+                                    onArchiveClick = {
+                                        navController.navigate("archive_tasks")
                                     }
-                                 )
+                                )
                             }
                             composable(Screen.About.route) {
                                 AboutScreen()
@@ -430,6 +434,9 @@ class MainActivity : ComponentActivity() {
                             composable("completed_tasks") {
                                 CompletedTasksScreen()
                             }
+                            composable("archive_tasks") {
+                                ArchiveScreen()
+                            }
                         }
                     }
                 }
@@ -440,12 +447,22 @@ class MainActivity : ComponentActivity() {
                             vttTitleResult = ""
                             vttDescriptionResult = ""
                             scope.launch { sheetState.hide() }
-                         },
+                        },
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, description, contextId, priority, startTime, endTime, duration ->
-                                viewModel.addTask(title, description, contextId, priority, startTime, endTime, duration)
+                            onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays ->
+                                viewModel.addTask(
+                                    title,
+                                    description,
+                                    contextId,
+                                    priority,
+                                    startTime,
+                                    endTime,
+                                    duration,
+                                    isRecurring,
+                                    recurrenceDays
+                                )
                                 scope.launch { sheetState.hide() }
                                 vttTitleResult = ""
                                 vttDescriptionResult = ""

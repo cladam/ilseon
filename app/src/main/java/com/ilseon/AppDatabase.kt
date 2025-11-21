@@ -17,7 +17,7 @@ import com.ilseon.data.task.FocusBlockDao
 import java.util.UUID
 
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 11, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 14, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

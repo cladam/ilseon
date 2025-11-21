@@ -29,6 +29,16 @@ enum class SchedulingType {
     Duration
 }
 
+enum class DayOfWeek {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY,
+    SATURDAY,
+    SUNDAY
+}
+
 /**
  * This is the Task Entity (Data Model)
  * It defines the table structure for the Room database.
@@ -55,7 +65,11 @@ data class Task(
     val completedAt: Long? = null,
     val completionReflection: String? = null,
     val reminderType: ReminderType = ReminderType.Time,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isRecurring: Boolean = false,
+    val recurrenceDays: String? = null, // Comma-separated days, e.g., "TUESDAY,THURSDAY"
+    val isArchived: Boolean = false,
+    val seriesId: UUID? = null
 )
 
 @Entity(tableName = "task_contexts")

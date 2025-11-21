@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,8 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.TaskContextViewModel
+import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.TaskPriority
+import com.ilseon.ui.components.DayPicker
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
@@ -61,7 +66,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?) -> Unit,
+    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?, Boolean, Set<DayOfWeek>) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
     initialDescription: String = "",
@@ -80,6 +85,8 @@ fun QuickCaptureSheet(
     var endTime by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
     var schedulingType by remember { mutableStateOf(SchedulingType.None) }
+    var isRecurring by remember { mutableStateOf(false) }
+    var selectedDays by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -134,6 +141,7 @@ fun QuickCaptureSheet(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 32.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         Text(
             text = "Quick Capture",
@@ -213,7 +221,11 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(16.dp))
 
-        Text("Scheduling", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
+        Text(
+            "Scheduling",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 14.sp
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
@@ -245,61 +257,107 @@ fun QuickCaptureSheet(
         Spacer(Modifier.height(16.dp))
 
         AnimatedVisibility(visible = schedulingType == SchedulingType.TimeBlock) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = startTime,
-                        onValueChange = {},
-                        label = { Text("Start Time") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            cursorColor = MaterialTheme.colorScheme.secondary,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        ),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable { showStartTimePicker = true }
-                    )
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = startTime,
+                            onValueChange = {},
+                            label = { Text("Start Time") },
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.secondary,
+                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.3f
+                                ),
+                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.7f
+                                ),
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.7f
+                                )
+                            ),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showStartTimePicker = true }
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = endTime,
+                            onValueChange = {},
+                            label = { Text("End Time") },
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.secondary,
+                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.3f
+                                ),
+                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.7f
+                                ),
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.7f
+                                )
+                            ),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showEndTimePicker = true }
+                        )
+                    }
                 }
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = endTime,
-                        onValueChange = {},
-                        label = { Text("End Time") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            cursorColor = MaterialTheme.colorScheme.secondary,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        ),
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { isRecurring = !isRecurring }
+                ) {
+                    Checkbox(
+                        checked = isRecurring,
+                        onCheckedChange = { isRecurring = it }
                     )
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable { showEndTimePicker = true }
-                    )
+                    Text("Recurring Task?")
+                }
+                AnimatedVisibility(visible = isRecurring) {
+                    Column {
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Repeat on",
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontSize = 14.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        DayPicker(
+                            selectedDays = selectedDays.toList(),
+                            onDaySelected = { day ->
+                                selectedDays = if (selectedDays.contains(day)) {
+                                    selectedDays - day
+                                } else {
+                                    selectedDays + day
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -327,7 +385,11 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(16.dp))
 
-        Text("Context", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
+        Text(
+            "Context",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 14.sp
+        )
         Spacer(Modifier.height(8.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             contexts.chunked(3).forEach { rowContexts ->
@@ -340,8 +402,12 @@ fun QuickCaptureSheet(
                             onClick = { selectedContextId = ctx.id },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary.copy(
+                                    alpha = 0.2f
+                                ) else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.7f
+                                )
                             ),
                             shape = RoundedCornerShape(12.dp),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
@@ -359,7 +425,11 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(24.dp))
 
-        Text("Priority", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 14.sp)
+        Text(
+            "Priority",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 14.sp
+        )
         Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -385,9 +455,29 @@ fun QuickCaptureSheet(
 
         Button(
             onClick = {
-                val durationInt = if (schedulingType == SchedulingType.Duration) duration.toIntOrNull() else null
+                val durationInt =
+                    if (schedulingType == SchedulingType.Duration) duration.toIntOrNull() else null
                 val (st, et) = if (schedulingType == SchedulingType.TimeBlock) startTime to endTime else "" to ""
-                onSave(title, description.takeIf { it.isNotBlank() }, selectedContextId, priority, st, et, durationInt)
+                val recurring = if (schedulingType == SchedulingType.TimeBlock) isRecurring else false
+                val days = if (recurring) {
+                    selectedDays.map {
+                        DayOfWeek.valueOf(java.time.DayOfWeek.of(it).name)
+                    }.toSet()
+                } else {
+                    emptySet()
+                }
+
+                onSave(
+                    title,
+                    description.takeIf { it.isNotBlank() },
+                    selectedContextId,
+                    priority,
+                    st,
+                    et,
+                    durationInt,
+                    recurring,
+                    days
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()

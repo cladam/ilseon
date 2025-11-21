@@ -32,7 +32,7 @@ interface TaskDao {
      */
     @Query("""
         SELECT * FROM tasks
-        WHERE isComplete = 0
+        WHERE isComplete = 0 AND isArchived = 0
         ORDER BY
             isCurrentPriority DESC,
             CASE priority
@@ -45,17 +45,23 @@ interface TaskDao {
     """)
     fun getIncompleteTasks(): Flow<List<Task>>
 
-    @Query("SELECT * FROM tasks WHERE isComplete = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM tasks WHERE isComplete = 1 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getCompletedTasks(): Flow<List<Task>>
 
-    @Query("SELECT * FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL ORDER BY completedAt DESC")
+    @Query("SELECT * FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND isArchived = 0 ORDER BY completedAt DESC")
     fun getTasksWithReflections(): Flow<List<Task>>
 
-    @Query("SELECT * FROM tasks WHERE isComplete = 0 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM tasks WHERE isComplete = 0 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
 
     @Query("SELECT * FROM tasks")
     suspend fun getAllTasksForDebug(): List<Task>
+    
+    @Query("SELECT * FROM tasks WHERE isRecurring = 1 AND isArchived = 0 AND isComplete = 0 GROUP BY seriesId")
+    fun getActiveRecurringTasks(): Flow<List<Task>>
+
+    @Query("UPDATE tasks SET isArchived = 1 WHERE seriesId = :seriesId")
+    suspend fun archiveTaskSeries(seriesId: UUID)
 
     /**
      * Inserts a new task.
@@ -87,23 +93,23 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getTaskById(id: UUID): Task?
 
-    @Query("SELECT * FROM tasks WHERE timerState = 'Running'")
+    @Query("SELECT * FROM tasks WHERE timerState = 'Running' AND isArchived = 0")
     suspend fun getRunningTasks(): List<Task>
 
     // --- Analytics Queries ---
 
-    @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime GROUP BY contextId")
+    @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0 GROUP BY contextId")
     suspend fun getFocusDistribution(startTime: Long, endTime: Long): List<FocusDistribution>
 
-    @Query("SELECT AVG(endTime - startTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND endTime IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    @Query("SELECT AVG(endTime - startTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND endTime IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getAverageTimeBlockMillis(startTime: Long, endTime: Long): Double?
 
-    @Query("SELECT AVG(totalTimeInMinutes * 60000.0) FROM tasks WHERE isComplete = 1 AND schedulingType = 'Duration' AND totalTimeInMinutes IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    @Query("SELECT AVG(totalTimeInMinutes * 60000.0) FROM tasks WHERE isComplete = 1 AND schedulingType = 'Duration' AND totalTimeInMinutes IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getAverageDurationMillis(startTime: Long, endTime: Long): Double?
 
-    @Query("SELECT completionReflection FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    @Query("SELECT completionReflection FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getCompletionReflections(startTime: Long, endTime: Long): List<String>
 
-    @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND endTime IS NOT NULL AND completedAt > endTime AND completedAt BETWEEN :startTime AND :endTime")
+    @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND endTime IS NOT NULL AND completedAt > endTime AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getOverdueTasksCount(startTime: Long, endTime: Long): Int
 }

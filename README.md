@@ -46,7 +46,7 @@ so your attention stays anchored on what matters _right now_.
 **Ilseon** is a **cognitive offloading tool** designed for neurodivergent users who need less friction, not more features. 
 Its purpose is simple: help you reclaim your front line of focus, one context at a time.
 
-## Getting Ilseon**
+## Getting Ilseon
 
 Ilseon is 100% **open source**, built for the community.
 

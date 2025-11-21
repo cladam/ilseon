@@ -2,7 +2,9 @@ package com.ilseon
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
@@ -28,6 +30,9 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -151,6 +156,107 @@ class TaskViewModelTest {
         assert(capturedTask.totalTimeInMinutes == null)
         assert(capturedTask.startTime == null)
         assert(capturedTask.endTime == null)
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `addTask with recurring time block task creates correct task`() = runTest(testDispatcher.scheduler) {
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val taskSlot = slot<Task>()
+        coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
+
+        viewModel.addTask(
+            title = "Recurring Time Block Task",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Medium,
+            startTimeStr = "13:00",
+            endTimeStr = "14:00",
+            durationInMinutes = null,
+            isRecurring = true,
+            recurrenceDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY)
+        )
+        runCurrent()
+
+        coVerify { taskRepository.insertTask(any()) }
+        val capturedTask = taskSlot.captured
+        assertEquals("Recurring Time Block Task", capturedTask.title)
+        assertEquals(SchedulingType.TimeBlock, capturedTask.schedulingType)
+        assertEquals(60, capturedTask.totalTimeInMinutes) // Duration is calculated
+        assertEquals(true, capturedTask.isRecurring)
+        assertNotNull(capturedTask.seriesId)
+        assertNotNull(capturedTask.startTime)
+        assertNotNull(capturedTask.endTime)
+        assertEquals("TUESDAY,THURSDAY", capturedTask.recurrenceDays)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `addTask with recurring duration task creates correct task`() = runTest(testDispatcher.scheduler) {
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val taskSlot = slot<Task>()
+        coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
+
+        viewModel.addTask(
+            title = "Recurring Duration Task",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.High,
+            startTimeStr = "09:00",
+            endTimeStr = "",
+            durationInMinutes = 30,
+            isRecurring = true,
+            recurrenceDays = setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY)
+        )
+        runCurrent()
+
+        coVerify { taskRepository.insertTask(any()) }
+        val capturedTask = taskSlot.captured
+        assertEquals("Recurring Duration Task", capturedTask.title)
+        assertEquals(SchedulingType.Duration, capturedTask.schedulingType)
+        assertEquals(30, capturedTask.totalTimeInMinutes)
+        assertEquals(true, capturedTask.isRecurring)
+        assertNotNull(capturedTask.seriesId)
+        assertNotNull(capturedTask.startTime)
+        assertNotNull(capturedTask.endTime)
+        assertNotNull(capturedTask.dueTime)
+        assertEquals("MONDAY,WEDNESDAY", capturedTask.recurrenceDays)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `addTask with recurring normal task creates correct task`() = runTest(testDispatcher.scheduler) {
+        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val taskSlot = slot<Task>()
+        coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
+
+        viewModel.addTask(
+            title = "Recurring Normal Task",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Low,
+            startTimeStr = "14:00",
+            endTimeStr = "",
+            durationInMinutes = null,
+            isRecurring = true,
+            recurrenceDays = setOf(DayOfWeek.FRIDAY)
+        )
+        runCurrent()
+
+        coVerify { taskRepository.insertTask(any()) }
+        val capturedTask = taskSlot.captured
+        assertEquals("Recurring Normal Task", capturedTask.title)
+        assertEquals(SchedulingType.None, capturedTask.schedulingType)
+        assertNull(capturedTask.totalTimeInMinutes)
+        assertEquals(true, capturedTask.isRecurring)
+        assertNotNull(capturedTask.seriesId)
+        assertNotNull(capturedTask.startTime)
+        assertNull(capturedTask.endTime) // No end time for normal tasks
+        assertNotNull(capturedTask.dueTime) // Due time is the start time
+        assertEquals("FRIDAY", capturedTask.recurrenceDays)
+
         viewModel.viewModelScope.cancel()
     }
 

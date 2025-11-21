@@ -309,9 +309,9 @@ class TaskViewModel @Inject constructor(
             if (title.isNotBlank() && contextId != null) {
                 var startTime: Long? = null
                 var endTime: Long? = null
-                var duration: Int? = null
+                var duration: Int? = durationInMinutes
                 var timerState = TimerState.NotStarted
-                var schedulingType = SchedulingType.None
+                var schedulingType: SchedulingType
                 var dueTime: Long? = null
                 var recurrenceDaysString: String? = null
 
@@ -319,16 +319,37 @@ class TaskViewModel @Inject constructor(
                     recurrenceDaysString = recurrenceDays.sorted().joinToString(",") { it.name }
                 }
 
+                // Determine SchedulingType and times based on the provided fields
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
+                    // This is a TimeBlock task, it has a clear start and end.
+                    schedulingType = SchedulingType.TimeBlock
                     val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
                     startTime = st
                     endTime = et
                     dueTime = et
                     duration = dur
-                    schedulingType = SchedulingType.TimeBlock
                 } else if (durationInMinutes != null) {
-                    duration = durationInMinutes
+                    // This is a Duration task.
                     schedulingType = SchedulingType.Duration
+                    if (isRecurring && startTimeStr.isNotBlank()) {
+                        // If it's a recurring duration task, it must have a start time.
+                        // We can calculate the end time from the start time and duration.
+                        val (st, et) = parseStartTimeAndCalculateEndTime(startTimeStr, durationInMinutes)
+                        startTime = st
+                        endTime = et
+                        dueTime = et
+                    }
+                    // If it's not recurring, it remains a simple duration task with no specific schedule.
+                } else {
+                    // This is a "Normal" (None) task.
+                    schedulingType = SchedulingType.None
+                    if (isRecurring && startTimeStr.isNotBlank()) {
+                        // If it's recurring, it gets a start time to anchor its schedule.
+                        // It doesn't have an end time or duration.
+                        val (st, _) = parseStartTimeAndCalculateEndTime(startTimeStr, 0)
+                        startTime = st
+                        dueTime = st // The due time is the start time.
+                    }
                 }
 
                 val newId = UUID.randomUUID()
@@ -354,6 +375,26 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    private fun parseStartTimeAndCalculateEndTime(startTimeStr: String, durationInMinutes: Int): Pair<Long?, Long?> {
+        if (startTimeStr.isBlank()) {
+            return Pair(null, null)
+        }
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        try {
+            val today = Calendar.getInstance()
+            val startCal = Calendar.getInstance()
+            startCal.time = timeFormat.parse(startTimeStr) ?: return Pair(null, null)
+            startCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
+
+            val startTime = startCal.timeInMillis
+            val endTime = startTime + TimeUnit.MINUTES.toMillis(durationInMinutes.toLong())
+
+            return Pair(startTime, endTime)
+        } catch (e: Exception) {
+            return Pair(null, null)
+        }
+    }
+
     private fun parseTimeAndCalculateDuration(
         startTimeStr: String,
         endTimeStr: String
@@ -372,7 +413,7 @@ class TaskViewModel @Inject constructor(
 
             val endCal = Calendar.getInstance()
             endCal.time = timeFormat.parse(endTimeStr) ?: return Triple(null, null, null)
-            endCal.set(today.get(Calendar::class.java.getField("YEAR").getInt(null)), today.get(Calendar::class.java.getField("MONTH").getInt(null)), today.get(Calendar::class.java.getField("DAY_OF_MONTH").getInt(null)))
+            endCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
 
             if (endCal.timeInMillis <= startCal.timeInMillis) {
                 return Triple(null, null, null)

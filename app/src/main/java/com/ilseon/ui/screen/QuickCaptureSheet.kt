@@ -221,6 +221,7 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(16.dp))
 
+        // --- SCHEDULING SECTION ---
         Text(
             "Scheduling",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -256,112 +257,30 @@ fun QuickCaptureSheet(
         }
         Spacer(Modifier.height(16.dp))
 
+        // Time Block specific fields
         AnimatedVisibility(visible = schedulingType == SchedulingType.TimeBlock) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = startTime,
-                            onValueChange = {},
-                            label = { Text("Start Time") },
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                cursorColor = MaterialTheme.colorScheme.secondary,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.3f
-                                ),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.7f
-                                ),
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.7f
-                                )
-                            ),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showStartTimePicker = true }
-                        )
-                    }
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = endTime,
-                            onValueChange = {},
-                            label = { Text("End Time") },
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                cursorColor = MaterialTheme.colorScheme.secondary,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.3f
-                                ),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.7f
-                                ),
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.7f
-                                )
-                            ),
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showEndTimePicker = true }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { isRecurring = !isRecurring }
-                ) {
-                    Checkbox(
-                        checked = isRecurring,
-                        onCheckedChange = { isRecurring = it }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    TimePickerField(
+                        time = startTime,
+                        label = "Start Time",
+                        onClick = { showStartTimePicker = true }
                     )
-                    Text("Recurring Task?")
                 }
-                AnimatedVisibility(visible = isRecurring) {
-                    Column {
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            "Repeat on",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            fontSize = 14.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        DayPicker(
-                            selectedDays = selectedDays.toList(),
-                            onDaySelected = { day ->
-                                selectedDays = if (selectedDays.contains(day)) {
-                                    selectedDays - day
-                                } else {
-                                    selectedDays + day
-                                }
-                            }
-                        )
-                    }
+                Box(modifier = Modifier.weight(1f)) {
+                    TimePickerField(
+                        time = endTime,
+                        label = "End Time",
+                        onClick = { showEndTimePicker = true }
+                    )
                 }
             }
         }
 
+        // Duration specific fields
         AnimatedVisibility(visible = schedulingType == SchedulingType.Duration) {
             OutlinedTextField(
                 value = duration,
@@ -385,6 +304,54 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(16.dp))
 
+        // --- RECURRING SECTION ---
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { isRecurring = !isRecurring }
+        ) {
+            Checkbox(
+                checked = isRecurring,
+                onCheckedChange = { isRecurring = it }
+            )
+            Text("Recurring Task?")
+        }
+
+        AnimatedVisibility(visible = isRecurring) {
+            Column {
+                Spacer(Modifier.height(16.dp))
+
+                // Show Start Time field for Normal and Duration recurring tasks
+                if (schedulingType != SchedulingType.TimeBlock) {
+                    TimePickerField(
+                        time = startTime,
+                        label = "Start Time",
+                        onClick = { showStartTimePicker = true }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                Text(
+                    "Repeat on",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                DayPicker(
+                    selectedDays = selectedDays.toList(),
+                    onDaySelected = { day ->
+                        selectedDays = if (selectedDays.contains(day)) {
+                            selectedDays - day
+                        } else {
+                            selectedDays + day
+                        }
+                    }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // --- CONTEXT SECTION ---
         Text(
             "Context",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -425,6 +392,7 @@ fun QuickCaptureSheet(
 
         Spacer(Modifier.height(24.dp))
 
+        // --- PRIORITY SECTION ---
         Text(
             "Priority",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -455,11 +423,8 @@ fun QuickCaptureSheet(
 
         Button(
             onClick = {
-                val durationInt =
-                    if (schedulingType == SchedulingType.Duration) duration.toIntOrNull() else null
-                val (st, et) = if (schedulingType == SchedulingType.TimeBlock) startTime to endTime else "" to ""
-                val recurring = if (schedulingType == SchedulingType.TimeBlock) isRecurring else false
-                val days = if (recurring) {
+                val durationInt = duration.toIntOrNull()
+                val days = if (isRecurring) {
                     selectedDays.map {
                         DayOfWeek.valueOf(java.time.DayOfWeek.of(it).name)
                     }.toSet()
@@ -472,10 +437,10 @@ fun QuickCaptureSheet(
                     description.takeIf { it.isNotBlank() },
                     selectedContextId,
                     priority,
-                    st,
-                    et,
+                    startTime,
+                    endTime,
                     durationInt,
-                    recurring,
+                    isRecurring,
                     days
                 )
             },
@@ -490,5 +455,41 @@ fun QuickCaptureSheet(
         ) {
             Text("Save Task", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         }
+    }
+}
+
+@Composable
+private fun TimePickerField(time: String, label: String, onClick: () -> Unit) {
+    Box {
+        OutlinedTextField(
+            value = time,
+            onValueChange = {},
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.secondary,
+                focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.3f
+                ),
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.7f
+                ),
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.7f
+                )
+            ),
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(onClick = onClick)
+        )
     }
 }

@@ -15,7 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface NotificationService {
-    fun sendTaskFinishedNotification(taskTitle: String)
+    fun sendTaskFinishedNotification(task: Task)
     fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int)
     fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int)
     fun sendFocusBlockStartedNotification(focusBlockName: String)
@@ -33,7 +33,9 @@ class NotificationServiceImpl @Inject constructor(
         title: String,
         content: String,
         tier: NotificationTier,
-        schedulingType: SchedulingType = SchedulingType.None // Default to None
+        schedulingType: SchedulingType = SchedulingType.None, // Default to None
+        taskId: String = UUID.randomUUID().toString(),
+        timerState: TimerState = TimerState.NotStarted
     ) {
         if (ContextCompat.checkSelfPermission(
                 context,
@@ -41,21 +43,23 @@ class NotificationServiceImpl @Inject constructor(
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             notificationHelper.showReminderNotification(
-                UUID.randomUUID().toString(),
+                taskId,
                 title,
                 content,
                 tier,
-                TimerState.NotStarted, // Timer state is not relevant for these general notifications
+                timerState,
                 schedulingType
             )
         }
     }
 
-    override fun sendTaskFinishedNotification(taskTitle: String) {
+    override fun sendTaskFinishedNotification(task: Task) {
         sendNotification(
-            "Task Finished",
-            "Your task '$taskTitle' has completed.",
-            NotificationTier.CriticalDecision
+            title = "Task Finished",
+            content = "Your task '${task.title}' has completed.",
+            tier = NotificationTier.CriticalDecision,
+            taskId = task.id.toString(),
+            timerState = TimerState.Finished // This ensures the 'Complete' action is shown
         )
     }
 

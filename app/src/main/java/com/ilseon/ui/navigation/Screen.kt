@@ -1,3 +1,4 @@
+
 package com.ilseon.ui.navigation
 
 sealed class Screen(val route: String) {
@@ -8,4 +9,5 @@ sealed class Screen(val route: String) {
     object Notes : Screen("notes")
     object Analytics : Screen("analytics")
     object ContextManagement : Screen("context_management")
+    object NextTaskActivation : Screen("next_task_activation")
 }

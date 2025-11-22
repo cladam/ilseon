@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -36,6 +36,12 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.max
 
+sealed class PostCompletionAction {
+    object Idle : PostCompletionAction()
+    object GoToDashboard : PostCompletionAction()
+    data class ActivateNextTask(val task: Task) : PostCompletionAction()
+}
+
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
@@ -48,6 +54,9 @@ class TaskViewModel @Inject constructor(
 
     private val _taskForReflection = MutableStateFlow<Task?>(null)
     val taskForReflection: StateFlow<Task?> = _taskForReflection.asStateFlow()
+
+    private val _postCompletionAction = MutableStateFlow<PostCompletionAction>(PostCompletionAction.Idle)
+    val postCompletionAction: StateFlow<PostCompletionAction> = _postCompletionAction.asStateFlow()
 
     fun onShowReflectionDialog(taskId: UUID) {
         viewModelScope.launch {
@@ -121,27 +130,20 @@ class TaskViewModel @Inject constructor(
             activeFocusBlock.collect { focusBlock ->
                 val currentId = focusBlock?.id
 
-                // If it's the first non-null block we've seen since the app started,
-                // treat it as the initial state and don't notify. This prevents
-                // notifications for already-active blocks on app launch.
                 if (currentId != null && !hasSeenFirstFocusBlock) {
                     hasSeenFirstFocusBlock = true
                     lastNotifiedFocusBlockId = currentId
                     return@collect
                 }
 
-                // If the state changes *after* the initial state has been seen...
                 if (currentId != lastNotifiedFocusBlockId) {
-                    // ...and the new state is a valid block (i.e., a block has started)...
                     focusBlock?.let {
-                        //...then send the notification.
                         val context = taskRepository.getContextById(it.contextId)
                         context?.let {
                             notificationService.sendFocusBlockStartedNotification(it.name)
                             hapticManager.performSuccess()
                         }
                     }
-                    // Update the state for the next change.
                     lastNotifiedFocusBlockId = currentId
                 }
             }
@@ -153,7 +155,6 @@ class TaskViewModel @Inject constructor(
         val naggingEnabled = settingsRepository.naggingNotificationsEnabled.first()
 
         tasks.value.forEach { task ->
-            // --- Standard Task Checks ---
             val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
             if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
                 startTask(task)
@@ -172,7 +173,6 @@ class TaskViewModel @Inject constructor(
                 }
             }
 
-            // --- Nagging Logic ---
             if (naggingEnabled && task.priority == TaskPriority.High && !task.isComplete) {
                 val isOverdue = task.dueTime?.let { it < now } ?: false
                 val isUnscheduledAndOld = task.schedulingType == SchedulingType.None && (now - task.createdAt > NAGGING_INTERVAL_MILLIS)
@@ -201,7 +201,6 @@ class TaskViewModel @Inject constructor(
                 val endTime = LocalTime.parse(focusBlock.endTime, formatter)
                 val fiveMinutes = 5L
 
-                // Starting soon notification
                 if (now.isBefore(startTime) && now.plusMinutes(fiveMinutes)
                         .isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(focusBlock.id)
                 ) {
@@ -214,7 +213,6 @@ class TaskViewModel @Inject constructor(
                     notifiedFocusBlocksStartingSoon.add(focusBlock.id)
                 }
 
-                // Ending soon notification
                 if (now.isBefore(endTime) && now.plusMinutes(fiveMinutes)
                         .isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(focusBlock.id)
                 ) {
@@ -235,18 +233,16 @@ class TaskViewModel @Inject constructor(
             val runningTasks = taskRepository.getRunningTasks()
             val now = System.currentTimeMillis()
             runningTasks.forEach { task ->
-                if (task.timerStartTime != null) {
-                    val elapsedTimeInSeconds = (now - task.timerStartTime) / 1000
-                    val newRemainingTime = task.remainingTimeInSeconds - elapsedTimeInSeconds
+                if (task.dueTime != null) {
+                    val newRemainingTime = (task.dueTime - now) / 1000
                     if (newRemainingTime > 0) {
                         val updatedTask = task.copy(
                             remainingTimeInSeconds = newRemainingTime,
-                            timerState = TimerState.Running // Keep it running
+                            timerState = TimerState.Running
                         )
                         taskRepository.updateTask(updatedTask)
                         reminderManager.rescheduleReminders(updatedTask)
                     } else {
-                        // Timer finished while app was closed
                         onTaskTimerFinished(task)
                         taskRepository.updateTask(
                             task.copy(
@@ -285,7 +281,7 @@ class TaskViewModel @Inject constructor(
 
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()
-        notificationService.sendTaskFinishedNotification(task.title)
+        notificationService.sendTaskFinishedNotification(task)
         reminderManager.cancelReminder(task)
     }
 
@@ -319,9 +315,7 @@ class TaskViewModel @Inject constructor(
                     recurrenceDaysString = recurrenceDays.sorted().joinToString(",") { it.name }
                 }
 
-                // Determine SchedulingType and times based on the provided fields
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
-                    // This is a TimeBlock task, it has a clear start and end.
                     schedulingType = SchedulingType.TimeBlock
                     val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
                     startTime = st
@@ -329,26 +323,19 @@ class TaskViewModel @Inject constructor(
                     dueTime = et
                     duration = dur
                 } else if (durationInMinutes != null) {
-                    // This is a Duration task.
                     schedulingType = SchedulingType.Duration
                     if (isRecurring && startTimeStr.isNotBlank()) {
-                        // If it's a recurring duration task, it must have a start time.
-                        // We can calculate the end time from the start time and duration.
                         val (st, et) = parseStartTimeAndCalculateEndTime(startTimeStr, durationInMinutes)
                         startTime = st
                         endTime = et
                         dueTime = et
                     }
-                    // If it's not recurring, it remains a simple duration task with no specific schedule.
                 } else {
-                    // This is a "Normal" (None) task.
                     schedulingType = SchedulingType.None
                     if (isRecurring && startTimeStr.isNotBlank()) {
-                        // If it's recurring, it gets a start time to anchor its schedule.
-                        // It doesn't have an end time or duration.
                         val (st, _) = parseStartTimeAndCalculateEndTime(startTimeStr, 0)
                         startTime = st
-                        dueTime = st // The due time is the start time.
+                        dueTime = st
                     }
                 }
 
@@ -441,13 +428,37 @@ class TaskViewModel @Inject constructor(
             )
             taskRepository.updateTask(updatedTask)
             reminderManager.cancelReminder(updatedTask)
+            prepareForNextTaskTransition(updatedTask)
+        }
+    }
+
+    private fun prepareForNextTaskTransition(completedTask: Task) {
+        viewModelScope.launch {
+            val currentTasks = tasks.value
+            val remainingTasks = currentTasks.filterNot { it.id == completedTask.id }
+
+            if (remainingTasks.isEmpty()) {
+                _postCompletionAction.value = PostCompletionAction.GoToDashboard
+            } else {
+                _postCompletionAction.value = PostCompletionAction.ActivateNextTask(remainingTasks.first())
+            }
+        }
+    }
+    
+    fun postCompletionActionHandled() {
+        _postCompletionAction.value = PostCompletionAction.Idle
+    }
+
+    fun startNextTask(task: Task) {
+        viewModelScope.launch {
+            startTaskTimer(task)
+            postCompletionActionHandled()
         }
     }
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
             taskRepository.updateTask(task)
-            // If the task has a due date, we might need to reschedule reminders
             if (task.dueTime != null || task.startTime != null) {
                 reminderManager.rescheduleReminders(task)
             }
@@ -466,7 +477,6 @@ class TaskViewModel @Inject constructor(
                 timerStartTime = now
             )
 
-            // Handle resuming from pause
             val pauseStartTime = taskPauseTimes.remove(task.id)
             if (task.timerState == TimerState.Paused && pauseStartTime != null) {
                 val pauseDuration = now - pauseStartTime
@@ -474,15 +484,12 @@ class TaskViewModel @Inject constructor(
                 updatedTask = updatedTask.copy(dueTime = newDueTime)
             }
 
-            // Handle first start of a duration task
             if (task.schedulingType == SchedulingType.Duration && task.dueTime == null) {
                 val newDueTime = now + (task.remainingTimeInSeconds * 1000)
                 updatedTask = updatedTask.copy(dueTime = newDueTime)
             }
 
-            // For TimeBlock tasks, remaining time is always calculated from its deadline.
             if (task.schedulingType == SchedulingType.TimeBlock) {
-                // Use the potentially updated dueTime
                 val dueTime = updatedTask.dueTime ?: task.dueTime ?: task.endTime
                 dueTime?.let {
                     val newRemaining = (it - now) / 1000
@@ -500,19 +507,16 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             if (task.timerState == TimerState.Running) {
                 val now = System.currentTimeMillis()
-                taskPauseTimes[task.id] = now // Record pause time
+                taskPauseTimes[task.id] = now
 
                 var updatedTask = task.copy(timerState = TimerState.Paused)
 
                 if (task.schedulingType == SchedulingType.Duration) {
-                    // For duration tasks, we must persist the new remaining time.
                     val elapsed = now - (task.timerStartTime ?: now)
                     val newRemaining = task.remainingTimeInSeconds - (elapsed / 1000)
                     updatedTask =
                         updatedTask.copy(remainingTimeInSeconds = max(0, newRemaining))
                 }
-                // For TimeBlock tasks, we only need to pause the state.
-                // The remaining time will be recalculated on resume based on the new dueTime.
                 taskRepository.updateTask(updatedTask)
                 reminderManager.cancelReminder(updatedTask)
             }

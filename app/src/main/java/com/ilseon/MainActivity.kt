@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -76,6 +77,7 @@ import com.ilseon.ui.screen.ArchiveScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
+import com.ilseon.ui.screen.NextTaskActivationScreen
 import com.ilseon.ui.screen.NotesScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
@@ -97,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: TaskViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
+    private val contextViewModel: TaskContextViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -354,12 +357,27 @@ class MainActivity : ComponentActivity() {
                         ) {
                             composable(Screen.DailyDashboard.route) {
                                 val taskForReflection by viewModel.taskForReflection.collectAsState()
+                                val postCompletionAction by viewModel.postCompletionAction.collectAsState()
+
+                                LaunchedEffect(postCompletionAction) {
+                                    when(postCompletionAction) {
+                                        is PostCompletionAction.ActivateNextTask -> {
+                                            viewModel.onReflectionDialogDismiss()
+                                            navController.navigate(Screen.NextTaskActivation.route)
+                                        }
+                                        is PostCompletionAction.GoToDashboard -> {
+                                            viewModel.onReflectionDialogDismiss()
+                                            viewModel.postCompletionActionHandled()
+                                        }
+                                        is PostCompletionAction.Idle -> { /* Do nothing */ }
+                                    }
+                                }
+
                                 taskForReflection?.let { task ->
                                     ReflectionDialog(
                                         taskTitle = task.title,
                                         onSave = { reflection ->
                                             viewModel.completeTask(task, reflection)
-                                            viewModel.onReflectionDialogDismiss()
                                         },
                                         onDismiss = {
                                             viewModel.onReflectionDialogDismiss()
@@ -387,6 +405,27 @@ class MainActivity : ComponentActivity() {
                                     },
                                     activeFocusBlock = activeFocusBlock,
                                 )
+                            }
+                            composable(Screen.NextTaskActivation.route) {
+                                val action = viewModel.postCompletionAction.collectAsState().value
+                                if (action is PostCompletionAction.ActivateNextTask) {
+                                    val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
+                                    val contextMap = remember(contextsWithFocusBlock) {
+                                        contextsWithFocusBlock.associate { it.context.id to it.context }
+                                    }
+                                    NextTaskActivationScreen(
+                                        nextTask = action.task,
+                                        contextMap = contextMap,
+                                        onStartNextBlock = {
+                                            viewModel.startNextTask(action.task)
+                                            navController.popBackStack()
+                                        },
+                                        onGoToFilter = {
+                                            viewModel.postCompletionActionHandled()
+                                            navController.popBackStack()
+                                        }
+                                    )
+                                }
                             }
                             composable(Screen.Notes.route) {
                                 NotesScreen()

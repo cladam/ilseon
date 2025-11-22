@@ -139,6 +139,9 @@ dependencies {
     // ** 4. KOTLINX SERIALIZATION **
     implementation(libs.kotlinx.serialization.json)
 
+    // In-app reviews
+    implementation(libs.play.review)
+
     // ** Test Dependencies **
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)

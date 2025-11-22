@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.play.core.review.ReviewManagerFactory
 import com.ilseon.ui.theme.IlseonTheme
 
 @Composable
@@ -54,6 +57,7 @@ private fun AboutScreenContent(versionName: String?) {
     ) {
         item { AppInfoCard(versionName = versionName) }
         item { DeveloperInfoCard() }
+        item { RateTheAppCard() }
     }
 }
 
@@ -104,6 +108,34 @@ private fun DeveloperInfoCard() {
                 text = "More About the Developer",
                 onClick = {
                     uriHandler.openUri("https://cladam.github.io/")
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RateTheAppCard() {
+    val context = LocalContext.current
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            InfoRow(
+                icon = Icons.Default.Star,
+                text = "Rate the app",
+                onClick = {
+                    val reviewManager = ReviewManagerFactory.create(context)
+                    val request = reviewManager.requestReviewFlow()
+                    request.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val reviewInfo = task.result
+                            val flow = reviewManager.launchReviewFlow(context as Activity, reviewInfo)
+                            flow.addOnCompleteListener { _ ->
+                                // The flow has finished. The API does not indicate whether the user
+                                // reviewed or not, or even whether the review dialog was shown. Thus, no
+                                // matter the result, we continue our app flow.
+                            }
+                        }
+                    }
                 }
             )
         }

@@ -63,7 +63,14 @@ fun CurrentPriorityTask(
     onUpdate: (Task, String) -> Unit,
     focusContextName: String?
 ) {
-    var remainingTime by remember(task.id) { mutableStateOf(task.remainingTimeInSeconds * 1000L) }
+    var remainingTime by remember(task.id, task.dueTime) {
+        val due = task.dueTime
+        if (task.timerState == TimerState.Running && due != null) {
+            mutableStateOf(max(0, due - System.currentTimeMillis()))
+        } else {
+            mutableStateOf(task.remainingTimeInSeconds * 1000L)
+        }
+    }
     val timerState = task.timerState
     val isInFocusBlock = focusContextName != null
     var isOverdue by remember { mutableStateOf(false) }
@@ -84,26 +91,23 @@ fun CurrentPriorityTask(
         isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
 
         if (timerState == TimerState.Running) {
-            val startTime = task.timerStartTime ?: System.currentTimeMillis()
-            // This is the duration to countdown from *now*
-            val countdownDuration = task.remainingTimeInSeconds * 1000L
-            val endTime = startTime + countdownDuration
+            val due = task.dueTime
+            if (due != null) {
+                val initialRemaining = due - System.currentTimeMillis()
+                remainingTime = max(0, initialRemaining)
 
-            val initialRemaining = endTime - System.currentTimeMillis()
-            remainingTime = max(0, initialRemaining)
+                while (remainingTime > 0) {
+                    delay(1000L)
+                    remainingTime -= 1000L
+                    isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
+                }
 
-            while (remainingTime > 0) {
-                delay(1000L)
-                remainingTime -= 1000L
-                isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
-            }
-
-            if (task.timerState == TimerState.Running) {
-                onTimerFinished(task)
-                isOverdue = true
+                if (task.timerState == TimerState.Running) {
+                    onTimerFinished(task)
+                    isOverdue = true
+                }
             }
         } else {
-            // If not running, display the remaining time from the task
             remainingTime = task.remainingTimeInSeconds * 1000L
         }
     }

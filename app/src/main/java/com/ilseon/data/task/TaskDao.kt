@@ -112,4 +112,7 @@ interface TaskDao {
 
     @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND endTime IS NOT NULL AND completedAt > endTime AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getOverdueTasksCount(startTime: Long, endTime: Long): Int
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt >= :startTime AND isArchived = 0")
+    fun getSuccessfulCompletionsCount(startTime: Long): Flow<Int>
 }

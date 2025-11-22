@@ -16,7 +16,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +32,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
@@ -54,6 +64,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -216,6 +228,7 @@ class MainActivity : ComponentActivity() {
 
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val tasks by viewModel.tasks.collectAsState()
+                val completionStreak by viewModel.completionStreak.collectAsState()
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
                 var vttTitleResult by remember { mutableStateOf("") }
@@ -310,6 +323,9 @@ class MainActivity : ComponentActivity() {
                                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                         Icon(Icons.Filled.Menu, contentDescription = "Menu")
                                     }
+                                },
+                                actions = {
+                                    StreakIndicator(streak = completionStreak)
                                 }
                             )
                         },
@@ -533,6 +549,67 @@ class MainActivity : ComponentActivity() {
             val taskIdString = intent.getStringExtra("EXTRA_TASK_ID")
             if (taskIdString != null) {
                 viewModel.onShowReflectionDialog(UUID.fromString(taskIdString))
+            }
+        }
+    }
+}
+
+@Composable
+fun StreakIndicator(streak: Int) {
+    val MutedGold = Color(0xFFC9B464)
+
+    Box(
+        modifier = Modifier
+            .padding(end = 16.dp)
+            .size(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            streak >= 7 -> { // Mastery Badge
+                Icon(
+                    imageVector = Icons.Filled.MilitaryTech,
+                    contentDescription = "Mastery Badge: $streak",
+                    tint = MutedGold,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            streak >= 5 -> { // Deep Focus - Subtle Alpha Pulse (Breathing Effect)
+                val infiniteTransition = rememberInfiniteTransition(label = "streak-pulse")
+
+                // Animate the alpha (opacity) slowly between 0.7f and 1.0f over 2.5 seconds
+                val pulseAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.7f,
+                    targetValue = 1.0f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2500, easing = FastOutSlowInEasing), // Slower animation
+                        repeatMode = RepeatMode.Reverse // Gentle fade in and out
+                    ),
+                    label = "streak-pulse-alpha"
+                )
+
+                // Star Icon with the subtle pulse effect
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Deep Focus Streak: $streak",
+                    tint = MutedGold,
+                    modifier = Modifier.alpha(pulseAlpha) // Apply the gentle pulse directly to the icon
+                )
+
+                // Optional: A very thin, static border or shadow (No animation needed here)
+            }
+            streak >= 3 -> { // Momentum
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Momentum Streak: $streak",
+                    tint = MutedGold
+                )
+            }
+            streak >= 1 -> { // Initiation
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(MutedGold, CircleShape)
+                )
             }
         }
     }

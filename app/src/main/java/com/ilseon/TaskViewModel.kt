@@ -83,6 +83,13 @@ class TaskViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    val completionStreak: StateFlow<Int> = taskRepository.getCompletionStreak()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
+
     private val notifiedFocusBlocksStartingSoon = mutableSetOf<UUID>()
     private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
     private val notifiedTasksStartingSoon = mutableSetOf<UUID>()

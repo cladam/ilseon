@@ -49,6 +49,13 @@ class TaskRepository @Inject constructor(
         return taskDao.getActiveRecurringTasks()
     }
 
+    fun getCompletionStreak(): Flow<Int> {
+        val twentyFourHoursAgo = Calendar.getInstance().apply {
+            add(Calendar.HOUR, -24)
+        }.timeInMillis
+        return taskDao.getSuccessfulCompletionsCount(twentyFourHoursAgo)
+    }
+
     suspend fun archiveTaskSeries(task: Task) {
         task.seriesId?.let {
             taskDao.archiveTaskSeries(it)

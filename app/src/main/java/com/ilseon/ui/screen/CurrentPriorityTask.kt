@@ -88,10 +88,12 @@ fun CurrentPriorityTask(
     }
 
     LaunchedEffect(key1 = task) {
-        isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
+        // A task is overdue if its due time has passed and it's not complete.
+        // This covers both TimeBlock (endTime) and Duration (dueTime) tasks.
+        val due = task.dueTime ?: task.endTime
+        isOverdue = due != null && System.currentTimeMillis() > due && !task.isComplete
 
         if (timerState == TimerState.Running) {
-            val due = task.dueTime
             if (due != null) {
                 val initialRemaining = due - System.currentTimeMillis()
                 remainingTime = max(0, initialRemaining)
@@ -99,7 +101,7 @@ fun CurrentPriorityTask(
                 while (remainingTime > 0) {
                     delay(1000L)
                     remainingTime -= 1000L
-                    isOverdue = task.endTime != null && System.currentTimeMillis() > task.endTime && !task.isComplete
+                    isOverdue = due != null && System.currentTimeMillis() > due && !task.isComplete
                 }
 
                 if (task.timerState == TimerState.Running) {

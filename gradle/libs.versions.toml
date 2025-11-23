@@ -24,6 +24,7 @@ navigationCompose = "2.9.6"
 roomVersion = "2.8.3"
 turbine = "1.2.1"
 playReview = "2.0.2"
+material3 = "1.4.0"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -61,6 +62,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkAndroid" }
 play-review = { module = "com.google.android.play:review-ktx", version.ref = "playReview" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

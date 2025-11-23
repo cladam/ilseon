@@ -83,12 +83,13 @@ abstract class AppModule {
         @Provides
         @Singleton
         fun provideTaskRepository(
+            @ApplicationContext context: Context,
             taskDao: TaskDao,
             focusBlockDao: FocusBlockDao,
             taskContextDao: TaskContextDao,
             reminderManager: ReminderManager
         ): TaskRepository {
-            return TaskRepository(taskDao, focusBlockDao, taskContextDao, reminderManager)
+            return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager)
         }
 
         @Provides

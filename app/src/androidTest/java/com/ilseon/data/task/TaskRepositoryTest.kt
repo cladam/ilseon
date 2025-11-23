@@ -43,7 +43,7 @@ class TaskRepositoryTest {
         focusBlockDao = db.focusBlockDao()
         taskContextDao = db.taskContextDao()
         reminderManager = mockk(relaxed = true)
-        repository = TaskRepository(taskDao, focusBlockDao, taskContextDao, reminderManager)
+        repository = TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager)
     }
 
     @After

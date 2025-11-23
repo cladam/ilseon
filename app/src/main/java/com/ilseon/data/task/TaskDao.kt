@@ -35,6 +35,10 @@ interface TaskDao {
         WHERE isComplete = 0 AND isArchived = 0
         ORDER BY
             isCurrentPriority DESC,
+            CASE 
+                WHEN schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND startTime > 0 THEN 1
+                ELSE 2
+            END,
             CASE priority
                 WHEN 'High'   THEN 1
                 WHEN 'Medium' THEN 2
@@ -53,6 +57,15 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE isComplete = 0 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE isCurrentPriority = 1 AND isComplete = 0 AND isArchived = 0 LIMIT 1")
+    fun getCurrentPriorityTask(): Flow<Task?>
+
+    @Query("UPDATE tasks SET isCurrentPriority = 0")
+    suspend fun clearCurrentPriority()
+
+    @Query("UPDATE tasks SET isCurrentPriority = 1 WHERE id = :taskId")
+    suspend fun setCurrentPriority(taskId: UUID)
 
     @Query("SELECT * FROM tasks")
     suspend fun getAllTasksForDebug(): List<Task>
@@ -115,4 +128,7 @@ interface TaskDao {
 
     @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt >= :startTime AND isArchived = 0")
     fun getSuccessfulCompletionsCount(startTime: Long): Flow<Int>
+
+    @Query("SELECT completedAt FROM tasks WHERE isComplete = 1 AND completedAt IS NOT NULL AND isArchived = 0 ORDER BY completedAt DESC")
+    fun getCompletionDates(): Flow<List<Long>>
 }

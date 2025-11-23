@@ -1,9 +1,13 @@
 package com.ilseon.data.task
 
+import android.content.Context
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.ilseon.notifications.ReminderManager
+import com.ilseon.widget.PriorityWidget
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.LocalTime
@@ -15,34 +19,54 @@ import javax.inject.Singleton
 
 @Singleton
 class TaskRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
     private val reminderManager: ReminderManager
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> {
-        val endOfToday = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 23)
-            set(Calendar.MINUTE, 59)
-            set(Calendar.SECOND, 59)
-            set(Calendar.MILLISECOND, 999)
-        }.timeInMillis
-
-        val tasksFlow = taskDao.getIncompleteTasks().map { tasks ->
-            tasks.filter { task ->
-                // A task is visible if it has no start time (is unscheduled)
-                // or if its start time is today or in the past.
-                task.startTime == null || task.startTime <= endOfToday
-            }
-        }
+        val tasksFlow = taskDao.getIncompleteTasks()
 
         return tasksFlow.combine(getActiveFocusBlock()) { tasks, activeFocusBlock ->
             if (activeFocusBlock != null) {
-                tasks.filter { it.contextId == activeFocusBlock.contextId || it.priority == TaskPriority.High }
+                val filteredTasks = tasks.filter {
+                    it.contextId == activeFocusBlock.contextId || it.priority == TaskPriority.High
+                }
+                // The DAO query already sorts by isCurrentPriority, this adds a secondary sort for display.
+                filteredTasks.sortedWith(
+                    compareBy<Task> { !it.isCurrentPriority }
+                        .thenBy { it.contextId != activeFocusBlock.contextId }
+                )
             } else {
                 tasks
             }
         }
+    }
+
+    suspend fun updatePriorityAndWidget() {
+        val allIncompleteTasks = taskDao.getIncompleteTasks().first()
+        
+        val sortedTasks = allIncompleteTasks.sortedWith(
+            compareBy<Task> { 
+                when (it.priority) {
+                    TaskPriority.High -> 0
+                    TaskPriority.Medium -> 1
+                    TaskPriority.Low -> 2
+                }
+            }.thenBy { it.createdAt }
+        )
+        
+        val newPriorityTask = sortedTasks.firstOrNull()
+        val currentPriorityTask = allIncompleteTasks.find { it.isCurrentPriority }
+
+        if (newPriorityTask?.id != currentPriorityTask?.id) {
+            taskDao.clearCurrentPriority()
+            newPriorityTask?.let {
+                taskDao.setCurrentPriority(it.id)
+            }
+        }
+        updateWidget()
     }
 
     fun getActiveRecurringTasks(): Flow<List<Task>> {
@@ -77,8 +101,10 @@ class TaskRepository @Inject constructor(
     suspend fun getAllTasksForDebug(): List<Task> {
         return taskDao.getAllTasksForDebug()
     }
-
+    
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
+
+    fun getCurrentPriorityTask(): Flow<Task?> = taskDao.getCurrentPriorityTask()
 
     suspend fun getAllFocusBlocks(): List<FocusBlock> {
         return focusBlockDao.getAllFocusBlocks()
@@ -87,11 +113,13 @@ class TaskRepository @Inject constructor(
     suspend fun insertTask(task: Task) {
         taskDao.insert(task)
         updateRemindersForTask(task)
+        updatePriorityAndWidget()
     }
 
     suspend fun updateTask(task: Task) {
         taskDao.update(task)
         updateRemindersForTask(task)
+        updatePriorityAndWidget()
 
         if (task.isComplete && task.isRecurring && !task.isArchived) {
             createNewRecurringInstance(task)
@@ -172,6 +200,7 @@ class TaskRepository @Inject constructor(
             taskDao.delete(task)
         }
         reminderManager.cancelReminder(task)
+        updatePriorityAndWidget()
     }
 
     suspend fun getTaskById(id: UUID): Task? {
@@ -227,6 +256,14 @@ class TaskRepository @Inject constructor(
 
                 !now.isBefore(startTime) && now.isBefore(endTime) && isTodayInRepeatDays
             }
+        }
+    }
+
+    private suspend fun updateWidget() {
+        val manager = GlanceAppWidgetManager(context)
+        val glanceIds = manager.getGlanceIds(PriorityWidget::class.java)
+        glanceIds.forEach { glanceId ->
+            PriorityWidget().update(context, glanceId)
         }
     }
 }

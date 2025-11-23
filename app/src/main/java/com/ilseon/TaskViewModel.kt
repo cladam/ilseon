@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -54,6 +56,7 @@ class TaskViewModel @Inject constructor(
 
     private val _taskForReflection = MutableStateFlow<Task?>(null)
     val taskForReflection: StateFlow<Task?> = _taskForReflection.asStateFlow()
+
 
     private val _postCompletionAction = MutableStateFlow<PostCompletionAction>(PostCompletionAction.Idle)
     val postCompletionAction: StateFlow<PostCompletionAction> = _postCompletionAction.asStateFlow()
@@ -108,6 +111,12 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             restoreRunningTasksState()
             monitorFocusBlockChanges()
+            // This is the correct way to handle this.
+            // When the active block changes, we need to re-evaluate the priority.
+            activeFocusBlock.onEach {
+                taskRepository.updatePriorityAndWidget()
+            }.launchIn(viewModelScope)
+
             while (isActive) {
                 checkTasks()
                 checkFocusBlocks()
@@ -254,9 +263,8 @@ class TaskViewModel @Inject constructor(
                         taskRepository.updateTask(
                             task.copy(
                                 remainingTimeInSeconds = 0,
-                                timerState = TimerState.NotStarted,
-                                isComplete = true,
-                                completedAt = System.currentTimeMillis()
+                                timerState = TimerState.Finished,
+                                isComplete = false
                             )
                         )
                     }
@@ -435,6 +443,7 @@ class TaskViewModel @Inject constructor(
             )
             taskRepository.updateTask(updatedTask)
             reminderManager.cancelReminder(updatedTask)
+            taskRepository.updatePriorityAndWidget()
             prepareForNextTaskTransition(updatedTask)
         }
     }
@@ -455,6 +464,8 @@ class TaskViewModel @Inject constructor(
     fun postCompletionActionHandled() {
         _postCompletionAction.value = PostCompletionAction.Idle
     }
+
+
 
     fun startNextTask(task: Task) {
         viewModelScope.launch {

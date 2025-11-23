@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
@@ -567,10 +568,10 @@ fun StreakIndicator(streak: Int) {
         when {
             streak >= 7 -> { // Mastery Badge
                 Icon(
-                    imageVector = Icons.Filled.MilitaryTech,
+                    imageVector = Icons.Filled.WorkspacePremium,
                     contentDescription = "Mastery Badge: $streak",
                     tint = MutedGold,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             streak >= 5 -> { // Deep Focus - Subtle Alpha Pulse (Breathing Effect)

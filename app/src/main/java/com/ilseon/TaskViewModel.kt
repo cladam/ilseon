@@ -314,7 +314,8 @@ class TaskViewModel @Inject constructor(
         endTimeStr: String,
         durationInMinutes: Int?,
         isRecurring: Boolean,
-        recurrenceDays: Set<DayOfWeek>
+        recurrenceDays: Set<DayOfWeek>,
+        isForTomorrow: Boolean = false
     ) {
         viewModelScope.launch {
             if (title.isNotBlank() && contextId != null) {
@@ -332,7 +333,7 @@ class TaskViewModel @Inject constructor(
 
                 if (startTimeStr.isNotBlank() && endTimeStr.isNotBlank()) {
                     schedulingType = SchedulingType.TimeBlock
-                    val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr)
+                    val (st, et, dur) = parseTimeAndCalculateDuration(startTimeStr, endTimeStr, isForTomorrow)
                     startTime = st
                     endTime = et
                     dueTime = et
@@ -340,7 +341,7 @@ class TaskViewModel @Inject constructor(
                 } else if (durationInMinutes != null) {
                     schedulingType = SchedulingType.Duration
                     if (isRecurring && startTimeStr.isNotBlank()) {
-                        val (st, et) = parseStartTimeAndCalculateEndTime(startTimeStr, durationInMinutes)
+                        val (st, et) = parseStartTimeAndCalculateEndTime(startTimeStr, durationInMinutes, isForTomorrow)
                         startTime = st
                         endTime = et
                         dueTime = et
@@ -348,7 +349,7 @@ class TaskViewModel @Inject constructor(
                 } else {
                     schedulingType = SchedulingType.None
                     if (isRecurring && startTimeStr.isNotBlank()) {
-                        val (st, _) = parseStartTimeAndCalculateEndTime(startTimeStr, 0)
+                        val (st, _) = parseStartTimeAndCalculateEndTime(startTimeStr, 0, isForTomorrow)
                         startTime = st
                         dueTime = st
                     }
@@ -377,58 +378,70 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private fun parseStartTimeAndCalculateEndTime(startTimeStr: String, durationInMinutes: Int): Pair<Long?, Long?> {
-        if (startTimeStr.isBlank()) {
-            return Pair(null, null)
+    private fun parseDateTime(dateTimeStr: String, isForTomorrow: Boolean = false): Calendar? {
+        val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        try {
+            val calendar = Calendar.getInstance()
+            calendar.time = dateTimeFormat.parse(dateTimeStr) ?: return null
+            return calendar
+        } catch (e: Exception) {
+            // Fallback to time-only parsing
         }
+
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         try {
             val today = Calendar.getInstance()
-            val startCal = Calendar.getInstance()
-            startCal.time = timeFormat.parse(startTimeStr) ?: return Pair(null, null)
-            startCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-
-            val startTime = startCal.timeInMillis
-            val endTime = startTime + TimeUnit.MINUTES.toMillis(durationInMinutes.toLong())
-
-            return Pair(startTime, endTime)
+            if (isForTomorrow) {
+                today.add(Calendar.DAY_OF_MONTH, 1)
+            }
+            val calendar = Calendar.getInstance()
+            calendar.time = timeFormat.parse(dateTimeStr) ?: return null
+            calendar.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
+            return calendar
         } catch (e: Exception) {
+            return null
+        }
+    }
+
+    private fun parseStartTimeAndCalculateEndTime(startTimeStr: String, durationInMinutes: Int, isForTomorrow: Boolean = false): Pair<Long?, Long?> {
+        if (startTimeStr.isBlank()) {
             return Pair(null, null)
         }
+
+        val startCal = parseDateTime(startTimeStr, isForTomorrow) ?: return Pair(null, null)
+
+        val startTime = startCal.timeInMillis
+        val endTime = startTime + TimeUnit.MINUTES.toMillis(durationInMinutes.toLong())
+
+        return Pair(startTime, endTime)
     }
 
     private fun parseTimeAndCalculateDuration(
         startTimeStr: String,
-        endTimeStr: String
+        endTimeStr: String,
+        isForTomorrow: Boolean = false
     ): Triple<Long?, Long?, Int?> {
         if (startTimeStr.isBlank() || endTimeStr.isBlank()) {
             return Triple(null, null, null)
         }
 
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        try {
-            val today = Calendar.getInstance()
+        val startCal = parseDateTime(startTimeStr, isForTomorrow) ?: return Triple(null, null, null)
+        val endCal = parseDateTime(endTimeStr, isForTomorrow) ?: return Triple(null, null, null)
 
-            val startCal = Calendar.getInstance()
-            startCal.time = timeFormat.parse(startTimeStr) ?: return Triple(null, null, null)
-            startCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
+        // If only time is provided for the end time, and it's before the start time, assume it's for the next day
+        if (endCal.timeInMillis <= startCal.timeInMillis && !endTimeStr.contains(" ")) {
+            endCal.add(Calendar.DAY_OF_MONTH, 1)
+        }
 
-            val endCal = Calendar.getInstance()
-            endCal.time = timeFormat.parse(endTimeStr) ?: return Triple(null, null, null)
-            endCal.set(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH))
-
-            if (endCal.timeInMillis <= startCal.timeInMillis) {
-                return Triple(null, null, null)
-            }
-
-            val startTime = startCal.timeInMillis
-            val endTime = endCal.timeInMillis
-            val duration = ((endTime - startTime) / (1000 * 60)).toInt()
-
-            return Triple(startTime, endTime, duration)
-        } catch (e: Exception) {
+        if (endCal.timeInMillis <= startCal.timeInMillis) {
             return Triple(null, null, null)
         }
+
+        val startTime = startCal.timeInMillis
+        val endTime = endCal.timeInMillis
+        val duration = ((endTime - startTime) / (1000 * 60)).toInt()
+
+        return Triple(startTime, endTime, duration)
     }
 
     fun completeTask(task: Task, completionReflection: String) {

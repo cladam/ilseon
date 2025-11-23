@@ -507,7 +507,7 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays ->
+                            onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
                                 viewModel.addTask(
                                     title,
                                     description,
@@ -517,7 +517,8 @@ class MainActivity : ComponentActivity() {
                                     endTime,
                                     duration,
                                     isRecurring,
-                                    recurrenceDays
+                                    recurrenceDays,
+                                    isForTomorrow
                                 )
                                 scope.launch { sheetState.hide() }
                                 vttTitleResult = ""

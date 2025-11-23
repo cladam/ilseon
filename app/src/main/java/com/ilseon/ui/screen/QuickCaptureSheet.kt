@@ -66,7 +66,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?, Boolean, Set<DayOfWeek>) -> Unit,
+    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
     initialDescription: String = "",
@@ -87,6 +87,7 @@ fun QuickCaptureSheet(
     var schedulingType by remember { mutableStateOf(SchedulingType.None) }
     var isRecurring by remember { mutableStateOf(false) }
     var selectedDays by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var isForTomorrow by remember { mutableStateOf(false) }
 
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -302,6 +303,20 @@ fun QuickCaptureSheet(
             )
         }
 
+        // --- TOMORROW CHECKBOX ---
+        AnimatedVisibility(visible = schedulingType != SchedulingType.None) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { isForTomorrow = !isForTomorrow }
+            ) {
+                Checkbox(
+                    checked = isForTomorrow,
+                    onCheckedChange = { isForTomorrow = it }
+                )
+                Text("Tomorrow?")
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
 
         // --- RECURRING SECTION ---
@@ -447,7 +462,8 @@ fun QuickCaptureSheet(
                     endTime,
                     durationInt,
                     isRecurring,
-                    days
+                    days,
+                    isForTomorrow
                 )
             },
             modifier = Modifier

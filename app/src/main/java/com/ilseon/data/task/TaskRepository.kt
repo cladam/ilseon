@@ -1,9 +1,9 @@
 package com.ilseon.data.task
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
+import android.content.Intent
 import com.ilseon.notifications.ReminderManager
-import com.ilseon.widget.PriorityWidget
+import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -259,11 +259,10 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    private suspend fun updateWidget() {
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(PriorityWidget::class.java)
-        glanceIds.forEach { glanceId ->
-            PriorityWidget().update(context, glanceId)
+    private fun updateWidget() {
+        val intent = Intent(context, PriorityWidgetReceiver::class.java).apply {
+            action = PriorityWidgetReceiver.UPDATE_ACTION
         }
+        context.sendBroadcast(intent)
     }
 }

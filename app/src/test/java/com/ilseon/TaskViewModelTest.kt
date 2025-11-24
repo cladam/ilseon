@@ -1,5 +1,8 @@
 package com.ilseon
 
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.DayOfWeek
@@ -15,6 +18,7 @@ import com.ilseon.service.NotificationService
 import com.ilseon.service.SoundManager
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
@@ -45,12 +49,15 @@ class TaskViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     // Mocks and dispatcher are declared here
+    private lateinit var context: Context
     private lateinit var taskRepository: TaskRepository
     private lateinit var hapticManager: HapticManager
     private lateinit var soundManager: SoundManager
     private lateinit var notificationService: NotificationService
     private lateinit var reminderManager: ReminderManager
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var usageStatsManager: UsageStatsManager
+    private lateinit var appOpsManager: AppOpsManager
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -58,12 +65,19 @@ class TaskViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         // Initialize mocks in setUp
+        context = mockk(relaxed = true)
         taskRepository = mockk(relaxed = true)
         hapticManager = mockk(relaxed = true)
         soundManager = mockk(relaxed = true)
         notificationService = mockk(relaxed = true)
         reminderManager = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        usageStatsManager = mockk(relaxed = true)
+        appOpsManager = mockk(relaxed = true)
+
+        // Stub the getSystemService calls
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOpsManager
 
         coEvery { taskRepository.getActiveFocusBlock() } returns MutableStateFlow<FocusBlock?>(null)
         coEvery { taskRepository.getIncompleteTasks() } returns MutableStateFlow<List<Task>>(emptyList())
@@ -79,7 +93,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with time block creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -106,7 +120,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with duration creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -132,7 +146,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with basic info creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -161,7 +175,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring time block task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -194,7 +208,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring duration task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -228,7 +242,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring normal task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -262,7 +276,7 @@ class TaskViewModelTest {
 
     @Test
     fun `completeTask updates task to complete and sets reflection`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.updateTask(capture(taskSlot)) } just runs
 

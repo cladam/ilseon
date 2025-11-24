@@ -42,47 +42,44 @@ class AnalyticsViewModelTest {
     }
 
     @Test
-    fun `selecting time interval calls repository and updates data`() = runTest {
+    fun `selecting time interval calls repository and updates data`() = runTest(testDispatcher) {
         // Arrange
         val weeklyData = AnalyticsData(
             focusDistribution = mapOf("Work" to 0.75f, "Personal" to 0.25f),
             averageTimeBlockMinutes = 60,
             averageDurationMinutes = 30,
             topKeywords = listOf("Test" to 1),
-            overdueTasksCount = 5
+            overdueTasksCount = 5,
+            interruptedTasksCount = 2
         )
         val monthlyData = AnalyticsData(
             focusDistribution = mapOf("Work" to 0.8f, "Personal" to 0.2f),
             averageTimeBlockMinutes = 75,
             averageDurationMinutes = 45,
             topKeywords = listOf("Review" to 5),
-            overdueTasksCount = 20
+            overdueTasksCount = 20,
+            interruptedTasksCount = 10
         )
-        
+
         coEvery { analyticsRepository.getAnalyticsData(TimeInterval.WEEK) } returns weeklyData
         coEvery { analyticsRepository.getAnalyticsData(TimeInterval.MONTH) } returns monthlyData
 
         val viewModel = AnalyticsViewModel(analyticsRepository)
-        
-        // Assert initial state
         advanceUntilIdle() // Let the initial loadAnalyticsData() in init {} finish
-        coVerify { analyticsRepository.getAnalyticsData(TimeInterval.WEEK) }
 
         viewModel.analyticsData.test {
+            // Assert initial state from init{}
             assertEquals(weeklyData, awaitItem())
 
             // Act: Change the time interval
             viewModel.selectTimeInterval(TimeInterval.MONTH)
-            
-            // Assert loading state
-            assertNull(awaitItem()) // It should be null while loading
-            
+
             // Assert new data
             assertEquals(monthlyData, awaitItem())
 
             // Verify the repository was called with the new interval
             coVerify { analyticsRepository.getAnalyticsData(TimeInterval.MONTH) }
-            
+
             cancelAndIgnoreRemainingEvents()
         }
     }

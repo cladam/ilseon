@@ -6,17 +6,12 @@
 
 <p align="center">
     <strong>A low-friction, distraction-minimal executive function assistant.</strong>
-
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://playbadges.pavi2410.com/badge/full?id=com.ilseon&theme=dark">
-      <img alt="Ilseon" src="https://playbadges.pavi2410.com/badge/full?id=com.ilseon">
-    </picture>
-    
 </p>
 
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 
 assistant designed to reduce mental overload. It creates a protected focus environment that helps users 
 regain control over time, attention, and priorities.
+![Ilseon](https://playbadges.pavi2410.com/badge/full?id=com.ilseon&theme=dark)
 
 ## The Core Problem
 

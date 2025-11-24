@@ -52,6 +52,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isComplete = 1 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getCompletedTasks(): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0 ORDER BY completedAt DESC")
+    suspend fun getCompletedTasks(startTime: Long, endTime: Long): List<Task>
+
     @Query("SELECT * FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND isArchived = 0 ORDER BY completedAt DESC")
     fun getTasksWithReflections(): Flow<List<Task>>
 

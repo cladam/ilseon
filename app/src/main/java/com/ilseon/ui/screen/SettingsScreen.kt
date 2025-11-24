@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -38,9 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.SettingsViewModel
+import com.ilseon.util.UsageStatsReader
 import java.util.Locale
 
 @Composable
@@ -114,6 +117,9 @@ private fun SettingsScreenContent(
             )
         }
         item {
+            PermissionsSettingsCard()
+        }
+        item {
             SpeechToTextSettingsCard(
                 bluetoothSstEnabled = bluetoothSstEnabled,
                 onBluetoothSstEnabledChange = onBluetoothSstEnabledChange,
@@ -131,6 +137,32 @@ private fun SettingsScreenContent(
         item {
             AboutCard(
                 onAboutClick = onAboutClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun PermissionsSettingsCard() {
+    val context = LocalContext.current
+    val usageStatsReader = remember { UsageStatsReader(context) }
+    val hasPermission by remember { mutableStateOf(usageStatsReader.hasUsageStatsPermission()) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Permissions",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsItem(
+                icon = Icons.Default.PhonelinkSetup,
+                title = "Usage Access",
+                subtitle = if (hasPermission) "Granted" else "Required for phone pickup tracking",
+                onClick = {
+                    usageStatsReader.requestUsageStatsPermission()
+                }
             )
         }
     }

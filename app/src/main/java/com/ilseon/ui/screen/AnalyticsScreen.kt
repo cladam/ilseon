@@ -32,7 +32,8 @@ data class AnalyticsData(
     val averageTimeBlockMinutes: Int,
     val averageDurationMinutes: Int,
     val topKeywords: List<Pair<String, Int>>, // Keyword and count
-    val overdueTasksCount: Int
+    val overdueTasksCount: Int,
+    val interruptedTasksCount: Int
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -131,6 +132,16 @@ fun AnalyticsScreen(
                     }
                 }
 
+                item {
+                    AnalyticsCard(title = "Interrupted Time Blocks") {
+                        Text(
+                            text = "${data!!.interruptedTasksCount}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
 
                 item {
                     AnalyticsCard(title = "Top Reflection Keywords") {

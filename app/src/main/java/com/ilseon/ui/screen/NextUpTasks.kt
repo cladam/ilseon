@@ -88,6 +88,7 @@ fun NextUpTasks(
     if (taskForReflection != null) {
         ReflectionDialog(
             taskTitle = taskForReflection!!.title,
+            phonePickups = null, // Not available in this context
             onDismiss = { taskForReflection = null },
             onSave = { reflection ->
                 onComplete(taskForReflection!!, reflection)

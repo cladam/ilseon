@@ -1,5 +1,6 @@
 package com.ilseon
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.DayOfWeek
@@ -14,7 +15,9 @@ import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
 import com.ilseon.service.SoundManager
+import com.ilseon.util.UsageStatsReader
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,8 +47,11 @@ sealed class PostCompletionAction {
     data class ActivateNextTask(val task: Task) : PostCompletionAction()
 }
 
+data class ReflectionData(val task: Task, val phonePickups: Int?)
+
 @HiltViewModel
 class TaskViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val taskRepository: TaskRepository,
     private val hapticManager: HapticManager,
     private val soundManager: SoundManager,
@@ -54,8 +60,10 @@ class TaskViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-    private val _taskForReflection = MutableStateFlow<Task?>(null)
-    val taskForReflection: StateFlow<Task?> = _taskForReflection.asStateFlow()
+    private val usageStatsReader = UsageStatsReader(context)
+
+    private val _taskForReflection = MutableStateFlow<ReflectionData?>(null)
+    val taskForReflection: StateFlow<ReflectionData?> = _taskForReflection.asStateFlow()
 
 
     private val _postCompletionAction = MutableStateFlow<PostCompletionAction>(PostCompletionAction.Idle)
@@ -63,7 +71,18 @@ class TaskViewModel @Inject constructor(
 
     fun onShowReflectionDialog(taskId: UUID) {
         viewModelScope.launch {
-            _taskForReflection.value = taskRepository.getTaskById(taskId)
+            val task = taskRepository.getTaskById(taskId)
+            if (task != null) {
+                var phonePickups: Int? = null
+                if (usageStatsReader.hasUsageStatsPermission()) {
+                    val startTime = task.timerStartTime ?: task.startTime
+                    val endTime = System.currentTimeMillis() // Assuming completion is now
+                    if (startTime != null) {
+                        phonePickups = usageStatsReader.getPhonePickups(startTime, endTime)
+                    }
+                }
+                _taskForReflection.value = ReflectionData(task, phonePickups)
+            }
         }
     }
 
@@ -409,7 +428,6 @@ class TaskViewModel @Inject constructor(
         }
 
         val startCal = parseDateTime(startTimeStr, isForTomorrow) ?: return Pair(null, null)
-
         val startTime = startCal.timeInMillis
         val endTime = startTime + TimeUnit.MINUTES.toMillis(durationInMinutes.toLong())
 

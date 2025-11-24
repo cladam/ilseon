@@ -39,7 +39,6 @@ class AnalyticsViewModel @Inject constructor(
 
     private fun loadAnalyticsData() {
         viewModelScope.launch {
-            _analyticsData.value = null // Show loading indicator
             _analyticsData.value = analyticsRepository.getAnalyticsData(selectedInterval.value)
         }
     }

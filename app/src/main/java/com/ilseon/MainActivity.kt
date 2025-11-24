@@ -373,7 +373,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(paddingValues)
                         ) {
                             composable(Screen.DailyDashboard.route) {
-                                val taskForReflection by viewModel.taskForReflection.collectAsState()
+                                val reflectionData by viewModel.taskForReflection.collectAsState()
                                 val postCompletionAction by viewModel.postCompletionAction.collectAsState()
 
                                 LaunchedEffect(postCompletionAction) {
@@ -390,11 +390,12 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                taskForReflection?.let { task ->
+                                reflectionData?.let { data ->
                                     ReflectionDialog(
-                                        taskTitle = task.title,
+                                        taskTitle = data.task.title,
+                                        phonePickups = data.phonePickups,
                                         onSave = { reflection ->
-                                            viewModel.completeTask(task, reflection)
+                                            viewModel.completeTask(data.task, reflection)
                                         },
                                         onDismiss = {
                                             viewModel.onReflectionDialogDismiss()

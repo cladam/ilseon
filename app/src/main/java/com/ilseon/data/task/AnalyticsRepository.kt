@@ -1,18 +1,24 @@
 package com.ilseon.data.task
 
+import android.content.Context
 import com.ilseon.TimeInterval
 import com.ilseon.ui.screen.AnalyticsData
+import com.ilseon.util.UsageStatsReader
 import com.ilseon.util.allStopWords
 import com.ilseon.util.cleanTextForAnalysis
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AnalyticsRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
     private val taskContextDao: TaskContextDao
 ) {
+    private val usageStatsReader = UsageStatsReader(context)
+
     suspend fun getAnalyticsData(interval: TimeInterval): AnalyticsData {
         val (startTime, endTime) = calculateTimeRange(interval)
 
@@ -45,12 +51,26 @@ class AnalyticsRepository @Inject constructor(
             .sortedByDescending { it.second }
             .take(9) // Just show top 9 words
 
+        val completedTasks = taskDao.getCompletedTasks(startTime, endTime)
+        var interruptedTasksCount = 0
+        if (usageStatsReader.hasUsageStatsPermission()) {
+            completedTasks.forEach { task ->
+                if (task.startTime != null && task.completedAt != null) {
+                    val pickups = usageStatsReader.getPhonePickups(task.startTime, task.completedAt)
+                    if (pickups > 1) { // > 1 because starting the task counts as 1
+                        interruptedTasksCount++
+                    }
+                }
+            }
+        }
+
         return AnalyticsData(
             focusDistribution = focusDistribution,
             averageTimeBlockMinutes = averageTimeBlockMinutes,
             averageDurationMinutes = averageDurationMinutes,
             topKeywords = topKeywords,
-            overdueTasksCount = overdueTasksCount
+            overdueTasksCount = overdueTasksCount,
+            interruptedTasksCount = interruptedTasksCount
         )
     }
 

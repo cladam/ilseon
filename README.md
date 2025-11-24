@@ -6,6 +6,7 @@
 
 <p align="center">
 <strong>A low-friction, distraction-minimal executive function assistant.</strong>
+https://playbadges.pavi2410.com/badge/full?id=com.ilseon[&theme=dark]
 </p>
 
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 

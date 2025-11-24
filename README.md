@@ -30,14 +30,16 @@ so your attention stays anchored on what matters _right now_.
 
 ## Tech Stack
 
+* **UI Toolkit:** Jetpack Compose
 * **Language**: Kotlin
-* **UI Toolkit:** Jetpack Compose (Modern, declarative, and visually minimalist)
-* **Data Persistence**: Room (SQLite Abstraction for robust local data)
-* **Scheduling**: Android AlarmManager (Reliable time-based reminders)
+* **Architecture**: MVI (Model-View-Intent)
+* **Database**: Room
+* **State**: Kotlin Flow / StateFlow
+* **Scheduling**: Android AlarmManager
 
 ## Design Principles
 
-1.	**Simplicity is Success**: Less is more — whitespace, quiet colours, and clean typography.
+1.	**Simplicity is Success**: Less is more! Whitespace, quiet colours, and clean typography.
 2.	**Focus First**: Only one visible task to combat overwhelm and indecision.
 3.	**Low Sensory Load**: Dark, muted themes as default. No flashing elements or visual noise.
 4.	**Instant Capture**: The path from “I thought of something” to “It’s safely saved” should take less than two seconds.
@@ -51,9 +53,23 @@ Its purpose is simple: help you reclaim your front line of focus, one context at
 
 Ilseon is 100% **open source**, built for the community.
 
-| Resource | Link |
-| :---- | :---- |
-| **Download App (Android)** | [https://play.google.com/store/apps/details?id=com.ilseon](https://play.google.com/store/apps/details?id=com.ilseon) |
-| **Project Homepage** | [https://cladam.github.io/projects/ilseon/](https://cladam.github.io/projects/ilseon/) |
-| **Source Code (You Are Here)** | https://github.com/cladam/ilseon |
+| Resource                       | Link                                                                                                                 |
+|:-------------------------------|:---------------------------------------------------------------------------------------------------------------------|
+| **Download App (Android)**     | [https://play.google.com/store/apps/details?id=com.ilseon](https://play.google.com/store/apps/details?id=com.ilseon) |
+| **Project Homepage**           | [https://cladam.github.io/projects/ilseon/](https://cladam.github.io/projects/ilseon/)                               |
 
+### Screenshots & Preview
+
+|                                                                        Task List                                                                        |                                                                       Time Block                                                                        |                                                                   Quick Capture                                                                   |
+|:-------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------:|
+| ![Dashboard](https://play-lh.googleusercontent.com/dk4QeDbRAF8GQwbmj8w6pkGIl39euZLvuJ-fTUzIhOmOl6d_53ct9JVjD0xCLVbawaBStFtY25A8H7yNe9_o9Sc=w5120-h2880) | ![Focus View](https://play-lh.googleusercontent.com/QdEp72HU9bF1hMCMTeirlKS3Tn7o4F3si04wvZjpBt6ShZlKuP4BofjfQ1l7Y5TSCtNMuKli5MbnFfLmCz5sag=w5120-h2880) | ![Widget](https://play-lh.googleusercontent.com/ru-Ue8NVMM6YIecvBF2HZr6FlS1g-_pCw-7Tgwm0wt_xYHcfTMst8HYwHxOMeeJaNpvY1Xu4MXYU-nTrAB4q=w5120-h2880) |
+
+### Getting started
+
+1. Clone this repository.
+2. Open the project in Android Studio
+3. Run the project on an emulator or physical device.
+
+### Contributing
+
+Contributions are welcome! Please feel free to open an issue or submit a pull request.

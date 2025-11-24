@@ -1,5 +1,6 @@
 <p align="center">
     <img src="images/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
+    <a href='https://play.google.com/store/apps/details?id=com.ilseon'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="80px"/></a>
 </p>
 
 <h1 align="center">ilseon</h1>
@@ -11,7 +12,6 @@
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 
 assistant designed to reduce mental overload. It creates a protected focus environment that helps users 
 regain control over time, attention, and priorities.
-![Ilseon](https://playbadges.pavi2410.com/badge/full?id=com.ilseon&theme=dark)
 
 ## The Core Problem
 

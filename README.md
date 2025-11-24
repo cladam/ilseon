@@ -1,12 +1,17 @@
 <p align="center">
-<img src="images/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
+    <img src="images/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
 </p>
 
 <h1 align="center">ilseon</h1>
 
 <p align="center">
-<strong>A low-friction, distraction-minimal executive function assistant.</strong>
-https://playbadges.pavi2410.com/badge/full?id=com.ilseon[&theme=dark]
+    <strong>A low-friction, distraction-minimal executive function assistant.</strong>
+
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://playbadges.pavi2410.com/badge/full?id=com.ilseon&theme=dark">
+      <img alt="Ilseon" src="https://playbadges.pavi2410.com/badge/full?id=com.ilseon">
+    </picture>
+    
 </p>
 
 **Ilseon** (일선, Korean for _“front line”_ or _“immediate priority”_) is a minimalist executive function 

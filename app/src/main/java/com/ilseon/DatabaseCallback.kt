@@ -51,7 +51,8 @@ class DatabaseCallback @Inject constructor(
                     description = "This task is scheduled for a specific time block.",
                     schedulingType = SchedulingType.TimeBlock,
                     startTime = System.currentTimeMillis() + 3600000, // 1 hour from now
-                    endTime = System.currentTimeMillis() + 7200000 // 2 hours from now
+                    endTime = System.currentTimeMillis() + 7200000, // 2 hours from now
+                    dueTime = System.currentTimeMillis() + 7200000 // 2 hours from now
                 )
             )
             taskDao.insert(

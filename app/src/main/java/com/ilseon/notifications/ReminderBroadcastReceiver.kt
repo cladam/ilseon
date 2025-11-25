@@ -19,10 +19,13 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
     lateinit var notificationHelper: NotificationHelper
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != "com.ilseon.REMINDER") {
-            return
+        when (intent.action) {
+            "com.ilseon.REMINDER_NOTIFICATION" -> handleNotification(context, intent)
+            "com.ilseon.REMINDER_HAPTIC" -> handleHaptic(intent)
         }
+    }
 
+    private fun handleNotification(context: Context, intent: Intent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context,
@@ -39,12 +42,22 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         val timerStateName = intent.getStringExtra("EXTRA_TIMER_STATE")
         val schedulingTypeName = intent.getStringExtra("EXTRA_SCHEDULING_TYPE")
 
-        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: NotificationTier.PreBlockWarning
+        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: return
         val timerState = timerStateName?.let { TimerState.valueOf(it) } ?: TimerState.NotStarted
         val schedulingType = schedulingTypeName?.let { SchedulingType.valueOf(it) } ?: SchedulingType.None
 
         if (taskId != null && title != null) {
+            // Coupled alerts will trigger haptics via the helper
+            if (tier == NotificationTier.CriticalDecision || tier == NotificationTier.PreBlockWarning || tier == NotificationTier.Nagging) {
+                notificationHelper.showHapticFeedback(tier)
+            }
             notificationHelper.showReminderNotification(taskId, title, description, tier, timerState, schedulingType)
         }
+    }
+
+    private fun handleHaptic(intent: Intent) {
+        val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
+        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: return
+        notificationHelper.showHapticFeedback(tier)
     }
 }

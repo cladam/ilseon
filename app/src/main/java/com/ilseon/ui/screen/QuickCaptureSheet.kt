@@ -61,6 +61,7 @@ import com.ilseon.data.task.TaskPriority
 import com.ilseon.ui.components.DayPicker
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.toColor
+import kotlinx.coroutines.delay
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,6 +98,7 @@ fun QuickCaptureSheet(
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
 
     val focusManager = LocalFocusManager.current
+    val titleFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(contexts) {
@@ -112,6 +114,13 @@ fun QuickCaptureSheet(
     LaunchedEffect(initialDescription) {
         if (initialDescription.isNotEmpty()) {
             description = initialDescription
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (initialTitle.isEmpty()) {
+            delay(100) // Add a small delay to allow the sheet to settle
+            titleFocusRequester.requestFocus()
         }
     }
 
@@ -156,7 +165,9 @@ fun QuickCaptureSheet(
             value = title,
             onValueChange = { title = it },
             label = { Text("What's on your mind?") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(titleFocusRequester),
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = MaterialTheme.colorScheme.secondary,

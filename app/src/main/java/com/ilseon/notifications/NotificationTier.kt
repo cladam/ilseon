@@ -3,5 +3,7 @@ package com.ilseon.notifications
 enum class NotificationTier {
     SubtleAnchor,
     PreBlockWarning,
-    CriticalDecision
+    CriticalDecision,
+    Nagging,
+    Success
 }

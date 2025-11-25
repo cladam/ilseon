@@ -28,10 +28,7 @@ class NotificationHelper @Inject constructor(
     private val notificationManager = NotificationManagerCompat.from(context)
 
     companion object {
-        // Haptic Feedback Patterns
-        private val CRITICAL_VIBRATION_PATTERN = longArrayOf(0, 500, 200, 500, 200, 500) // On, off, on, off...
-        private val WARNING_VIBRATION_PATTERN = longArrayOf(0, 300, 150, 300)
-        private val ANCHOR_VIBRATION_PATTERN = longArrayOf(0, 100)
+        // Haptic feedback is handled by HapticManager
 
         // Tier 3
         private const val CRITICAL_CHANNEL_ID = "ilseon_critical_decision"
@@ -48,6 +45,14 @@ class NotificationHelper @Inject constructor(
         private const val ANCHOR_CHANNEL_NAME = "Subtle Anchor"
         private const val ANCHOR_CHANNEL_DESCRIPTION = "Low-priority, subtle cues during a focus block."
 
+        private const val NAGGING_CHANNEL_ID = "ilseon_nagging"
+        private const val NAGGING_CHANNEL_NAME = "Nagging"
+        private const val NAGGING_CHANNEL_DESCRIPTION = "For repeated reminders that need attention."
+        
+        private const val SUCCESS_CHANNEL_ID = "ilseon_success"
+        private const val SUCCESS_CHANNEL_NAME = "Success"
+        private const val SUCCESS_CHANNEL_DESCRIPTION = "For successful completion of tasks."
+
         private const val FOCUS_CHANNEL_ID = "ilseon_focus"
         private const val FOCUS_CHANNEL_NAME = "Focus Session"
         private const val FOCUS_CHANNEL_DESCRIPTION = "Persistent notification for the active focus session"
@@ -61,8 +66,6 @@ class NotificationHelper @Inject constructor(
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = CRITICAL_CHANNEL_DESCRIPTION
-                enableVibration(true)
-                vibrationPattern = CRITICAL_VIBRATION_PATTERN
             }
 
             val warningChannel = NotificationChannel(
@@ -71,8 +74,6 @@ class NotificationHelper @Inject constructor(
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = WARNING_CHANNEL_DESCRIPTION
-                enableVibration(true)
-                vibrationPattern = WARNING_VIBRATION_PATTERN
             }
 
             val anchorChannel = NotificationChannel(
@@ -81,8 +82,22 @@ class NotificationHelper @Inject constructor(
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = ANCHOR_CHANNEL_DESCRIPTION
-                enableVibration(true)
-                vibrationPattern = ANCHOR_VIBRATION_PATTERN
+            }
+
+            val naggingChannel = NotificationChannel(
+                NAGGING_CHANNEL_ID,
+                NAGGING_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = NAGGING_CHANNEL_DESCRIPTION
+            }
+            
+            val successChannel = NotificationChannel(
+                SUCCESS_CHANNEL_ID,
+                SUCCESS_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = SUCCESS_CHANNEL_DESCRIPTION
             }
 
             val focusChannel = NotificationChannel(
@@ -91,12 +106,21 @@ class NotificationHelper @Inject constructor(
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = FOCUS_CHANNEL_DESCRIPTION
-                // No vibration for the persistent focus notification
             }
 
             notificationManager.createNotificationChannels(
-                listOf(criticalChannel, warningChannel, anchorChannel, focusChannel)
+                listOf(criticalChannel, warningChannel, anchorChannel, naggingChannel, successChannel, focusChannel)
             )
+        }
+    }
+
+    fun showHapticFeedback(tier: NotificationTier) {
+        when (tier) {
+            NotificationTier.CriticalDecision -> hapticManager.performAlert()
+            NotificationTier.PreBlockWarning -> hapticManager.performWarning()
+            NotificationTier.SubtleAnchor -> hapticManager.performNudge()
+            NotificationTier.Nagging -> hapticManager.performNagging()
+            NotificationTier.Success -> hapticManager.performSuccess()
         }
     }
 
@@ -109,22 +133,20 @@ class NotificationHelper @Inject constructor(
         timerState: TimerState,
         schedulingType: SchedulingType
     ) {
-        when (tier) {
-            NotificationTier.CriticalDecision -> hapticManager.performAlert()
-            NotificationTier.PreBlockWarning -> hapticManager.performWarning()
-            NotificationTier.SubtleAnchor -> hapticManager.performNudge()
-        }
-
         val channelId = when (tier) {
             NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
             NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
             NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
+            NotificationTier.Nagging -> NAGGING_CHANNEL_ID
+            NotificationTier.Success -> SUCCESS_CHANNEL_ID
         }
 
         val priority = when (tier) {
             NotificationTier.CriticalDecision -> NotificationCompat.PRIORITY_HIGH
             NotificationTier.PreBlockWarning -> NotificationCompat.PRIORITY_DEFAULT
             NotificationTier.SubtleAnchor -> NotificationCompat.PRIORITY_LOW
+            NotificationTier.Nagging -> NotificationCompat.PRIORITY_HIGH
+            NotificationTier.Success -> NotificationCompat.PRIORITY_DEFAULT
         }
 
         val builder = NotificationCompat.Builder(context, channelId)

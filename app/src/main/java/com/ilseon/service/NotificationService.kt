@@ -21,6 +21,7 @@ interface NotificationService {
     fun sendFocusBlockStartedNotification(focusBlockName: String)
     fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int)
     fun sendNaggingNotification(task: Task)
+    fun sendHapticFeedback(tier: NotificationTier)
 }
 
 @Singleton
@@ -42,6 +43,11 @@ class NotificationServiceImpl @Inject constructor(
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         ) {
+            // Rule 2: Coupled Critical Alerts
+            if (tier == NotificationTier.CriticalDecision || tier == NotificationTier.PreBlockWarning) {
+                notificationHelper.showHapticFeedback(tier)
+            }
+
             notificationHelper.showReminderNotification(
                 taskId,
                 title,
@@ -53,13 +59,17 @@ class NotificationServiceImpl @Inject constructor(
         }
     }
 
+    override fun sendHapticFeedback(tier: NotificationTier) {
+        notificationHelper.showHapticFeedback(tier)
+    }
+
     override fun sendTaskFinishedNotification(task: Task) {
         sendNotification(
             title = "Task Finished",
             content = "Your task '${task.title}' has completed.",
-            tier = NotificationTier.CriticalDecision,
+            tier = NotificationTier.Success, // Using Success tier
             taskId = task.id.toString(),
-            timerState = TimerState.Finished // This ensures the 'Complete' action is shown
+            timerState = TimerState.Finished
         )
     }
 
@@ -102,11 +112,13 @@ class NotificationServiceImpl @Inject constructor(
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         ) {
+            // Rule 3: Use nagging tier and haptic
+            notificationHelper.showHapticFeedback(NotificationTier.Nagging)
             notificationHelper.showReminderNotification(
                 task.id.toString(),
                 "High-Priority Task Incomplete",
                 "Reminder: '${task.title}' is still waiting to be completed.",
-                NotificationTier.CriticalDecision,
+                NotificationTier.Nagging, // Correct Tier
                 task.timerState,
                 task.schedulingType
             )

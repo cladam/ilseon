@@ -4,9 +4,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class NoteExporter {
+class ReflectionExporter {
 
-    fun exportNotes(tasks: List<Task>): String {
+    fun exportReflections(tasks: List<Task>): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val stringBuilder = StringBuilder()
         stringBuilder.append("Ilseon Task Reflections:\n\n")

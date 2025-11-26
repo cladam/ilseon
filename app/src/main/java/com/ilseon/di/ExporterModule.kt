@@ -1,6 +1,6 @@
 package com.ilseon.di
 
-import com.ilseon.data.task.NoteExporter
+import com.ilseon.data.task.ReflectionExporter
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +13,7 @@ object ExporterModule {
 
     @Provides
     @Singleton
-    fun provideNoteExporter(): NoteExporter {
-        return NoteExporter()
+    fun provideReflectionExporter(): ReflectionExporter {
+        return ReflectionExporter()
     }
 }

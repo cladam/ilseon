@@ -6,7 +6,7 @@ sealed class Screen(val route: String) {
     object QuickCapture : Screen("quick_capture")
     object About : Screen("about")
     object Settings : Screen("settings")
-    object Notes : Screen("notes")
+    object Reflections : Screen("reflections")
     object Analytics : Screen("analytics")
     object ContextManagement : Screen("context_management")
     object NextTaskActivation : Screen("next_task_activation")

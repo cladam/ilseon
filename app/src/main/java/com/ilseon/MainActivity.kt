@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -67,14 +66,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -92,7 +89,7 @@ import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
 import com.ilseon.ui.screen.NextTaskActivationScreen
-import com.ilseon.ui.screen.NotesScreen
+import com.ilseon.ui.screen.ReflectionScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
@@ -286,7 +283,7 @@ class MainActivity : ComponentActivity() {
                     contract = ActivityResultContracts.CreateDocument("text/plain"),
                     onResult = { uri: Uri? ->
                         uri?.let {
-                            settingsViewModel.exportNotes { exportedData ->
+                            settingsViewModel.exportReflections { exportedData ->
                                 context.contentResolver.openOutputStream(it)?.use { outputStream ->
                                     OutputStreamWriter(outputStream).use { writer ->
                                         writer.write(exportedData)
@@ -447,8 +444,8 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            composable(Screen.Notes.route) {
-                                NotesScreen()
+                            composable(Screen.Reflections.route) {
+                                ReflectionScreen()
                             }
                             composable(Screen.Settings.route) {
                                 SettingsScreen(
@@ -627,7 +624,7 @@ private fun DrawerContent(
 ) {
     val navigationItems = listOf(
         "Dashboard" to Screen.DailyDashboard.route,
-        "Notes" to Screen.Notes.route,
+        "Reflections" to Screen.Reflections.route,
         "Contexts" to Screen.ContextManagement.route,
         "Analytics" to Screen.Analytics.route
     )

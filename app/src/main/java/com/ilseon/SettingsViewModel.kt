@@ -2,7 +2,7 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ilseon.data.task.NoteExporter
+import com.ilseon.data.task.ReflectionExporter
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +16,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val taskRepository: TaskRepository,
-    private val noteExporter: NoteExporter
+    private val reflectionExporter: ReflectionExporter
 ) : ViewModel() {
 
     val nudgeNotificationsEnabled = settingsRepository.nudgeNotificationsEnabled
@@ -71,10 +71,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportNotes(onExported: (String) -> Unit) {
+    fun exportReflections(onExported: (String) -> Unit) {
         viewModelScope.launch {
             val tasks = taskRepository.getTasksWithReflections().first()
-            val exportedData = noteExporter.exportNotes(tasks)
+            val exportedData = reflectionExporter.exportReflections(tasks)
             // Fetch ALL tasks for the debug export.
             //val tasks = taskRepository.getAllTasksForDebug()
             // Use the new debug export function.

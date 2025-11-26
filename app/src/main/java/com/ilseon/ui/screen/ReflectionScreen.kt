@@ -36,7 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.ilseon.NotesViewModel
+import com.ilseon.ReflectionsViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.HtmlText
 import java.text.SimpleDateFormat
@@ -44,24 +44,24 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun NotesScreen(
-    viewModel: NotesViewModel = hiltViewModel()
+fun ReflectionScreen(
+    viewModel: ReflectionsViewModel = hiltViewModel()
 ) {
-    val notes by viewModel.notes.collectAsState()
+    val reflections by viewModel.reflections.collectAsState()
     var editingTask by remember { mutableStateOf<Task?>(null) }
 
-    NotesScreenContent(
-        notes = notes,
-        onDeleteNote = { viewModel.deleteNote(it) },
-        onEditNote = { editingTask = it }
+    ReflectionScreenContent(
+        reflections = reflections,
+        onDeleteReflection = { viewModel.deleteReflection(it) },
+        onEditReflection = { editingTask = it }
     )
 
     if (editingTask != null) {
-        EditNoteDialog(
+        EditReflectionDialog(
             task = editingTask!!,
             onDismiss = { editingTask = null },
             onSave = { updatedTask ->
-                viewModel.updateNote(updatedTask)
+                viewModel.updateReflection(updatedTask)
                 editingTask = null
             }
         )
@@ -69,7 +69,7 @@ fun NotesScreen(
 }
 
 @Composable
-private fun EditNoteDialog(
+private fun EditReflectionDialog(
     task: Task,
     onDismiss: () -> Unit,
     onSave: (Task) -> Unit
@@ -78,7 +78,7 @@ private fun EditNoteDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Edit Note") },
+        title = { Text(text = "Edit Reflection") },
         text = {
             OutlinedTextField(
                 value = reflectionText,
@@ -106,10 +106,10 @@ private fun EditNoteDialog(
 }
 
 @Composable
-private fun NotesScreenContent(
-    notes: List<Task>,
-    onDeleteNote: (Task) -> Unit,
-    onEditNote: (Task) -> Unit
+private fun ReflectionScreenContent(
+    reflections: List<Task>,
+    onDeleteReflection: (Task) -> Unit,
+    onEditReflection: (Task) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -119,32 +119,32 @@ private fun NotesScreenContent(
         item {
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
                 Text(
-                    text = "Your Notes",
+                    text = "Your Reflections",
                     style = MaterialTheme.typography.headlineSmall
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "You have ${notes.size} notes. Keep reflecting!",
+                    text = "You have ${reflections.size} reflections. Keep reflecting!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        if (notes.isEmpty()) {
+        if (reflections.isEmpty()) {
             item {
                 Text(
-                    text = "No notes yet. Complete a task to add a note.",
+                    text = "No reflections yet. Complete a task to add a reflection.",
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
-            items(notes, key = { it.id }) { task ->
-                NoteItem(
+            items(reflections, key = { it.id }) { task ->
+                ReflectionItem(
                     task = task,
-                    onDelete = { onDeleteNote(task) },
-                    onEdit = { onEditNote(task) }
+                    onDelete = { onDeleteReflection(task) },
+                    onEdit = { onEditReflection(task) }
                 )
             }
         }
@@ -152,7 +152,7 @@ private fun NotesScreenContent(
 }
 
 @Composable
-private fun NoteItem(
+private fun ReflectionItem(
     task: Task,
     onDelete: () -> Unit,
     onEdit: () -> Unit
@@ -194,7 +194,7 @@ private fun NoteItem(
             IconButton(onClick = onEdit) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit note",
+                    contentDescription = "Edit reflection",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -202,7 +202,7 @@ private fun NoteItem(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete note",
+                    contentDescription = "Delete reflection",
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(24.dp)
                 )

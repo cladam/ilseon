@@ -1,7 +1,7 @@
 package com.ilseon
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.ilseon.data.task.NoteExporter
+import com.ilseon.data.task.ReflectionExporter
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
 import io.mockk.coEvery
@@ -29,7 +29,7 @@ class SettingsViewModelTest {
 
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var taskRepository: TaskRepository
-    private lateinit var noteExporter: NoteExporter
+    private lateinit var reflectionExporter: ReflectionExporter
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -37,7 +37,7 @@ class SettingsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         settingsRepository = mockk(relaxed = true)
         taskRepository = mockk(relaxed = true)
-        noteExporter = mockk(relaxed = true)
+        reflectionExporter = mockk(relaxed = true)
 
         // Mock the flow to prevent issues during ViewModel initialization
         coEvery { settingsRepository.nudgeNotificationsEnabled } returns MutableStateFlow(true)
@@ -51,7 +51,7 @@ class SettingsViewModelTest {
     @Test
     fun `setNudgeNotificationsEnabled calls repository`() = runTest {
         // Arrange
-        val viewModel = SettingsViewModel(settingsRepository, taskRepository, noteExporter)
+        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter)
 
         // Act
         viewModel.setNudgeNotificationsEnabled(false)
@@ -62,20 +62,20 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `exportNotes calls noteExporter`() = runTest {
+    fun `exportReflections calls reflectionExporter`() = runTest {
         // Arrange
         val tasks = listOf(mockk<com.ilseon.data.task.Task>())
         coEvery { taskRepository.getTasksWithReflections() } returns flowOf(tasks)
-        coEvery { noteExporter.exportNotes(tasks) } returns "exported data"
-        val viewModel = SettingsViewModel(settingsRepository, taskRepository, noteExporter)
+        coEvery { reflectionExporter.exportReflections(tasks) } returns "exported data"
+        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter)
         var exportedData = ""
 
         // Act
-        viewModel.exportNotes { exportedData = it }
+        viewModel.exportReflections { exportedData = it }
         advanceUntilIdle()
 
         // Assert
-        coVerify { noteExporter.exportNotes(tasks) }
+        coVerify { reflectionExporter.exportReflections(tasks) }
         assert(exportedData == "exported data")
     }
 }

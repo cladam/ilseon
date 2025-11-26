@@ -12,24 +12,24 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class NotesViewModel @Inject constructor(
+class ReflectionsViewModel @Inject constructor(
     private val taskRepository: TaskRepository
 ) : ViewModel() {
 
-    val notes: StateFlow<List<Task>> = taskRepository.getTasksWithReflections()
+    val reflections: StateFlow<List<Task>> = taskRepository.getTasksWithReflections()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    fun updateNote(task: Task) {
+    fun updateReflection(task: Task) {
         viewModelScope.launch {
             taskRepository.updateTask(task)
         }
     }
 
-    fun deleteNote(task: Task) {
+    fun deleteReflection(task: Task) {
         viewModelScope.launch {
             val updatedTask = task.copy(completionReflection = null)
             taskRepository.updateTask(updatedTask)

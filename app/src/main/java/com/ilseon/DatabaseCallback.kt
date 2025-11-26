@@ -31,7 +31,7 @@ class DatabaseCallback @Inject constructor(
                     title = "Welcome to Ilseon!",
                     contextId = ilseonContextId,
                     priority = TaskPriority.High,
-                    description = "This is a regular task, click the checkbox to complete it. If you add a reflection of how the task went it will show up in Notes.",
+                    description = "This is a regular task, click the checkbox to complete it. If you add a reflection of how the task went it will show up in Reflections.",
                     isCurrentPriority = true
                 )
             )

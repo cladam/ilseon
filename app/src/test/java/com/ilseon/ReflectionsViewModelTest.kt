@@ -22,7 +22,7 @@ import org.junit.Test
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
-class NotesViewModelTest {
+class ReflectionsViewModelTest {
 
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
@@ -42,7 +42,7 @@ class NotesViewModelTest {
     }
 
     @Test
-    fun `notes StateFlow emits tasks with reflections from repository`() = runTest {
+    fun `reflections StateFlow emits tasks with reflections from repository`() = runTest {
         // 1. Arrange
         val completedTask = Task(
             id = UUID.randomUUID(),
@@ -57,10 +57,10 @@ class NotesViewModelTest {
         coEvery { taskRepository.getTasksWithReflections() } returns tasksFlow
 
         // 2. Act
-        val viewModel = NotesViewModel(taskRepository)
+        val viewModel = ReflectionsViewModel(taskRepository)
 
         // 3. Assert
-        viewModel.notes.test {
+        viewModel.reflections.test {
             // First, assert the initial empty state is emitted.
             assertEquals(emptyList<Task>(), awaitItem())
 

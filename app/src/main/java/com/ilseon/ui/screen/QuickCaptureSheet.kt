@@ -101,9 +101,16 @@ fun QuickCaptureSheet(
     val titleFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
 
+    // Combined LaunchedEffect to handle initialization and focus
     LaunchedEffect(contexts) {
-        if (selectedContextId == null) {
-            selectedContextId = contexts.firstOrNull()?.id
+        if (selectedContextId == null && contexts.isNotEmpty()) {
+            selectedContextId = contexts.first().id
+        }
+        // Only request focus if the title is empty
+        if (initialTitle.isEmpty()) {
+            // A minimal delay is still useful to ensure the keyboard appears smoothly
+            delay(50) 
+            titleFocusRequester.requestFocus()
         }
     }
 
@@ -114,13 +121,6 @@ fun QuickCaptureSheet(
     LaunchedEffect(initialDescription) {
         if (initialDescription.isNotEmpty()) {
             description = initialDescription
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (initialTitle.isEmpty()) {
-            delay(100) // Add a small delay to allow the sheet to settle
-            titleFocusRequester.requestFocus()
         }
     }
 

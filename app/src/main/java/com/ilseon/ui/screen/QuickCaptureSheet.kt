@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -46,6 +47,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -62,6 +64,8 @@ import com.ilseon.ui.components.DayPicker
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.toColor
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,15 +105,23 @@ fun QuickCaptureSheet(
     val titleFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
 
-    // Combined LaunchedEffect to handle initialization and focus
+    // Initialize selected context when contexts are loaded
     LaunchedEffect(contexts) {
         if (selectedContextId == null && contexts.isNotEmpty()) {
             selectedContextId = contexts.first().id
         }
-        // Only request focus if the title is empty
+    }
+
+    val windowInfo = LocalWindowInfo.current
+    LaunchedEffect(windowInfo) {
         if (initialTitle.isEmpty()) {
-            // A minimal delay is still useful to ensure the keyboard appears smoothly
-            delay(50) 
+            // Wait until the window is focused before requesting focus.
+            snapshotFlow { windowInfo.isWindowFocused }
+                .filter { isWindowFocused -> isWindowFocused }
+                .first()
+
+            // A small delay helps ensure the keyboard appears smoothly
+            delay(100)
             titleFocusRequester.requestFocus()
         }
     }

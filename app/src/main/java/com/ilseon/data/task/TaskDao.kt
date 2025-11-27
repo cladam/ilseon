@@ -15,21 +15,8 @@ data class FocusDistribution(
     val count: Int
 )
 
-/**
- * This is the DAO (Data Access Object) as specified in the brief.
- * It defines all the database operations (CRUD).
- *
- * It uses Kotlin's Flow to expose a reactive stream of data,
- * which the UI (Jetpack Compose) can collect.
- */
 @Dao
 interface TaskDao {
-
-    /**
-     * Gets a reactive flow of all incomplete tasks,
-     * ordered by priority (High, Medium, Low) and then by creation time.
-     * This will power the main dashboard.
-     */
     @Query("""
         SELECT * FROM tasks
         WHERE isComplete = 0 AND isArchived = 0

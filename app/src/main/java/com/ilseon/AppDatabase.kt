@@ -4,6 +4,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import com.ilseon.data.idea.Idea
+import com.ilseon.data.idea.IdeaDao
 import com.ilseon.data.task.ReminderType
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
@@ -17,14 +19,14 @@ import com.ilseon.data.task.FocusBlockDao
 import java.util.UUID
 
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class], version = 14, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class], version = 15, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
     abstract fun taskContextDao(): TaskContextDao
-
     abstract fun focusBlockDao(): FocusBlockDao
+    abstract fun ideaDao(): IdeaDao
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.

@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
     object Analytics : Screen("analytics")
     object ContextManagement : Screen("context_management")
     object NextTaskActivation : Screen("next_task_activation")
+    object IdeaInbox : Screen("idea_inbox")
 }

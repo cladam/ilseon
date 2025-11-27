@@ -88,6 +88,7 @@ import com.ilseon.ui.screen.ArchiveScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
+import com.ilseon.ui.screen.IdeaInboxScreen
 import com.ilseon.ui.screen.NextTaskActivationScreen
 import com.ilseon.ui.screen.ReflectionScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
@@ -121,8 +122,6 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
         }
-
-        handleIntent(intent)
 
         setContent {
             IlseonTheme {
@@ -227,16 +226,21 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                var showAddIdeaDialog by remember { mutableStateOf(false) }
+                var onTaskSavedFromIdea by remember { mutableStateOf(false) }
+
+
                 val tasks by viewModel.tasks.collectAsState()
                 val completionStreak by viewModel.completionStreak.collectAsState()
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
+
                 var vttTitleResult by remember { mutableStateOf("") }
                 var vttDescriptionResult by remember { mutableStateOf("") }
+                var vttIdeaContentResult by remember { mutableStateOf("") }
                 var vttContextNameResult by remember { mutableStateOf("") }
                 var vttContextDescriptionResult by remember { mutableStateOf("") }
                 var vttTarget by remember { mutableStateOf("quick_capture_title") }
-
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
@@ -253,6 +257,10 @@ class MainActivity : ComponentActivity() {
                                 "quick_capture_description" -> {
                                     vttDescriptionResult = text
                                     scope.launch { sheetState.show() }
+                                }
+                                "idea_content" -> {
+                                    vttIdeaContentResult = text
+                                    showAddIdeaDialog = true
                                 }
                                 "context_name" -> vttContextNameResult = text
                                 "context_description" -> vttContextDescriptionResult = text
@@ -293,6 +301,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
+                
+                LaunchedEffect(intent) {
+                    handleIntent(intent,
+                        onShowTaskSheet = { scope.launch { sheetState.show() } },
+                        onShowIdeaDialog = {
+                            navController.navigate(Screen.IdeaInbox.route)
+                            showAddIdeaDialog = true
+                        }
+                    )
+                    // Clear the extra to avoid re-triggering
+                    intent?.removeExtra("capture_type")
+                }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -331,14 +351,25 @@ class MainActivity : ComponentActivity() {
                         },
                         floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
-                            if (currentRoute == Screen.DailyDashboard.route) {
+                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route) {
                                 LargeFloatingActionButton(
                                     onClick = {
-                                        vttTarget = "quick_capture_title"
-                                        if (bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()) {
-                                            startVtt()
-                                        } else {
-                                            scope.launch { sheetState.show() }
+                                        val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
+                                        if (currentRoute == Screen.IdeaInbox.route) {
+                                            vttTarget = "idea_content"
+                                            if (useVtt) {
+                                                startVtt()
+                                            } else {
+                                                vttIdeaContentResult = ""
+                                                showAddIdeaDialog = true
+                                            }
+                                        } else { // Dashboard
+                                            vttTarget = "quick_capture_title"
+                                            if (useVtt) {
+                                                startVtt()
+                                            } else {
+                                                scope.launch { sheetState.show() }
+                                            }
                                         }
                                     },
                                     shape = CircleShape,
@@ -487,6 +518,26 @@ class MainActivity : ComponentActivity() {
                                     initialContextDescription = vttContextDescriptionResult
                                 )
                             }
+                            composable(Screen.IdeaInbox.route) {
+                                IdeaInboxScreen(
+                                    onNavigateToNewTask = { title, description ->
+                                        vttTitleResult = title
+                                        vttDescriptionResult = description
+                                        onTaskSavedFromIdea = true
+                                        scope.launch { sheetState.show() }
+                                    },
+                                    showAddIdeaDialog = showAddIdeaDialog,
+                                    onDismissAddIdeaDialog = {
+                                        showAddIdeaDialog = false
+                                        vttIdeaContentResult = "" // Reset after dialog dismiss
+                                    },
+                                    vttIdeaContent = vttIdeaContentResult,
+                                    onVttClick = {
+                                        vttTarget = "idea_content"
+                                        startVtt()
+                                    }
+                                )
+                            }
                             composable("completed_tasks") {
                                 CompletedTasksScreen()
                             }
@@ -520,7 +571,14 @@ class MainActivity : ComponentActivity() {
                                     recurrenceDays,
                                     isForTomorrow
                                 )
-                                scope.launch { sheetState.hide() }
+                                scope.launch { sheetState.hide() }.invokeOnCompletion { 
+                                    if (onTaskSavedFromIdea) {
+                                        navController.navigate(Screen.DailyDashboard.route) {
+                                            popUpTo(navController.graph.startDestinationId)
+                                        }
+                                        onTaskSavedFromIdea = false
+                                    }
+                                }
                                 vttTitleResult = ""
                                 vttDescriptionResult = ""
                             },
@@ -543,11 +601,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent)
+        handleIntent(intent,
+            onShowTaskSheet = { /* We need a coroutine scope here, but can't get one. Will be handled by LaunchedEffect. */ },
+            onShowIdeaDialog = { /* Same as above. */ }
+        )
     }
 
-    private fun handleIntent(intent: Intent?) {
-        if (intent?.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
+    private fun handleIntent(intent: Intent?, onShowTaskSheet: () -> Unit, onShowIdeaDialog: () -> Unit) {
+        if (intent == null) return
+        when (intent.getStringExtra("capture_type")) {
+            "task" -> onShowTaskSheet()
+            "idea" -> onShowIdeaDialog()
+        }
+        
+        if (intent.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
             val taskIdString = intent.getStringExtra("EXTRA_TASK_ID")
             if (taskIdString != null) {
                 viewModel.onShowReflectionDialog(UUID.fromString(taskIdString))
@@ -577,27 +644,23 @@ fun StreakIndicator(streak: Int) {
             }
             streak >= 5 -> { // Deep Focus - Subtle Alpha Pulse (Breathing Effect)
                 val infiniteTransition = rememberInfiniteTransition(label = "streak-pulse")
-
-                // Animate the alpha (opacity) slowly between 0.7f and 1.0f over 2.5 seconds
+                
                 val pulseAlpha by infiniteTransition.animateFloat(
                     initialValue = 0.7f,
                     targetValue = 1.0f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(2500, easing = FastOutSlowInEasing), // Slower animation
-                        repeatMode = RepeatMode.Reverse // Gentle fade in and out
+                        animation = tween(2500, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
                     ),
                     label = "streak-pulse-alpha"
                 )
 
-                // Star Icon with the subtle pulse effect
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = "Deep Focus Streak: $streak",
                     tint = MutedGold,
-                    modifier = Modifier.alpha(pulseAlpha) // Apply the gentle pulse directly to the icon
+                    modifier = Modifier.alpha(pulseAlpha)
                 )
-
-                // Optional: A very thin, static border or shadow (No animation needed here)
             }
             streak >= 3 -> { // Momentum
                 Icon(
@@ -624,6 +687,7 @@ private fun DrawerContent(
 ) {
     val navigationItems = listOf(
         "Dashboard" to Screen.DailyDashboard.route,
+        "Idea Inbox" to Screen.IdeaInbox.route,
         "Reflections" to Screen.Reflections.route,
         "Contexts" to Screen.ContextManagement.route,
         "Analytics" to Screen.Analytics.route

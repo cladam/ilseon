@@ -7,6 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.AppDatabase
 import com.ilseon.DatabaseCallback
+import com.ilseon.data.idea.IdeaDao
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
@@ -21,7 +22,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -45,26 +45,32 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                 .build()
         }
 
         private val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE tasks ADD COLUMN isRecurring INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE tasks ADD COLUMN recurrenceDays TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN isRecurring INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN recurrenceDays TEXT")
             }
         }
 
         private val MIGRATION_12_13 = object : Migration(12, 13) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE tasks ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
             }
         }
         
         private val MIGRATION_13_14 = object : Migration(13, 14) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE tasks ADD COLUMN seriesId TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN seriesId TEXT")
+            }
+        }
+
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE `Idea` (`id` TEXT NOT NULL, `content` TEXT, `createdAt` INTEGER NOT NULL, `isConverted` INTEGER NOT NULL, PRIMARY KEY(`id`))")
             }
         }
 
@@ -72,6 +78,12 @@ abstract class AppModule {
         @Singleton
         fun provideTaskDao(appDatabase: AppDatabase): TaskDao {
             return appDatabase.taskDao()
+        }
+        
+        @Provides
+        @Singleton
+        fun provideIdeaDao(appDatabase: AppDatabase): IdeaDao {
+            return appDatabase.ideaDao()
         }
 
         @Provides

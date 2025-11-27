@@ -29,6 +29,7 @@ import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.ilseon.ActionTrampolineActivity
 import com.ilseon.MainActivity
 import com.ilseon.R
 import com.ilseon.data.task.Task
@@ -87,6 +88,12 @@ class PriorityWidget : GlanceAppWidget() {
                             fontSize = 12.sp
                         )
                     )
+                    Spacer(modifier = GlanceModifier.defaultWeight())
+                    Image(
+                        provider = ImageProvider(android.R.drawable.ic_input_add),
+                        contentDescription = "Quick Capture",
+                        modifier = GlanceModifier.size(24.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
+                    )
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
@@ -136,6 +143,12 @@ class PriorityWidget : GlanceAppWidget() {
                             fontSize = 12.sp
                         )
                     )
+                     Spacer(modifier = GlanceModifier.defaultWeight())
+                     Image(
+                         provider = ImageProvider(android.R.drawable.ic_input_add),
+                         contentDescription = "Quick Capture",
+                         modifier = GlanceModifier.size(24.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
+                     )
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(

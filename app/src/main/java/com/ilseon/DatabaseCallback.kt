@@ -60,7 +60,7 @@ class DatabaseCallback @Inject constructor(
                     title = "Schedule a task with a duration",
                     contextId = ilseonContextId,
                     priority = TaskPriority.Medium,
-                    description = "This task has a duration of 1 hour.",
+                    description = "This task has a duration of 25 minutes.",
                     schedulingType = SchedulingType.Duration,
                     totalTimeInMinutes = 25
                 )

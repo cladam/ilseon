@@ -40,6 +40,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ActionTrampolineActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <receiver
             android:name=".notifications.ReminderBroadcastReceiver"
             android:enabled="true"

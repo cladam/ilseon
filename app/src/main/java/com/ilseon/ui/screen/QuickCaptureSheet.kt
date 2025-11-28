@@ -101,7 +101,6 @@ fun QuickCaptureSheet(
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
 
-    val focusManager = LocalFocusManager.current
     val titleFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
 
@@ -112,14 +111,8 @@ fun QuickCaptureSheet(
         }
     }
 
-    val windowInfo = LocalWindowInfo.current
-    LaunchedEffect(windowInfo) {
+    LaunchedEffect(Unit) {
         if (initialTitle.isEmpty()) {
-            // Wait until the window is focused before requesting focus.
-            snapshotFlow { windowInfo.isWindowFocused }
-                .filter { isWindowFocused -> isWindowFocused }
-                .first()
-
             // A small delay helps ensure the keyboard appears smoothly
             delay(100)
             titleFocusRequester.requestFocus()

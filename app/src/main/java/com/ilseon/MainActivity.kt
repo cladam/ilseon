@@ -1,7 +1,6 @@
 package com.ilseon
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
@@ -119,7 +118,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         enableEdgeToEdge()
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
@@ -247,7 +246,7 @@ class MainActivity : ComponentActivity() {
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
-                    if (result.resultCode == Activity.RESULT_OK) {
+                    if (result.resultCode == RESULT_OK) {
                         val data: Intent? = result.data
                         val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                         results?.firstOrNull()?.let { text ->

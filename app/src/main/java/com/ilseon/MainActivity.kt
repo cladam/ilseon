@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -68,8 +69,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
@@ -557,6 +560,12 @@ class MainActivity : ComponentActivity() {
                         },
                         sheetState = sheetState
                     ) {
+                        val view = LocalView.current
+                        val window = (view.context as Activity).window
+                        LaunchedEffect(Unit) {
+                            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+                        }
+
                         QuickCaptureSheet(
                             onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
                                 viewModel.addTask(
@@ -571,7 +580,7 @@ class MainActivity : ComponentActivity() {
                                     recurrenceDays,
                                     isForTomorrow
                                 )
-                                scope.launch { sheetState.hide() }.invokeOnCompletion { 
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
                                     if (onTaskSavedFromIdea) {
                                         navController.navigate(Screen.DailyDashboard.route) {
                                             popUpTo(navController.graph.startDestinationId)

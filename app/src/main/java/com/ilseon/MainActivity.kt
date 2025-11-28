@@ -69,10 +69,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
@@ -121,6 +119,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         enableEdgeToEdge()
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
@@ -560,12 +559,6 @@ class MainActivity : ComponentActivity() {
                         },
                         sheetState = sheetState
                     ) {
-                        val view = LocalView.current
-                        val window = (view.context as Activity).window
-                        LaunchedEffect(Unit) {
-                            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-                        }
-
                         QuickCaptureSheet(
                             onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
                                 viewModel.addTask(

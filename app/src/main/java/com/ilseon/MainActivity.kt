@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         enableEdgeToEdge()
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
@@ -475,7 +475,7 @@ class MainActivity : ComponentActivity() {
                                             navController.popBackStack()
                                         }
                                     )
-                                }
+                                 }
                             }
                             composable(Screen.Reflections.route) {
                                 ReflectionScreen()
@@ -573,7 +573,7 @@ class MainActivity : ComponentActivity() {
                                     recurrenceDays,
                                     isForTomorrow
                                 )
-                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                     if (onTaskSavedFromIdea) {
                                         navController.navigate(Screen.DailyDashboard.route) {
                                             popUpTo(navController.graph.startDestinationId)

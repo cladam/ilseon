@@ -557,7 +557,7 @@ class MainActivity : ComponentActivity() {
                             scope.launch { sheetState.hide() }
                         },
                         sheetState = sheetState,
-                        windowInsets = WindowInsets.ime
+                        contentWindowInsets = { WindowInsets.ime }
                     ) {
                         QuickCaptureSheet(
                             onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->

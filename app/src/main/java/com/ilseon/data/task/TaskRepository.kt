@@ -90,6 +90,16 @@ class TaskRepository @Inject constructor(
         return taskContextDao.getContext(id)
     }
 
+    suspend fun getOrCreateImportedContext(): TaskContext {
+        val existingContext = taskContextDao.getContextByName("Imported")
+        if (existingContext != null) {
+            return existingContext
+        }
+        val newContext = TaskContext(name = "Imported", description = "Tasks from imported reflections")
+        taskContextDao.insertContext(newContext)
+        return newContext
+    }
+
     fun getCompletedTasks(): Flow<List<Task>> {
         return taskDao.getCompletedTasks()
     }
@@ -113,6 +123,11 @@ class TaskRepository @Inject constructor(
     suspend fun insertTask(task: Task) {
         taskDao.insert(task)
         updateRemindersForTask(task)
+        updatePriorityAndWidget()
+    }
+
+    suspend fun insertTasks(tasks: List<Task>) {
+        taskDao.insertTasks(tasks)
         updatePriorityAndWidget()
     }
 
@@ -148,6 +163,7 @@ class TaskRepository @Inject constructor(
                     java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
                 }
             } catch (e: IllegalArgumentException) {
+        
                 null
             }
         }.toSet()

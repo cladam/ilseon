@@ -14,6 +14,9 @@ interface TaskContextDao {
 
     @Query("SELECT * FROM task_contexts WHERE id = :id")
     suspend fun getContext(id: UUID): TaskContext?
+    
+    @Query("SELECT * FROM task_contexts WHERE name = :name LIMIT 1")
+    suspend fun getContextByName(name: String): TaskContext?
 
     @Insert
     suspend fun insertContext(context: TaskContext)

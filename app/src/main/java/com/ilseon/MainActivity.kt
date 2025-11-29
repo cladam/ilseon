@@ -97,6 +97,8 @@ import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -302,7 +304,21 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
-                
+
+                val openFileLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument(),
+                    onResult = { uri: Uri? ->
+                        uri?.let {
+                            context.contentResolver.openInputStream(it)?.use { inputStream ->
+                                BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                                    val text = reader.readText()
+                                    settingsViewModel.importReflections(text)
+                                }
+                            }
+                        }
+                    }
+                )
+
                 LaunchedEffect(intent) {
                     handleIntent(intent,
                         onShowTaskSheet = { scope.launch { sheetState.show() } },
@@ -491,6 +507,9 @@ class MainActivity : ComponentActivity() {
                                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                         val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
                                         createFileLauncher.launch(fileName)
+                                    },
+                                    onImportClick = {
+                                        openFileLauncher.launch(arrayOf("text/plain"))
                                     },
                                     onArchiveClick = {
                                         navController.navigate("archive_tasks")

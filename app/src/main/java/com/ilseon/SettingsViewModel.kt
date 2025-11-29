@@ -2,7 +2,9 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.task.IlseonReflectionParser
 import com.ilseon.data.task.ReflectionExporter
+import com.ilseon.data.task.ReflectionImporter
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -75,11 +77,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val tasks = taskRepository.getTasksWithReflections().first()
             val exportedData = reflectionExporter.exportReflections(tasks)
-            // Fetch ALL tasks for the debug export.
-            //val tasks = taskRepository.getAllTasksForDebug()
-            // Use the new debug export function.
-            //val exportedData = noteExporter.exportAllTasksForDebug(tasks)
             onExported(exportedData)
+        }
+    }
+
+    fun importReflections(fileContent: String) {
+        viewModelScope.launch {
+            val parser = IlseonReflectionParser()
+            val importer = ReflectionImporter(parser)
+            val importedContext = taskRepository.getOrCreateImportedContext()
+            importer.import(fileContent, importedContext.id).onSuccess { tasks ->
+                taskRepository.insertTasks(tasks)
+            }.onFailure {
+                // Handle the error, e.g., show a toast to the user
+            }
         }
     }
 }

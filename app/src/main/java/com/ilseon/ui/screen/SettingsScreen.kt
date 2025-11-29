@@ -51,6 +51,7 @@ fun SettingsScreen(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
+    onImportClick: () -> Unit,
     onArchiveClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -63,6 +64,7 @@ fun SettingsScreen(
         onCompletedTasksClick = onCompletedTasksClick,
         onAboutClick = onAboutClick,
         onExportClick = onExportClick,
+        onImportClick = onImportClick,
         onArchiveClick = onArchiveClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
@@ -80,6 +82,7 @@ private fun SettingsScreenContent(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
     onExportClick: () -> Unit,
+    onImportClick: () -> Unit,
     onArchiveClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit,
@@ -131,6 +134,7 @@ private fun SettingsScreenContent(
             DataManagementCard(
                 onCompletedTasksClick = onCompletedTasksClick,
                 onExportClick = onExportClick,
+                onImportClick = onImportClick,
                 onArchiveClick = onArchiveClick
             )
         }
@@ -270,6 +274,7 @@ private fun SpeechToTextSettingsCard(
 private fun DataManagementCard(
     onCompletedTasksClick: () -> Unit,
     onExportClick: () -> Unit,
+    onImportClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -288,9 +293,15 @@ private fun DataManagementCard(
             )
             SettingsItem(
                 icon = Icons.Default.Download,
-                title = "Export Data",
-                subtitle = "Save your data to a file",
+                title = "Export Reflections",
+                subtitle = "Save your reflections to a file",
                 onClick = onExportClick
+            )
+            SettingsItem(
+                icon = Icons.Default.Download, // Note: Consider a more appropriate icon like Upload
+                title = "Import Reflections",
+                subtitle = "Load reflections from a file",
+                onClick = onImportClick
             )
             SettingsItem(
                 icon = Icons.Default.Archive,

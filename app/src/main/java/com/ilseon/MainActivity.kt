@@ -5,12 +5,14 @@ import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +26,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -57,6 +60,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,7 +71,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -127,6 +130,20 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val darkTheme = isSystemInDarkTheme()
+            DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        Color.TRANSPARENT,
+                        Color.TRANSPARENT,
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        lightScrim,
+                        darkScrim,
+                    ) { darkTheme },
+                )
+                onDispose {}
+            }
             IlseonTheme {
                 val context = LocalContext.current
                 var hasNotificationPermission by remember {
@@ -644,9 +661,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private val lightScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val darkScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+
 @Composable
 fun StreakIndicator(streak: Int) {
-    val MutedGold = Color(0xFFC9B464)
+    val mutedGold = androidx.compose.ui.graphics.Color(0xFFC9B464)
 
     Box(
         modifier = Modifier
@@ -659,7 +679,7 @@ fun StreakIndicator(streak: Int) {
                 Icon(
                     imageVector = Icons.Filled.WorkspacePremium,
                     contentDescription = "Mastery Badge: $streak",
-                    tint = MutedGold,
+                    tint = mutedGold,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -679,7 +699,7 @@ fun StreakIndicator(streak: Int) {
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = "Deep Focus Streak: $streak",
-                    tint = MutedGold,
+                    tint = mutedGold,
                     modifier = Modifier.alpha(pulseAlpha)
                 )
             }
@@ -687,14 +707,14 @@ fun StreakIndicator(streak: Int) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Momentum Streak: $streak",
-                    tint = MutedGold
+                    tint = mutedGold
                 )
             }
             streak >= 1 -> { // Initiation
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(MutedGold, CircleShape)
+                        .background(mutedGold, CircleShape)
                 )
             }
         }
@@ -720,7 +740,7 @@ private fun DrawerContent(
             selected = currentRoute == route,
             onClick = { onNavigate(route) },
             colors = NavigationDrawerItemDefaults.colors(
-                selectedContainerColor = Color.DarkGray
+                selectedContainerColor = androidx.compose.ui.graphics.Color.DarkGray
             )
         )
     }

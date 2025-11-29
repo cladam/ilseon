@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="images/ilseon-banner.png" alt="Ilseon App Icon" width="640" height="352">
+    <img src="images/ilseon-screenshot-PS5.png" alt="Ilseon App Icon" width="640" height="352">
     <a href='https://play.google.com/store/apps/details?id=com.ilseon'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="80px"/></a>
 </p>
 
@@ -61,9 +61,9 @@ Ilseon is 100% **open source**, built for the community.
 
 ### Screenshots & Preview
 
-|                                                                        Task List                                                                        |                                                                       Time Block                                                                        |                                                                   Quick Capture                                                                   |
-|:-------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------:|
-| ![Dashboard](https://play-lh.googleusercontent.com/dk4QeDbRAF8GQwbmj8w6pkGIl39euZLvuJ-fTUzIhOmOl6d_53ct9JVjD0xCLVbawaBStFtY25A8H7yNe9_o9Sc=w5120-h2880) | ![Focus View](https://play-lh.googleusercontent.com/QdEp72HU9bF1hMCMTeirlKS3Tn7o4F3si04wvZjpBt6ShZlKuP4BofjfQ1l7Y5TSCtNMuKli5MbnFfLmCz5sag=w5120-h2880) | ![Widget](https://play-lh.googleusercontent.com/ru-Ue8NVMM6YIecvBF2HZr6FlS1g-_pCw-7Tgwm0wt_xYHcfTMst8HYwHxOMeeJaNpvY1Xu4MXYU-nTrAB4q=w5120-h2880) |
+|                    Capture                     |                    Focus                     |                    Reflect                    | Review                                         |
+|:----------------------------------------------:|:--------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------|
+| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png) |
 
 ### Getting started
 

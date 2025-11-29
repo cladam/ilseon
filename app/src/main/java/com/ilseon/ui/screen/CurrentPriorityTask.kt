@@ -63,13 +63,8 @@ fun CurrentPriorityTask(
     onUpdate: (Task, String) -> Unit,
     focusContextName: String?
 ) {
-    var remainingTime by remember(task.id, task.dueTime) {
-        val due = task.dueTime
-        if (task.timerState == TimerState.Running && due != null) {
-            mutableStateOf(max(0, due - System.currentTimeMillis()))
-        } else {
-            mutableStateOf(task.remainingTimeInSeconds * 1000L)
-        }
+    var remainingTime by remember(task.id) {
+        mutableStateOf(task.remainingTimeInSeconds * 1000L)
     }
     val timerState = task.timerState
     val isInFocusBlock = focusContextName != null
@@ -87,27 +82,20 @@ fun CurrentPriorityTask(
         )
     }
 
-    LaunchedEffect(key1 = task) {
-        // A task is overdue if its due time has passed and it's not complete.
-        // This covers both TimeBlock (endTime) and Duration (dueTime) tasks.
-        val due = task.dueTime ?: task.endTime
+    LaunchedEffect(key1 = task.id, key2 = timerState, key3 = task.dueTime) {
+        val due = task.dueTime
         isOverdue = due != null && System.currentTimeMillis() > due && !task.isComplete
 
-        if (timerState == TimerState.Running) {
-            if (due != null) {
-                val initialRemaining = due - System.currentTimeMillis()
-                remainingTime = max(0, initialRemaining)
-
-                while (remainingTime > 0) {
-                    delay(1000L)
-                    remainingTime -= 1000L
-                    isOverdue = due != null && System.currentTimeMillis() > due && !task.isComplete
-                }
-
-                if (task.timerState == TimerState.Running) {
+        if (timerState == TimerState.Running && due != null) {
+            while (true) {
+                val newRemaining = max(0, due - System.currentTimeMillis())
+                remainingTime = newRemaining
+                if (newRemaining == 0L) {
                     onTimerFinished(task)
                     isOverdue = true
+                    break
                 }
+                delay(1000L)
             }
         } else {
             remainingTime = task.remainingTimeInSeconds * 1000L

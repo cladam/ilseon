@@ -14,7 +14,7 @@ class UsageStatsReader(private val context: Context) {
 
     /**
      * A proxy for screen-on events or phone pickups. This counts how many times an activity
-     * was resumed in the given time frame.
+     * was moved to the foreground in the given time frame.
      */
     fun getPhonePickups(startTime: Long, endTime: Long): Int {
         if (!hasUsageStatsPermission()) {
@@ -25,12 +25,12 @@ class UsageStatsReader(private val context: Context) {
         val events = usageStatsManager.queryEvents(startTime, endTime)
         var pickupCount = 0
 
-        // This logic is a proxy. A "pickup" could be defined as the start of a new series of events
-        // after a period of inactivity. For now, we'll count activity resumptions.
+        // This logic is a proxy. A "pickup" is defined as any app's activity
+        // moving to the foreground.
         while (events.hasNextEvent()) {
             val event = android.app.usage.UsageEvents.Event()
             events.getNextEvent(event)
-            if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
+            if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
                 pickupCount++
             }
         }

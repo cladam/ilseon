@@ -55,8 +55,23 @@ class AnalyticsRepository @Inject constructor(
         var interruptedTasksCount = 0
         if (usageStatsReader.hasUsageStatsPermission()) {
             completedTasks.forEach { task ->
-                if (task.startTime != null && task.completedAt != null) {
-                    val pickups = usageStatsReader.getPhonePickups(task.startTime, task.completedAt)
+                val taskStartTime = task.startTime
+                val taskCompletedAt = task.completedAt
+                val taskDueTime = task.dueTime
+                val totalTime = task.totalTimeInMinutes
+
+                if (taskCompletedAt != null) {
+                    val pickups = if (taskStartTime != null) {
+                        // Time Block based task
+                        usageStatsReader.getPhonePickups(taskStartTime, taskCompletedAt)
+                    } else if (taskDueTime != null && totalTime != null) {
+                        // Duration based task
+                        val calculatedStartTime = taskDueTime - (totalTime * 60 * 1000L)
+                        usageStatsReader.getPhonePickups(calculatedStartTime, taskCompletedAt)
+                    } else {
+                        0
+                    }
+
                     if (pickups > 1) { // > 1 because starting the task counts as 1
                         interruptedTasksCount++
                     }

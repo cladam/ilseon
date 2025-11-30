@@ -75,8 +75,13 @@ class TaskViewModel @Inject constructor(
             if (task != null) {
                 var phonePickups: Int? = null
                 if (usageStatsReader.hasUsageStatsPermission()) {
-                    val startTime = task.timerStartTime ?: task.startTime
                     val endTime = System.currentTimeMillis() // Assuming completion is now
+                    val startTime = if (task.schedulingType == SchedulingType.Duration && task.dueTime != null && task.totalTimeInMinutes != null) {
+                        task.dueTime - (task.totalTimeInMinutes * 60 * 1000L)
+                    } else {
+                        task.timerStartTime ?: task.startTime
+                    }
+
                     if (startTime != null) {
                         phonePickups = usageStatsReader.getPhonePickups(startTime, endTime)
                     }

@@ -1,10 +1,10 @@
 package com.ilseon.ui.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,19 +14,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.data.idea.Idea
 import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.theme.MutedTeal
 
 @Composable
 fun IdeaInboxScreen(
@@ -83,7 +88,7 @@ fun IdeaInboxScreen(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IdeaInboxScreenContent(
     ideas: List<Idea>,
@@ -121,53 +126,48 @@ fun IdeaInboxScreenContent(
             }
         } else {
             items(ideas, key = { it.id }) { idea ->
-                var showDropdown by remember { mutableStateOf(false) }
-
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .pointerInput(idea) {
-                            detectTapGestures(
-                                onLongPress = { showDropdown = true }
-                            )
-                        }
                         .animateItem(),
                     shape = MaterialTheme.shapes.large,
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    idea.content?.let {
-                        HtmlText(
-                            html = it,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        idea.content?.let {
+                            HtmlText(
+                                html = it,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { onConvertToTask(idea) }) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Convert to Task",
+                                    tint = MutedTeal
+                                )
+                            }
+                            IconButton(onClick = { onEditIdea(idea) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Idea",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(onClick = { onDeleteIdea(idea) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete Idea",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
-                }
-
-                DropdownMenu(
-                    expanded = showDropdown,
-                    onDismissRequest = { showDropdown = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Convert to Task") },
-                        onClick = {
-                            onConvertToTask(idea)
-                            showDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Edit") },
-                        onClick = {
-                            onEditIdea(idea)
-                            showDropdown = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        onClick = {
-                            onDeleteIdea(idea)
-                            showDropdown = false
-                        }
-                    )
                 }
             }
         }

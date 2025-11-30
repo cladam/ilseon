@@ -41,7 +41,7 @@ import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
 import com.ilseon.ui.components.EditTaskDialog
-import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.VisualCountdownTimer
 import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
@@ -164,7 +164,7 @@ fun CurrentPriorityTask(
                     task.description?.let {
                         if (it.isNotBlank()) {
                             Spacer(Modifier.height(4.dp))
-                            HtmlText(html = it)
+                            MarkdownText(markdown = it)
                         }
                     }
                     Spacer(Modifier.height(8.dp))

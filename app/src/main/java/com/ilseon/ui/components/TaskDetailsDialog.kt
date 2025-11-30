@@ -57,8 +57,8 @@ fun TaskDetailsDialog(
                 Spacer(Modifier.height(8.dp))
                 task.description?.let {
                     if (it.isNotBlank()) {
-                        HtmlText(
-                            html = it
+                        MarkdownText(
+                            markdown = it
                         )
                         Spacer(Modifier.height(16.dp))
                     }

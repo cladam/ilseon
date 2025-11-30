@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
-import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -82,7 +82,7 @@ fun NextTaskActivationScreen(
                             nextTask.description?.let {
                                 if (it.isNotBlank()) {
                                     Spacer(Modifier.height(4.dp))
-                                    HtmlText(html = it)
+                                    MarkdownText(markdown = it)
                                 }
                             }
                             Spacer(Modifier.height(8.dp))

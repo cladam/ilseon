@@ -92,7 +92,7 @@ class PriorityWidget : GlanceAppWidget() {
                     Image(
                         provider = ImageProvider(android.R.drawable.ic_input_add),
                         contentDescription = "Quick Capture",
-                        modifier = GlanceModifier.size(24.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
+                        modifier = GlanceModifier.size(32.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
                     )
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))
@@ -132,22 +132,22 @@ class PriorityWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.fillMaxWidth()
                 ) {
                     Image(
-                        provider = ImageProvider(R.drawable.ic_launcher),
+                        provider = ImageProvider(R.drawable.img),
                         contentDescription = "App Icon",
-                        modifier = GlanceModifier.size(24.dp).padding(end = 8.dp)
+                        modifier = GlanceModifier.size(36.dp).padding(end = 8.dp)
                     )
                     Text(
                         text = "Ilseon",
                         style = TextStyle(
                             color = GlanceTheme.colors.secondary,
-                            fontSize = 12.sp
+                            fontSize = 16.sp
                         )
                     )
                      Spacer(modifier = GlanceModifier.defaultWeight())
                      Image(
                          provider = ImageProvider(android.R.drawable.ic_input_add),
                          contentDescription = "Quick Capture",
-                         modifier = GlanceModifier.size(24.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
+                         modifier = GlanceModifier.size(32.dp).clickable(actionStartActivity<ActionTrampolineActivity>())
                      )
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))

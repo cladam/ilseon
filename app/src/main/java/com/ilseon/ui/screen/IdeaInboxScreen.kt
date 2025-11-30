@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.data.idea.Idea
-import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.MutedTeal
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -119,8 +119,8 @@ fun IdeaInboxScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             idea.content?.let {
-                                HtmlText(
-                                    html = it,
+                                MarkdownText(
+                                    markdown = it,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
                             }

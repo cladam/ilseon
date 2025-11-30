@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.ReflectionsViewModel
 import com.ilseon.data.task.Task
-import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.components.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -180,8 +180,8 @@ private fun ReflectionItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 task.completionReflection?.let {
-                    HtmlText(
-                        html = it,
+                    MarkdownText(
+                        markdown = it,
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

@@ -526,7 +526,7 @@ private fun ContextItem(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit context",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
             }

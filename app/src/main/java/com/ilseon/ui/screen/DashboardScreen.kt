@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -26,6 +28,7 @@ import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
 import java.util.UUID
+import kotlin.math.abs
 
 @Composable
 fun DashboardScreen(
@@ -37,6 +40,7 @@ fun DashboardScreen(
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
     activeFocusBlock: FocusBlock?,
+    onSwipeUp: () -> Unit,
     taskViewModel: TaskViewModel = hiltViewModel(),
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
@@ -56,7 +60,15 @@ fun DashboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, dragAmount ->
+                    val yDrag = dragAmount
+                    if (yDrag < -40) { // Threshold for swipe up
+                        onSwipeUp()
+                    }
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ClockDisplay()

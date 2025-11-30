@@ -1,6 +1,7 @@
 package com.ilseon.ui.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,6 +34,7 @@ import com.ilseon.data.idea.Idea
 import com.ilseon.ui.components.HtmlText
 import com.ilseon.ui.theme.MutedTeal
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IdeaInboxScreen(
     viewModel: IdeaInboxViewModel = hiltViewModel(),
@@ -41,6 +43,7 @@ fun IdeaInboxScreen(
     onDismissAddIdeaDialog: () -> Unit,
     vttIdeaContent: String,
     onVttClick: () -> Unit,
+    onSwipeUp: () -> Unit,
 ) {
     val ideas by viewModel.ideas.collectAsState()
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
@@ -68,103 +71,97 @@ fun IdeaInboxScreen(
         )
     }
 
-    IdeaInboxScreenContent(
-        ideas = ideas,
-        onConvertToTask = { idea ->
-            viewModel.convertToTask(idea)
-            val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
-            val title = sentences?.firstOrNull() ?: idea.content
-            val description = sentences?.size?.let {
-                if (it > 1) {
-                    sentences.drop(1).joinToString(" ")
-                } else {
-                    ""
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, dragAmount ->
+                    if (dragAmount < -40) { // Swipe up threshold
+                        onSwipeUp()
+                    }
                 }
             }
-            title?.let { description?.let { p2 -> onNavigateToNewTask(it, p2) } }
-        },
-        onDeleteIdea = { viewModel.deleteIdea(it) },
-        onEditIdea = { editingIdea = it }
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun IdeaInboxScreenContent(
-    ideas: List<Idea>,
-    onConvertToTask: (Idea) -> Unit,
-    onDeleteIdea: (Idea) -> Unit,
-    onEditIdea: (Idea) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                Text(
-                    text = "Your Ideas",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "You have ${ideas.size} ideas. Keep them coming!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)) {
+            Text(
+                text = "Your Ideas",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "You have ${ideas.size} ideas. Keep them coming!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        if (ideas.isEmpty()) {
-            item {
-                Text(
-                    text = "No ideas yet. Jot down your thoughts and ideas here.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            items(ideas, key = { it.id }) { idea ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(),
-                    shape = MaterialTheme.shapes.large,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        idea.content?.let {
-                            HtmlText(
-                                html = it,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = { onConvertToTask(idea) }) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Convert to Task",
-                                    tint = MutedTeal
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (ideas.isEmpty()) {
+                item {
+                    Text(
+                        text = "No ideas yet. Jot down your thoughts and ideas here.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                items(ideas, key = { it.id }) { idea ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem(),
+                        shape = MaterialTheme.shapes.large,
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            idea.content?.let {
+                                HtmlText(
+                                    html = it,
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
                             }
-                            IconButton(onClick = { onEditIdea(idea) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Idea",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            IconButton(onClick = { onDeleteIdea(idea) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Idea",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = {
+                                    viewModel.convertToTask(idea)
+                                    val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
+                                    val title = sentences?.firstOrNull() ?: idea.content
+                                    val description = sentences?.size?.let {
+                                        if (it > 1) {
+                                            sentences.drop(1).joinToString(" ")
+                                        } else {
+                                            ""
+                                        }
+                                    }
+                                    title?.let { description?.let { p2 -> onNavigateToNewTask(it, p2) } }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Convert to Task",
+                                        tint = MutedTeal
+                                    )
+                                }
+                                IconButton(onClick = { editingIdea = idea }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit Idea",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = { viewModel.deleteIdea(idea) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Idea",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }

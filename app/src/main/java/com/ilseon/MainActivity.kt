@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
-        enableEdgeToEdge()
+        // enableEdgeToEdge()
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val darkTheme = isSystemInDarkTheme()
-            DisposableEffect(darkTheme) {
+            /* DisposableEffect(darkTheme) {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(
                         Color.TRANSPARENT,
@@ -143,7 +143,7 @@ class MainActivity : ComponentActivity() {
                     ) { darkTheme },
                 )
                 onDispose {}
-            }
+            } */
             IlseonTheme {
                 val context = LocalContext.current
                 var hasNotificationPermission by remember {
@@ -486,6 +486,9 @@ class MainActivity : ComponentActivity() {
                                         viewModel.pauseTaskTimer(task)
                                     },
                                     activeFocusBlock = activeFocusBlock,
+                                    onSwipeUp = {
+                                        scope.launch { sheetState.show() }
+                                    }
                                 )
                             }
                             composable(Screen.NextTaskActivation.route) {
@@ -572,6 +575,9 @@ class MainActivity : ComponentActivity() {
                                     onVttClick = {
                                         vttTarget = "idea_content"
                                         startVtt()
+                                    },
+                                    onSwipeUp = {
+                                        showAddIdeaDialog = true
                                     }
                                 )
                             }

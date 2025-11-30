@@ -598,8 +598,7 @@ class MainActivity : ComponentActivity() {
                             vttDescriptionResult = ""
                             scope.launch { sheetState.hide() }
                         },
-                        sheetState = sheetState,
-                        contentWindowInsets = { WindowInsets.ime }
+                        sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
                             onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->

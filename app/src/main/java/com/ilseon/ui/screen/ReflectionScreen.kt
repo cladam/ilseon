@@ -195,7 +195,7 @@ private fun ReflectionItem(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit reflection",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
             }

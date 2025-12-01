@@ -17,8 +17,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.ReflectionsViewModel
 import com.ilseon.data.task.Task
+import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -160,12 +159,7 @@ private fun ReflectionItem(
     val dateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
+    AppCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

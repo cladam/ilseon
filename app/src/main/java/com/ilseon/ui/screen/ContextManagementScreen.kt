@@ -58,7 +58,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
-import com.ilseon.ui.components.HtmlText
+import com.ilseon.ui.components.AppCard
+import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TimePickerDialog
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -476,16 +477,7 @@ private fun ContextItem(
 ) {
     val context = contextWithFocusBlock.context
     val focusBlock = contextWithFocusBlock.focusBlock
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                RoundedCornerShape(16.dp)
-            )
-    ) {
+    AppCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -501,8 +493,8 @@ private fun ContextItem(
                 )
                 context.description?.let {
                     Spacer(modifier = Modifier.height(4.dp))
-                    HtmlText(
-                        html = it
+                    MarkdownText(
+                        markdown = it
                     )
                 }
                 focusBlock?.let {

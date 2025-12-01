@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.data.idea.Idea
+import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.MutedTeal
 
@@ -110,12 +111,9 @@ fun IdeaInboxScreen(
                 }
             } else {
                 items(ideas, key = { it.id }) { idea ->
-                    Card(
+                    AppCard(
                         modifier = Modifier
-                            .fillMaxWidth()
                             .animateItem(),
-                        shape = MaterialTheme.shapes.large,
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             idea.content?.let {

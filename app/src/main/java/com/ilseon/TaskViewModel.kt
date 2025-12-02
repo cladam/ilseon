@@ -215,9 +215,26 @@ class TaskViewModel @Inject constructor(
         val naggingEnabled = settingsRepository.naggingNotificationsEnabled.first()
 
         allIncompleteTasks.value.forEach { task ->
-            val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
-            if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
-                startTask(task)
+            val isTaskActive = task.startTime == null || task.startTime <= now
+            if (isTaskActive) {
+                val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
+                if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
+                    startTask(task)
+                }
+
+                if (naggingEnabled && task.priority == TaskPriority.High && !task.isComplete) {
+                    val isOverdue = task.dueTime?.let { it < now } ?: false
+                    val isUnscheduledAndOld = task.schedulingType == SchedulingType.None && (now - task.createdAt > NAGGING_INTERVAL_MILLIS)
+
+                    if (isOverdue || isUnscheduledAndOld) {
+                        val lastNagTime = taskNagTimes[task.id]
+                        if (lastNagTime == null || (now - lastNagTime > NAGGING_INTERVAL_MILLIS)) {
+                            notificationService.sendNaggingNotification(task)
+                            hapticManager.performNudge()
+                            taskNagTimes[task.id] = now
+                        }
+                    }
+                }
             }
 
             if (task.timerState == TimerState.NotStarted && task.startTime != null) {
@@ -230,20 +247,6 @@ class TaskViewModel @Inject constructor(
                     )
                     hapticManager.performNudge()
                     notifiedTasksStartingSoon.add(task.id)
-                }
-            }
-
-            if (naggingEnabled && task.priority == TaskPriority.High && !task.isComplete) {
-                val isOverdue = task.dueTime?.let { it < now } ?: false
-                val isUnscheduledAndOld = task.schedulingType == SchedulingType.None && (now - task.createdAt > NAGGING_INTERVAL_MILLIS)
-
-                if (isOverdue || isUnscheduledAndOld) {
-                    val lastNagTime = taskNagTimes[task.id]
-                    if (lastNagTime == null || (now - lastNagTime > NAGGING_INTERVAL_MILLIS)) {
-                        notificationService.sendNaggingNotification(task)
-                        hapticManager.performNudge()
-                        taskNagTimes[task.id] = now
-                    }
                 }
             }
         }

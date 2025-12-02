@@ -409,7 +409,7 @@ class MainActivity : ComponentActivity() {
                                     shape = CircleShape,
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     modifier = Modifier
-                                        .size(112.dp)
+                                        .size(116.dp)
                                         .border(
                                             3.dp,
                                             MaterialTheme.colorScheme.primary,

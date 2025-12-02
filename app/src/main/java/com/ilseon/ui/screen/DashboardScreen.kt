@@ -112,7 +112,7 @@ fun DashboardScreen(
                         NextUpTasks(
                             tasks = nextUpTasks,
                             completedTaskIds = completedTaskIds,
-                            onComplete = { task, _ -> onTaskComplete(task) },
+                            onComplete = { onTaskComplete(it) },
                             onAnimationFinished = onAnimateComplete,
                             contextMap = contextMap,
                             viewModel = taskViewModel

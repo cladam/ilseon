@@ -48,8 +48,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isComplete = 0 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getTasks(): Flow<List<Task>>
 
-    @Query("SELECT * FROM tasks WHERE isCurrentPriority = 1 AND isComplete = 0 AND isArchived = 0 LIMIT 1")
-    fun getCurrentPriorityTask(): Flow<Task?>
+    @Query("SELECT * FROM tasks WHERE isCurrentPriority = 1 AND isComplete = 0 AND isArchived = 0 AND (startTime IS NULL OR startTime <= :currentTime) LIMIT 1")
+    fun getCurrentPriorityTask(currentTime: Long = System.currentTimeMillis()): Flow<Task?>
+
 
     @Query("UPDATE tasks SET isCurrentPriority = 0")
     suspend fun clearCurrentPriority()

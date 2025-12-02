@@ -45,9 +45,11 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun updatePriorityAndWidget() {
+        val now = System.currentTimeMillis()
         val allIncompleteTasks = taskDao.getIncompleteTasks().first()
-        
-        val sortedTasks = allIncompleteTasks.sortedWith(
+        val validTasks = allIncompleteTasks.filter { it.startTime == null || it.startTime <= now }
+
+        val sortedTasks = validTasks.sortedWith(
             compareBy<Task> { 
                 when (it.priority) {
                     TaskPriority.High -> 0

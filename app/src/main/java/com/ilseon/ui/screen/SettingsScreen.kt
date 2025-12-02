@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +23,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.SettingsViewModel
+import com.ilseon.ui.components.AppCard
 import com.ilseon.util.UsageStatsReader
 import java.util.Locale
 
@@ -112,6 +113,14 @@ private fun SettingsScreenContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
+        }
+        item {
             NotificationSettingsCard(
                 nudgeNotificationsEnabled = nudgeNotificationsEnabled,
                 onNudgeNotificationsChange = onNudgeNotificationsChange,
@@ -152,7 +161,7 @@ private fun PermissionsSettingsCard() {
     val usageStatsReader = remember { UsageStatsReader(context) }
     val hasPermission by remember { mutableStateOf(usageStatsReader.hasUsageStatsPermission()) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = "Permissions",
@@ -212,7 +221,7 @@ private fun NotificationSettingsCard(
     naggingNotificationsEnabled: Boolean,
     onNaggingNotificationsChange: (Boolean) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = "Notifications",
@@ -245,7 +254,7 @@ private fun SpeechToTextSettingsCard(
     sstLanguage: String,
     onLanguageClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = "Speech to Text",
@@ -277,7 +286,7 @@ private fun DataManagementCard(
     onImportClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = "Data Management",
@@ -317,7 +326,7 @@ private fun DataManagementCard(
 private fun AboutCard(
     onAboutClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = "About",

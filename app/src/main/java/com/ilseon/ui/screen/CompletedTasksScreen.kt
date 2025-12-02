@@ -26,14 +26,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.CompletedTasksViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.ui.theme.IlseonTheme
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -115,10 +118,13 @@ private fun CompletedTaskItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                MarkdownText(
+                    markdown = task.title,
+                    style = TextStyle(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -136,34 +142,5 @@ private fun CompletedTaskItem(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CompletedTasksScreenPreview() {
-    IlseonTheme {
-        val previewTasks = listOf(
-            Task(
-                id = UUID.randomUUID(),
-                title = "Finish the design mockups",
-                contextId = UUID.randomUUID(),
-                priority = TaskPriority.High,
-                isComplete = true,
-                completedAt = System.currentTimeMillis() - 86400000 // 1 day ago
-            ),
-            Task(
-                id = UUID.randomUUID(),
-                title = "Call the dentist",
-                contextId = UUID.randomUUID(),
-                priority = TaskPriority.Medium,
-                isComplete = true,
-                completedAt = System.currentTimeMillis() - 172800000 // 2 days ago
-            )
-        )
-        CompletedTasksScreenContent(
-            tasks = previewTasks,
-            onDeleteTask = {}
-        )
     }
 }

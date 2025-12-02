@@ -1,13 +1,10 @@
 package com.ilseon.ui.screen
 
-import android.R.attr.enabled
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -24,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.AnalyticsViewModel
 import com.ilseon.TimeInterval
-import kotlin.math.log10
+import com.ilseon.ui.components.AppCard
 
 // Data class to hold simulated analysis results
 data class AnalyticsData(
@@ -46,11 +43,6 @@ fun AnalyticsScreen(
     val selectedInterval by viewModel.selectedInterval.collectAsState()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Focus Patterns") }
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
@@ -60,7 +52,14 @@ fun AnalyticsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item { Spacer(modifier = Modifier.height(2.dp)) }
+            item {
+                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text(
+                        text = "My Focus Patterns",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+            }
 
             item {
                 TimeIntervalDropdown(
@@ -82,11 +81,21 @@ fun AnalyticsScreen(
                 }
             } else {
                 item {
-                    AnalyticsCard(title = "Focus Distribution") {
-                        if (data!!.focusDistribution.isEmpty()) {
-                            Text("No data for this period.", style = MaterialTheme.typography.bodyMedium)
-                        } else {
-                            FocusDistributionChart(data!!.focusDistribution)
+                    AppCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Focus Distribution",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (data!!.focusDistribution.isEmpty()) {
+                                Text("No data for this period.", style = MaterialTheme.typography.bodyMedium)
+                            } else {
+                                FocusDistributionChart(data!!.focusDistribution)
+                            }
                         }
                     }
                 }
@@ -96,71 +105,119 @@ fun AnalyticsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        AnalyticsCard(
-                            title = "Avg. Time Block",
+                        AppCard(
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(
-                                text = "${data!!.averageTimeBlockMinutes} min",
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        AnalyticsCard(
-                            title = "Avg. Duration",
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "${data!!.averageDurationMinutes} min",
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    AnalyticsCard(title = "Overdue Tasks") {
-                        Text(
-                            text = "${data!!.overdueTasksCount}",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                item {
-                    AnalyticsCard(title = "Interrupted Time Blocks") {
-                        Text(
-                            text = "${data!!.interruptedTasksCount}",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                item {
-                    AnalyticsCard(title = "Top Reflection Keywords") {
-                        if (data!!.topKeywords.isEmpty()) {
-                            Text("No reflection keywords found for this period.", style = MaterialTheme.typography.bodyMedium)
-                        } else {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                data!!.topKeywords.forEach { (keyword, count) ->
-                                    KeywordChip(keyword)
-                                }
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Avg. Time Block",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "${data!!.averageTimeBlockMinutes} min",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = onNavigateToCompletedTasks) {
-                            Text("View All Completed Tasks")
+                        AppCard(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Avg. Duration",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "${data!!.averageDurationMinutes} min",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    AppCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Overdue Tasks",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "${data!!.overdueTasksCount}",
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    AppCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Interrupted Time Blocks",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "${data!!.interruptedTasksCount}",
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    AppCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Top Reflection Keywords",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (data!!.topKeywords.isEmpty()) {
+                                Text("No reflection keywords found for this period.", style = MaterialTheme.typography.bodyMedium)
+                            } else {
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    data!!.topKeywords.forEach { (keyword, count) ->
+                                        KeywordChip(keyword)
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = onNavigateToCompletedTasks) {
+                                Text("View All Completed Tasks")
+                            }
                         }
                     }
                 }
@@ -220,32 +277,6 @@ fun TimeIntervalDropdown(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun AnalyticsCard(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable (ColumnScope.() -> Unit)
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            content()
         }
     }
 }

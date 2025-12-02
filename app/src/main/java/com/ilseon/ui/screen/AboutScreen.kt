@@ -15,12 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,10 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.play.core.review.ReviewManagerFactory
-import com.ilseon.ui.theme.IlseonTheme
+import com.ilseon.ui.components.AppCard
 
 @Composable
 fun AboutScreen() {
@@ -55,6 +52,14 @@ private fun AboutScreenContent(versionName: String?) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item {
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                Text(
+                    text = "About Ilseon",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
+        }
         item { AppInfoCard(versionName = versionName) }
         item { DeveloperInfoCard() }
         item { RateTheAppCard() }
@@ -63,7 +68,7 @@ private fun AboutScreenContent(versionName: String?) {
 
 @Composable
 private fun AppInfoCard(versionName: String?) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Ilseon",
@@ -84,7 +89,7 @@ private fun AppInfoCard(versionName: String?) {
 private fun DeveloperInfoCard() {
     val uriHandler = LocalUriHandler.current
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Claes Adamsson (@cladam)",
@@ -117,7 +122,7 @@ private fun DeveloperInfoCard() {
 @Composable
 private fun RateTheAppCard() {
     val context = LocalContext.current
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp)) {
             InfoRow(
                 icon = Icons.Default.Star,

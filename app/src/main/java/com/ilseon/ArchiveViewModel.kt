@@ -15,7 +15,7 @@ class ArchiveViewModel @Inject constructor(
     private val taskRepository: TaskRepository
 ) : ViewModel() {
 
-    val activeRecurringTasks = taskRepository.getActiveRecurringTasks()
+    val unarchivedRecurringSeries = taskRepository.getUnarchivedRecurringTaskSeries()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

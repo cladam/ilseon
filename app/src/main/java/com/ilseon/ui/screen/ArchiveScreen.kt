@@ -32,7 +32,7 @@ import com.ilseon.ArchiveViewModel
 fun ArchiveScreen(
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
-    val recurringTasks by viewModel.activeRecurringTasks.collectAsState()
+    val recurringTaskSeries by viewModel.unarchivedRecurringSeries.collectAsState()
 
     Scaffold(
         topBar = {
@@ -46,7 +46,7 @@ fun ArchiveScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(recurringTasks) { task ->
+            items(recurringTaskSeries) { task ->
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {

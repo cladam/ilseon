@@ -44,7 +44,6 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.components.EditTaskDialog
-import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.TaskDetailsDialog
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
@@ -54,7 +53,7 @@ import java.util.UUID
 fun NextUpTasks(
     tasks: List<Task>,
     completedTaskIds: Set<UUID>,
-    onComplete: (Task, String) -> Unit,
+    onComplete: (Task) -> Unit,
     onAnimationFinished: (Task) -> Unit,
     contextMap: Map<UUID, TaskContext>,
     viewModel: TaskViewModel
@@ -62,7 +61,6 @@ fun NextUpTasks(
     var isExpanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
     var taskToShowDetails by remember { mutableStateOf<Task?>(null) }
-    var taskForReflection by remember { mutableStateOf<Task?>(null) }
     var taskToEdit by remember { mutableStateOf<Task?>(null) }
 
     taskToShowDetails?.let { task ->
@@ -81,18 +79,6 @@ fun NextUpTasks(
             onSave = {
                 viewModel.updateTask(it)
                 taskToEdit = null
-            }
-        )
-    }
-
-    if (taskForReflection != null) {
-        ReflectionDialog(
-            taskTitle = taskForReflection!!.title,
-            phonePickups = null, // Not available in this context
-            onDismiss = { taskForReflection = null },
-            onSave = { reflection ->
-                onComplete(taskForReflection!!, reflection)
-                taskForReflection = null
             }
         )
     }
@@ -167,7 +153,7 @@ fun NextUpTasks(
                                     .size(24.dp)
                                     .clip(CircleShape)
                                     .border(1.dp, borderColor, CircleShape)
-                                    .clickable { taskForReflection = it },
+                                    .clickable { onComplete(it) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 // Empty, for the checkmark to appear after click

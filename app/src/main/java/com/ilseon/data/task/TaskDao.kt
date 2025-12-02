@@ -22,15 +22,15 @@ interface TaskDao {
         WHERE isComplete = 0 AND isArchived = 0
         ORDER BY
             isCurrentPriority DESC,
-            CASE 
-                WHEN schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND startTime > 0 THEN 1
-                ELSE 2
-            END,
             CASE priority
                 WHEN 'High'   THEN 1
                 WHEN 'Medium' THEN 2
                 WHEN 'Low'    THEN 3
                 ELSE 4
+            END,
+            CASE 
+                WHEN schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND startTime > 0 THEN 1
+                ELSE 2
             END,
             createdAt ASC
     """)
@@ -62,6 +62,9 @@ interface TaskDao {
     
     @Query("SELECT * FROM tasks WHERE isRecurring = 1 AND isArchived = 0 AND isComplete = 0 GROUP BY seriesId")
     fun getActiveRecurringTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE isRecurring = 1 AND isArchived = 0 GROUP BY seriesId")
+    fun getUnarchivedRecurringTaskSeries(): Flow<List<Task>>
 
     @Query("UPDATE tasks SET isArchived = 1 WHERE seriesId = :seriesId")
     suspend fun archiveTaskSeries(seriesId: UUID)

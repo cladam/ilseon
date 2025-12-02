@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -103,12 +104,31 @@ class TaskViewModel @Inject constructor(
             initialValue = null
         )
 
-    val tasks: StateFlow<List<Task>> = taskRepository.getIncompleteTasks()
+    private val allIncompleteTasks: StateFlow<List<Task>> = taskRepository.getIncompleteTasks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    val tasks: StateFlow<List<Task>> = allIncompleteTasks.map { tasks ->
+        val startOfTomorrow = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        tasks.filter {
+            it.startTime == null || it.startTime < startOfTomorrow
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
 
     val completionStreak: StateFlow<Int> = taskRepository.getCompletionStreak()
         .stateIn(
@@ -194,7 +214,7 @@ class TaskViewModel @Inject constructor(
         val now = System.currentTimeMillis()
         val naggingEnabled = settingsRepository.naggingNotificationsEnabled.first()
 
-        tasks.value.forEach { task ->
+        allIncompleteTasks.value.forEach { task ->
             val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
             if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
                 startTask(task)
@@ -364,7 +384,7 @@ class TaskViewModel @Inject constructor(
                     duration = dur
                 } else if (durationInMinutes != null) {
                     schedulingType = SchedulingType.Duration
-                    if (isRecurring && startTimeStr.isNotBlank()) {
+                    if (startTimeStr.isNotBlank()) { // Can have start time without being recurring
                         val (st, et) = parseStartTimeAndCalculateEndTime(startTimeStr, durationInMinutes, isForTomorrow)
                         startTime = st
                         endTime = et
@@ -372,10 +392,12 @@ class TaskViewModel @Inject constructor(
                     }
                 } else {
                     schedulingType = SchedulingType.None
-                    if (isRecurring && startTimeStr.isNotBlank()) {
-                        val (st, _) = parseStartTimeAndCalculateEndTime(startTimeStr, 0, isForTomorrow)
-                        startTime = st
-                        dueTime = st
+                    if (startTimeStr.isNotBlank()) {
+                        val startCal = parseDateTime(startTimeStr, isForTomorrow)
+                        if (startCal != null) {
+                            startTime = startCal.timeInMillis
+                            dueTime = startTime
+                        }
                     }
                 }
 

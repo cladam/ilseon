@@ -73,6 +73,10 @@ class TaskRepository @Inject constructor(
         return taskDao.getActiveRecurringTasks()
     }
 
+    fun getUnarchivedRecurringTaskSeries(): Flow<List<Task>> {
+        return taskDao.getUnarchivedRecurringTaskSeries()
+    }
+
     fun getCompletionStreak(): Flow<Int> {
         val twentyFourHoursAgo = Calendar.getInstance().apply {
             add(Calendar.HOUR, -24)
@@ -145,12 +149,12 @@ class TaskRepository @Inject constructor(
         if (task.startTime == null || task.recurrenceDays.isNullOrBlank()) {
             return
         }
-
+    
         val recurrenceDayStrings = task.recurrenceDays
             .replace("[", "").replace("]", "")
             .split(',')
             .map { it.trim().uppercase() }
-
+    
         val recurrenceDays = recurrenceDayStrings.mapNotNull { dayString ->
             try {
                 when (java.time.DayOfWeek.valueOf(dayString)) {
@@ -163,34 +167,39 @@ class TaskRepository @Inject constructor(
                     java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
                 }
             } catch (e: IllegalArgumentException) {
-        
                 null
             }
         }.toSet()
-
+    
         if (recurrenceDays.isEmpty()) return
-
-        val nextStartTime = Calendar.getInstance().apply {
-            timeInMillis = task.startTime
-            add(Calendar.DAY_OF_YEAR, 1)
+    
+        val originalStartCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
+    
+        // Start searching from tomorrow, but keep the original task's time
+        val nextStartCal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1) // Start from tomorrow
+            set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
+            set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
-
+    
         var nextDayFound = false
         for (i in 1..7) {
-            if (recurrenceDays.contains(nextStartTime.get(Calendar.DAY_OF_WEEK))) {
+            if (recurrenceDays.contains(nextStartCal.get(Calendar.DAY_OF_WEEK))) {
                 nextDayFound = true
                 break
             }
-            nextStartTime.add(Calendar.DAY_OF_YEAR, 1)
+            nextStartCal.add(Calendar.DAY_OF_YEAR, 1)
         }
-
+    
         if (!nextDayFound) {
             return
         }
-
-        val duration = (task.endTime ?: task.startTime) - task.startTime
-        val nextEndTime = nextStartTime.timeInMillis + duration
-
+    
+        val duration = if (task.endTime != null && task.endTime > task.startTime) task.endTime - task.startTime else 0L
+        val nextEndTime = if (task.endTime != null) nextStartCal.timeInMillis + duration else null
+    
         val newTask = task.copy(
             id = UUID.randomUUID(),
             isComplete = false,
@@ -199,9 +208,9 @@ class TaskRepository @Inject constructor(
             timerState = TimerState.NotStarted,
             timerStartTime = null,
             remainingTimeInSeconds = task.totalTimeInMinutes?.times(60L) ?: 0,
-            startTime = nextStartTime.timeInMillis,
+            startTime = nextStartCal.timeInMillis,
             endTime = nextEndTime,
-            dueTime = nextEndTime,
+            dueTime = nextEndTime ?: nextStartCal.timeInMillis,
             seriesId = task.seriesId
         )
         taskDao.insert(newTask)
@@ -252,7 +261,7 @@ class TaskRepository @Inject constructor(
             return
         }
 
-        if (task.startTime != null && task.endTime != null) {
+        if (task.startTime != null) {
             reminderManager.scheduleTimedTaskReminders(task)
         } else {
             reminderManager.cancelReminder(task)

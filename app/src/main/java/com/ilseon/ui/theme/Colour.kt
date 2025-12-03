@@ -13,6 +13,10 @@ val DarkGrey = Color(0xFF121212)      // Primary background
 val LightGrey = Color(0xFF1E1E1E)     // Surface color (cards)
 val TextPrimary = Color(0xFFE0E0E0)   // Primary text color
 val TextSecondary = Color(0xFFB0B0B0) // Secondary text color
+// Use these custom colors for semantic slots
+val CustomTextPrimary = Color(0xFFB0B0B0)   // Primary text color (Your preferred soft white)
+val CustomTextSecondary = Color(0xFF888888) // Secondary text color (Your muted detail color)
+
 
 // "Low Sensory" Accents (From our comparison)
 val MutedRed = Color(0xFFB35F5F)      // For FAB (Primary Action)

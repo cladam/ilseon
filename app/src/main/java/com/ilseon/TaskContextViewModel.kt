@@ -4,11 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.FocusBlockRepository
+import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
+import com.ilseon.data.task.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,8 +27,15 @@ data class ContextWithFocusBlock(
 @HiltViewModel
 class TaskContextViewModel @Inject constructor(
     private val taskContextRepository: TaskContextRepository,
-    private val focusBlockRepository: FocusBlockRepository
+    private val focusBlockRepository: FocusBlockRepository,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
+
+    private val _selectedContextTasks = MutableStateFlow<List<Task>>(emptyList())
+    val selectedContextTasks = _selectedContextTasks.asStateFlow()
+
+    private val _showTasksDialog = MutableStateFlow(false)
+    val showTasksDialog = _showTasksDialog.asStateFlow()
 
     val contextsWithFocusBlock: StateFlow<List<ContextWithFocusBlock>> =
         taskContextRepository.getContexts()
@@ -71,5 +82,18 @@ class TaskContextViewModel @Inject constructor(
         viewModelScope.launch {
             taskContextRepository.deleteContext(id)
         }
+    }
+
+    fun onContextSelected(contextId: UUID) {
+        viewModelScope.launch {
+            taskRepository.getIncompleteTasksByContext(contextId).collect { tasks ->
+                _selectedContextTasks.value = tasks
+                _showTasksDialog.value = true
+            }
+        }
+    }
+
+    fun dismissTasksDialog() {
+        _showTasksDialog.value = false
     }
 }

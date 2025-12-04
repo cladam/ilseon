@@ -94,6 +94,7 @@ import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
 import com.ilseon.ui.screen.IdeaInboxScreen
 import com.ilseon.ui.screen.NextTaskActivationScreen
+import com.ilseon.ui.screen.OngoingTasksScreen
 import com.ilseon.ui.screen.ReflectionScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.SettingsScreen
@@ -555,7 +556,10 @@ class MainActivity : ComponentActivity() {
                                         startVtt()
                                     },
                                     initialContextName = vttContextNameResult,
-                                    initialContextDescription = vttContextDescriptionResult
+                                    initialContextDescription = vttContextDescriptionResult,
+                                    onNavigateToOngoingTasks = { contextId ->
+                                        navController.navigate("ongoing_tasks/$contextId")
+                                    }
                                 )
                             }
                             composable(Screen.IdeaInbox.route) {
@@ -586,6 +590,9 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("archive_tasks") {
                                 ArchiveScreen()
+                            }
+                            composable("ongoing_tasks/{contextId}") { backStackEntry ->
+                                OngoingTasksScreen(contextId = backStackEntry.arguments?.getString("contextId"))
                             }
                         }
                     }

@@ -44,6 +44,10 @@ class TaskRepository @Inject constructor(
         }
     }
 
+    fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {
+        return taskDao.getIncompleteTasksByContext(contextId)
+    }
+
     suspend fun updatePriorityAndWidget() {
         val now = System.currentTimeMillis()
         val allIncompleteTasks = taskDao.getIncompleteTasks().first()
@@ -215,7 +219,7 @@ class TaskRepository @Inject constructor(
             dueTime = nextEndTime ?: nextStartCal.timeInMillis,
             seriesId = task.seriesId
         )
-        taskDao.insert(newTask)
+        insertTask(newTask)
     }
 
     suspend fun deleteTask(task: Task) {
@@ -264,7 +268,7 @@ class TaskRepository @Inject constructor(
         }
 
         if (task.startTime != null) {
-            reminderManager.scheduleTimedTaskReminders(task)
+            reminderManager.rescheduleReminders(task)
         } else {
             reminderManager.cancelReminder(task)
         }

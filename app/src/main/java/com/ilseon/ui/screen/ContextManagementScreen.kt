@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Task
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -34,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
@@ -58,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.ContextWithFocusBlock
 import com.ilseon.TaskContextViewModel
+import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TimePickerDialog
@@ -72,7 +76,8 @@ fun ContextManagementScreen(
     onNewContextVttClick: () -> Unit,
     onNewContextDescriptionVttClick: () -> Unit,
     initialContextName: String = "",
-    initialContextDescription: String = ""
+    initialContextDescription: String = "",
+    onNavigateToOngoingTasks: (String) -> Unit
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
     var newContextName by remember { mutableStateOf(initialContextName) }
@@ -89,6 +94,16 @@ fun ContextManagementScreen(
     val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+
+    val showTasksDialog by viewModel.showTasksDialog.collectAsState()
+    val tasks by viewModel.selectedContextTasks.collectAsState()
+
+    if (showTasksDialog) {
+        TasksDialog(
+            tasks = tasks,
+            onDismiss = { viewModel.dismissTasksDialog() }
+        )
+    }
 
     fun resetForm() {
         newContextName = ""
@@ -427,7 +442,8 @@ fun ContextManagementScreen(
                     ContextItem(
                         contextWithFocusBlock = item,
                         onDelete = { viewModel.deleteContext(item.context.id) },
-                        onEdit = { editingContext = item }
+                        onEdit = { editingContext = item },
+                        onNavigateToOngoingTasks = { onNavigateToOngoingTasks(item.context.id.toString()) }
                     )
                 }
             }
@@ -473,7 +489,8 @@ fun DayPicker(
 private fun ContextItem(
     contextWithFocusBlock: ContextWithFocusBlock,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onNavigateToOngoingTasks: () -> Unit
 ) {
     val context = contextWithFocusBlock.context
     val focusBlock = contextWithFocusBlock.focusBlock
@@ -514,6 +531,14 @@ private fun ContextItem(
                     )
                 }
             }
+            IconButton(onClick = onNavigateToOngoingTasks) {
+                Icon(
+                    imageVector = Icons.Default.Task,
+                    contentDescription = "View ongoing tasks",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             IconButton(onClick = { onEdit() }) {
                 Icon(
                     imageVector = Icons.Default.Edit,
@@ -532,4 +557,31 @@ private fun ContextItem(
             }
         }
     }
+}
+
+@Composable
+fun TasksDialog(
+    tasks: List<Task>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Open Tasks") },
+        text = {
+            if (tasks.isEmpty()) {
+                Text("No open tasks for this context.")
+            } else {
+                LazyColumn {
+                    items(tasks) { task ->
+                        Text(task.title)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }

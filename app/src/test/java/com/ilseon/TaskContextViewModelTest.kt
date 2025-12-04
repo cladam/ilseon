@@ -6,6 +6,7 @@ import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.FocusBlockRepository
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
+import com.ilseon.data.task.TaskRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ class TaskContextViewModelTest {
 
     private lateinit var taskContextRepository: TaskContextRepository
     private lateinit var focusBlockRepository: FocusBlockRepository
+    private lateinit var taskRepository: TaskRepository
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -39,6 +41,7 @@ class TaskContextViewModelTest {
         Dispatchers.setMain(testDispatcher)
         taskContextRepository = mockk()
         focusBlockRepository = mockk()
+        taskRepository = mockk(relaxed = true)
     }
 
     @After
@@ -65,7 +68,7 @@ class TaskContextViewModelTest {
         coEvery { focusBlockRepository.getFocusBlocks() } returns focusBlocksFlow
 
         // Act
-        val viewModel = TaskContextViewModel(taskContextRepository, focusBlockRepository)
+        val viewModel = TaskContextViewModel(taskContextRepository, focusBlockRepository, taskRepository)
 
         // Assert
         viewModel.contextsWithFocusBlock.test {

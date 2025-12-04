@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +22,7 @@ import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.MarkdownText
+import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -74,14 +77,25 @@ fun NextTaskActivationScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            dev.jeziellago.compose.markdowntext.MarkdownText(
-                                markdown = nextTask.title,
-                                style = TextStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (nextTask.isUrgent) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalFireDepartment,
+                                        contentDescription = "Urgent",
+                                        tint = QuietAmber,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                dev.jeziellago.compose.markdowntext.MarkdownText(
+                                    markdown = nextTask.title,
+                                    style = TextStyle(
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 )
-                            )
+                            }
                             nextTask.description?.let {
                                 if (it.isNotBlank()) {
                                     Spacer(Modifier.height(4.dp))

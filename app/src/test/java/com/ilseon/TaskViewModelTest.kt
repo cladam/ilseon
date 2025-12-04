@@ -102,6 +102,7 @@ class TaskViewModelTest {
             description = "Description",
             contextId = UUID.randomUUID(),
             priority = TaskPriority.High,
+            isUrgent = false,
             startTimeStr = "10:00",
             endTimeStr = "11:00",
             durationInMinutes = null,
@@ -129,6 +130,7 @@ class TaskViewModelTest {
             description = "Description",
             contextId = UUID.randomUUID(),
             priority = TaskPriority.Medium,
+            isUrgent = false,
             startTimeStr = "",
             endTimeStr = "",
             durationInMinutes = 45,
@@ -155,6 +157,7 @@ class TaskViewModelTest {
             description = "Just a title and description",
             contextId = UUID.randomUUID(),
             priority = TaskPriority.Low,
+            isUrgent = false,
             startTimeStr = "",
             endTimeStr = "",
             durationInMinutes = null,
@@ -184,6 +187,7 @@ class TaskViewModelTest {
             description = null,
             contextId = UUID.randomUUID(),
             priority = TaskPriority.Medium,
+            isUrgent = false,
             startTimeStr = "13:00",
             endTimeStr = "14:00",
             durationInMinutes = null,
@@ -217,6 +221,7 @@ class TaskViewModelTest {
             description = null,
             contextId = UUID.randomUUID(),
             priority = TaskPriority.High,
+            isUrgent = false,
             startTimeStr = "09:00",
             endTimeStr = "",
             durationInMinutes = 30,
@@ -251,6 +256,7 @@ class TaskViewModelTest {
             description = null,
             contextId = UUID.randomUUID(),
             priority = TaskPriority.Low,
+            isUrgent = false,
             startTimeStr = "14:00",
             endTimeStr = "",
             durationInMinutes = null,
@@ -270,6 +276,34 @@ class TaskViewModelTest {
         assertNull(capturedTask.endTime) // No end time for normal tasks
         assertNotNull(capturedTask.dueTime) // Due time is the start time
         assertEquals("FRIDAY", capturedTask.recurrenceDays)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `addTask with urgent flag sets isUrgent to true`() = runTest(testDispatcher.scheduler) {
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val taskSlot = slot<Task>()
+        coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
+
+        viewModel.addTask(
+            title = "Urgent Task",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.High,
+            isUrgent = true,
+            startTimeStr = "",
+            endTimeStr = "",
+            durationInMinutes = null,
+            isRecurring = false,
+            recurrenceDays = emptySet()
+        )
+        runCurrent()
+
+        coVerify { taskRepository.insertTask(any()) }
+        val capturedTask = taskSlot.captured
+        assertEquals("Urgent Task", capturedTask.title)
+        assertEquals(true, capturedTask.isUrgent)
 
         viewModel.viewModelScope.cancel()
     }

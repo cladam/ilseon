@@ -608,12 +608,13 @@ class MainActivity : ComponentActivity() {
                         sheetState = sheetState
                     ) {
                         QuickCaptureSheet(
-                            onSave = { title, description, contextId, priority, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
+                            onSave = { title, description, contextId, priority, isUrgent, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
                                 viewModel.addTask(
                                     title,
                                     description,
                                     contextId,
                                     priority,
+                                    isUrgent,
                                     startTime,
                                     endTime,
                                     duration,

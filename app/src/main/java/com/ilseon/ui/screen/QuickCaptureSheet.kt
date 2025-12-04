@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
@@ -66,7 +67,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
-    onSave: (String, String?, UUID?, TaskPriority, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean) -> Unit,
+    onSave: (String, String?, UUID?, TaskPriority, Boolean, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
     initialDescription: String = "",
@@ -81,6 +82,7 @@ fun QuickCaptureSheet(
     var description by remember { mutableStateOf(initialDescription) }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Medium) }
+    var isUrgent by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
@@ -450,6 +452,26 @@ fun QuickCaptureSheet(
                 }
             }
         }
+        
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isUrgent = !isUrgent }
+                .padding(vertical = 8.dp)
+        ) {
+            Switch(
+                checked = isUrgent,
+                onCheckedChange = { isUrgent = it }
+            )
+            Text(
+                "Urgent",
+                modifier = Modifier.padding(start = 8.dp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
 
         Spacer(Modifier.height(32.dp))
 
@@ -469,6 +491,7 @@ fun QuickCaptureSheet(
                     description.takeIf { it.isNotBlank() },
                     selectedContextId,
                     priority,
+                    isUrgent,
                     startTime,
                     endTime,
                     durationInt,

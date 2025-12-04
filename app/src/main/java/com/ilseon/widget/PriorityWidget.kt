@@ -96,14 +96,24 @@ class PriorityWidget : GlanceAppWidget() {
                     )
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))
-                Text(
-                    text = task.title,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.primary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (task.isUrgent) {
+                        Image(
+                            provider = ImageProvider(android.R.drawable.btn_star_big_on),
+                            contentDescription = "Urgent",
+                            modifier = GlanceModifier.size(20.dp).padding(end = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = task.title,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.primary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                }
+
 
                 Spacer(modifier = GlanceModifier.height(8.dp))
 

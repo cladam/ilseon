@@ -51,6 +51,7 @@ data class Task(
     val contextId: UUID,
     val description: String? = null,
     val priority: TaskPriority,
+    val isUrgent: Boolean = false,
     val dueTime: Long? = null, // Timestamp for when the task is due
     val schedulingType: SchedulingType = SchedulingType.None,
     val startTime: Long? = null, // Start of the time block

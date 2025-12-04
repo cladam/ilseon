@@ -54,15 +54,16 @@ class TaskRepository @Inject constructor(
         val validTasks = allIncompleteTasks.filter { it.startTime == null || it.startTime <= now }
 
         val sortedTasks = validTasks.sortedWith(
-            compareBy<Task> { 
-                when (it.priority) {
-                    TaskPriority.High -> 0
-                    TaskPriority.Medium -> 1
-                    TaskPriority.Low -> 2
-                }
-            }.thenBy { it.createdAt }
+            compareBy<Task> { !it.isUrgent }
+                .thenBy {
+                    when (it.priority) {
+                        TaskPriority.High -> 0
+                        TaskPriority.Medium -> 1
+                        TaskPriority.Low -> 2
+                    }
+                }.thenBy { it.createdAt }
         )
-        
+
         val newPriorityTask = sortedTasks.firstOrNull()
         val currentPriorityTask = allIncompleteTasks.find { it.isCurrentPriority }
 
@@ -181,13 +182,9 @@ class TaskRepository @Inject constructor(
     
         val originalStartCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
     
-        // Start searching from tomorrow, but keep the original task's time
-        val nextStartCal = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1) // Start from tomorrow
-            set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
-            set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        // Start searching from the day after the original task's start date
+        val nextStartCal = (originalStartCal.clone() as Calendar).apply {
+            add(Calendar.DAY_OF_YEAR, 1)
         }
     
         var nextDayFound = false

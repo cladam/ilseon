@@ -53,6 +53,21 @@ class TaskRepositoryTest {
     }
 
     @Test
+    fun updatePriorityAndWidget_prioritizesUrgentTaskOverImportantTask() = runBlocking {
+        val highPriorityTask = Task(title = "High Priority", contextId = UUID.randomUUID(), priority = TaskPriority.High, isUrgent = false)
+        val urgentTask = Task(title = "Urgent Task", contextId = UUID.randomUUID(), priority = TaskPriority.Low, isUrgent = true)
+
+        repository.insertTask(highPriorityTask)
+        repository.insertTask(urgentTask)
+
+        repository.updatePriorityAndWidget()
+
+        val currentPriorityTask = repository.getCurrentPriorityTask().first()
+        assertNotNull(currentPriorityTask)
+        assertEquals("Urgent Task", currentPriorityTask!!.title)
+    }
+
+    @Test
     fun updateTask_whenRecurringTaskCompleted_createsNewInstanceOfNextDay() = runBlocking {
         // Arrange
         val calendar = Calendar.getInstance()

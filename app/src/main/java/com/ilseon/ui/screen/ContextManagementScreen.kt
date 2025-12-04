@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -24,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Task
 import androidx.compose.material3.AlertDialog
@@ -65,6 +67,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TimePickerDialog
+import com.ilseon.ui.theme.QuietAmber
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -573,7 +576,18 @@ fun TasksDialog(
             } else {
                 LazyColumn {
                     items(tasks) { task ->
-                        Text(task.title)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (task.isUrgent) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
+                                    contentDescription = "Urgent",
+                                    tint = QuietAmber,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Text(task.title)
+                        }
                     }
                 }
             }

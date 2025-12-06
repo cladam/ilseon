@@ -150,7 +150,12 @@ class VoiceMemoViewModel @Inject constructor(
             put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
             put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_RECORDINGS + "/ilseon")
+                val recordingsFolder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Environment.DIRECTORY_RECORDINGS
+                } else {
+                    "Recordings"
+                }
+                put(MediaStore.MediaColumns.RELATIVE_PATH, recordingsFolder + "/ilseon")
             }
         }
 

@@ -1,9 +1,12 @@
 package com.ilseon
 
+import android.content.ContentValues
 import android.content.Context
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.Task
@@ -46,7 +49,7 @@ class VoiceMemoViewModel @Inject constructor(
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Companion.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
@@ -62,7 +65,8 @@ class VoiceMemoViewModel @Inject constructor(
         stopPlayback() // Stop any previous playback
         mediaPlayer = MediaPlayer().apply {
             try {
-                setDataSource(memo.filePath)
+                val uri = Uri.parse(memo.filePath)
+                setDataSource(context, uri)
                 prepareAsync()
                 setOnPreparedListener { player ->
                     player.start()
@@ -110,29 +114,19 @@ class VoiceMemoViewModel @Inject constructor(
 
     fun saveVoiceMemo(filePath: String, transcription: String, durationSeconds: Int) {
         viewModelScope.launch {
-            // Determine the title for the UI and filename
             val title = if (transcription.isNotBlank() && transcription != "(Transcription failed)") {
                 transcription.substringBefore('\n').take(50)
             } else {
-                "Voice Memo" // Generic title for failed or empty transcriptions
+                "Voice Memo"
             }
 
-            val originalFile = File(filePath)
-            val newFile = getFileForTitle(title)
-            if (originalFile.renameTo(newFile)) {
-                val voiceMemo = VoiceMemo(
-                    title = title,
-                    transcription = transcription, // Keep the original transcription result
-                    filePath = newFile.absolutePath,
-                    durationSeconds = durationSeconds
-                )
-                voiceMemoRepository.insert(voiceMemo)
-            } else {
-                // If rename fails, save with original path and data
+            val finalUri = saveRecordingToMediaStore(filePath, title)
+
+            if (finalUri != null) {
                 val voiceMemo = VoiceMemo(
                     title = title,
                     transcription = transcription,
-                    filePath = filePath,
+                    filePath = finalUri.toString(),
                     durationSeconds = durationSeconds
                 )
                 voiceMemoRepository.insert(voiceMemo)
@@ -140,48 +134,61 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
-    fun updateVoiceMemoTitle(memo: VoiceMemo, newTitle: String) {
-        viewModelScope.launch {
-            val originalFile = File(memo.filePath)
-            val newFile = getFileForTitle(newTitle)
+    private suspend fun saveRecordingToMediaStore(tempFilePath: String, title: String): Uri? = withContext(Dispatchers.IO) {
+        val sanitizedTitle = title
+            .replace(Regex("[^a-zA-Z0-9.-]+"), "_")
+            .trim('_')
+            .let { if (it.isBlank()) "voicememo" else it }
+            .take(100)
+        val displayName = "${sanitizedTitle}_${System.currentTimeMillis()}.m4a"
 
-            var updatedFilePath = memo.filePath
-            // Ensure the parent directory of the original file exists for the new file
-            if (originalFile.parentFile?.exists() == true && originalFile.renameTo(newFile)) {
-                updatedFilePath = newFile.absolutePath
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_RECORDINGS + "/ilseon")
             }
-
-            val updatedMemo = memo.copy(
-                title = newTitle,
-                filePath = updatedFilePath
-            )
-            voiceMemoRepository.update(updatedMemo)
         }
+
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+        uri?.let {
+            try {
+                val tempFile = File(tempFilePath)
+                resolver.openOutputStream(it).use { outputStream ->
+                    tempFile.inputStream().use { inputStream ->
+                        inputStream.copyTo(outputStream!!)
+                    }
+                }
+                tempFile.delete() // Clean up temp file
+                return@withContext it
+            } catch (e: IOException) {
+                resolver.delete(it, null, null)
+                e.printStackTrace()
+            }
+        }
+        return@withContext null
     }
 
-    private fun getFileForTitle(title: String): File {
-        val outputDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)
-        } else {
-            val dir = File(context.getExternalFilesDir(null), "Recordings")
-            if (!dir.exists()) {
-                dir.mkdirs()
+
+    fun updateVoiceMemoTitle(memo: VoiceMemo, newTitle: String) {
+        viewModelScope.launch {
+            val uri = Uri.parse(memo.filePath)
+            val sanitizedTitle = newTitle
+                .replace(Regex("[^a-zA-Z0-9.-]+"), "_")
+                .trim('_')
+                .let { if (it.isBlank()) "voicememo" else it }
+                .take(100)
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "$sanitizedTitle.m4a")
             }
-            dir
+            context.contentResolver.update(uri, contentValues, null, null)
+
+            val updatedMemo = memo.copy(title = newTitle)
+            voiceMemoRepository.update(updatedMemo)
         }
-        // Sanitize the title for use in a filename
-        var sanitizedTitle = title
-            .replace(Regex("[^a-zA-Z0-9.-]+"), "_") // Replace invalid chars with a single underscore
-            .trim('_') // Remove leading/trailing underscores
-
-        // Fallback for empty or invalid titles
-        if (sanitizedTitle.isBlank()) {
-            sanitizedTitle = "voicememo"
-        }
-
-        sanitizedTitle = sanitizedTitle.take(100) // Truncate to a reasonable length
-
-        return File(outputDir, "${sanitizedTitle}_${System.currentTimeMillis()}.m4a")
     }
 
     fun deleteVoiceMemo(voiceMemo: VoiceMemo) {
@@ -191,10 +198,8 @@ class VoiceMemoViewModel @Inject constructor(
             }
             withContext(Dispatchers.IO) {
                 try {
-                    val file = File(voiceMemo.filePath)
-                    if (file.exists()) {
-                        file.delete()
-                    }
+                    val uri = Uri.parse(voiceMemo.filePath)
+                    context.contentResolver.delete(uri, null, null)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -217,10 +222,8 @@ class VoiceMemoViewModel @Inject constructor(
             taskRepository.insertTask(task)
             withContext(Dispatchers.IO) {
                 try {
-                    val file = File(voiceMemo.filePath)
-                    if (file.exists()) {
-                        file.delete()
-                    }
+                    val uri = Uri.parse(voiceMemo.filePath)
+                    context.contentResolver.delete(uri, null, null)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

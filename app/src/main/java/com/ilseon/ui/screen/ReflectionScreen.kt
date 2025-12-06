@@ -163,7 +163,7 @@ private fun ReflectionItem(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
     AppCard {
@@ -201,7 +201,7 @@ private fun ReflectionItem(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Completed on $completedDate",
+                    text = "Completed at $completedDate",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

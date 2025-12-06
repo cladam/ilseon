@@ -33,6 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.ui.theme.MutedTeal
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -60,6 +63,12 @@ fun VoiceMemoCard(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(memo.timestamp)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = memo.transcription,
                 style = MaterialTheme.typography.bodyMedium,

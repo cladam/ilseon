@@ -105,7 +105,7 @@ private fun CompletedTaskItem(
     task: Task,
     onDelete: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
     Card(

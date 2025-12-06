@@ -34,6 +34,9 @@ import com.ilseon.data.idea.Idea
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.MutedTeal
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -124,41 +127,48 @@ fun IdeaInboxScreen(
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(onClick = {
-                                    viewModel.convertToTask(idea)
-                                    val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
-                                    val title = sentences?.firstOrNull() ?: idea.content
-                                    val description = sentences?.size?.let {
-                                        if (it > 1) {
-                                            sentences.drop(1).joinToString(" ")
-                                        } else {
-                                            ""
+                                Text(
+                                    text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(idea.createdAt)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Row {
+                                    IconButton(onClick = {
+                                        viewModel.convertToTask(idea)
+                                        val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
+                                        val title = sentences?.firstOrNull() ?: idea.content
+                                        val description = sentences?.size?.let {
+                                            if (it > 1) {
+                                                sentences.drop(1).joinToString(" ")
+                                            } else {
+                                                ""
+                                            }
                                         }
+                                        title?.let { description?.let { p2 -> onNavigateToNewTask(it, p2) } }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Convert to Task",
+                                            tint = MutedTeal
+                                        )
                                     }
-                                    title?.let { description?.let { p2 -> onNavigateToNewTask(it, p2) } }
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Convert to Task",
-                                        tint = MutedTeal
-                                    )
-                                }
-                                IconButton(onClick = { editingIdea = idea }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Edit Idea",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                IconButton(onClick = { viewModel.deleteIdea(idea) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete Idea",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+                                    IconButton(onClick = { editingIdea = idea }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit Idea",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = { viewModel.deleteIdea(idea) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Idea",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }

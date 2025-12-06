@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -112,13 +113,6 @@ class TaskViewModel @Inject constructor(
         )
 
     val tasks: StateFlow<List<Task>> = allIncompleteTasks.map { tasks ->
-        val startOfToday = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-
         val startOfTomorrow = Calendar.getInstance().apply {
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 0)
@@ -127,9 +121,22 @@ class TaskViewModel @Inject constructor(
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
 
-        tasks.filter {
-            // Include tasks with no start time, or tasks that start before tomorrow.
-            it.startTime == null || it.startTime < startOfTomorrow
+        val todayName = LocalDate.now().dayOfWeek.name
+
+        tasks.filter { task ->
+            // A task is for today if it's recurring on this day of the week
+            val isRecurringToday = if (task.isRecurring) {
+                task.recurrenceDays?.split(',')?.contains(todayName) == true
+            } else {
+                false
+            }
+
+            // A task is also for today if it's not recurring and starts before tomorrow,
+            // or if it has no start time at all. This includes overdue tasks.
+            val isNonRecurringAndRelevant = !task.isRecurring &&
+                    (task.startTime == null || task.startTime < startOfTomorrow)
+
+            isRecurringToday || isNonRecurringAndRelevant
         }
     }.stateIn(
         scope = viewModelScope,

@@ -6,6 +6,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,7 +21,7 @@ interface HapticManager {
 
 @Singleton
 class HapticManagerImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context
 ) : HapticManager {
 
     private val vibrator: Vibrator by lazy {
@@ -40,17 +41,19 @@ class HapticManagerImpl @Inject constructor(
     private val warningPattern = longArrayOf(0, 80, 100, 80)
     private val alertPattern = longArrayOf(0, 50, 100, 50, 100, 50, 100, 50)
 
-    // Tier 1
+    // A very light tap, good for subtle feedback.
     override fun performNudge() {
-        vibrate(nudgePattern)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        } else {
+            vibrate(nudgePattern)
+        }
     }
 
-    // Tier 2
     override fun performWarning() {
         vibrate(warningPattern)
     }
-
-    // Tier 3
+    
     override fun performAlert() {
         vibrate(alertPattern)
     }
@@ -65,13 +68,20 @@ class HapticManagerImpl @Inject constructor(
 
     private fun vibrate(pattern: LongArray) {
         if (vibrator.hasVibrator()) {
-            Log.d("HapticManager", "Device has vibrator, attempting to vibrate.")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+                vibrate(VibrationEffect.createWaveform(pattern, -1))
             } else {
                 @Suppress("DEPRECATION")
                 vibrator.vibrate(pattern, -1)
             }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun vibrate(effect: VibrationEffect) {
+        if (vibrator.hasVibrator()) {
+            Log.d("HapticManager", "Device has vibrator, attempting to vibrate with effect.")
+            vibrator.vibrate(effect)
         } else {
             Log.d("HapticManager", "Device does not have a vibrator.")
         }

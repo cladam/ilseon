@@ -105,45 +105,12 @@ class TaskViewModel @Inject constructor(
             initialValue = null
         )
 
-    private val allIncompleteTasks: StateFlow<List<Task>> = taskRepository.getIncompleteTasks()
+    val tasks: StateFlow<List<Task>> = taskRepository.getDashboardTasks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-
-    val tasks: StateFlow<List<Task>> = allIncompleteTasks.map { tasks ->
-        val startOfTomorrow = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-
-        val todayName = LocalDate.now().dayOfWeek.name
-
-        tasks.filter { task ->
-            // A task is for today if it's recurring on this day of the week
-            val isRecurringToday = if (task.isRecurring) {
-                task.recurrenceDays?.split(',')?.contains(todayName) == true
-            } else {
-                false
-            }
-
-            // A task is also for today if it's not recurring and starts before tomorrow,
-            // or if it has no start time at all. This includes overdue tasks.
-            val isNonRecurringAndRelevant = !task.isRecurring &&
-                    (task.startTime == null || task.startTime < startOfTomorrow)
-
-            isRecurringToday || isNonRecurringAndRelevant
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
 
     val completionStreak: StateFlow<Int> = taskRepository.getCompletionStreak()
         .stateIn(
@@ -156,15 +123,10 @@ class TaskViewModel @Inject constructor(
     private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
     private val notifiedTasksStartingSoon = mutableSetOf<UUID>()
     private val taskPauseTimes = ConcurrentHashMap<UUID, Long>()
-    private val taskNagTimes = ConcurrentHashMap<UUID, Long>()
 
     // State for tracking focus block notifications
     private var hasSeenFirstFocusBlock = false
     private var lastNotifiedFocusBlockId: UUID? = null
-
-    companion object {
-        val NAGGING_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(30)
-    }
 
     init {
         viewModelScope.launch {
@@ -227,28 +189,13 @@ class TaskViewModel @Inject constructor(
 
     private suspend fun checkTasks() {
         val now = System.currentTimeMillis()
-        val naggingEnabled = settingsRepository.naggingNotificationsEnabled.first()
 
-        allIncompleteTasks.value.forEach { task ->
+        taskRepository.getIncompleteTasks().first().forEach { task ->
             val isTaskActive = task.startTime == null || task.startTime <= now
             if (isTaskActive) {
                 val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
                 if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
                     startTask(task)
-                }
-
-                if (naggingEnabled && task.priority == TaskPriority.High && !task.isComplete) {
-                    val isOverdue = task.dueTime?.let { it < now } ?: false
-                    val isUnscheduledAndOld = task.schedulingType == SchedulingType.None && (now - task.createdAt > NAGGING_INTERVAL_MILLIS)
-
-                    if (isOverdue || isUnscheduledAndOld) {
-                        val lastNagTime = taskNagTimes[task.id]
-                        if (lastNagTime == null || (now - lastNagTime > NAGGING_INTERVAL_MILLIS)) {
-                            notificationService.sendNaggingNotification(task)
-                            hapticManager.performNudge()
-                            taskNagTimes[task.id] = now
-                        }
-                    }
                 }
             }
 

@@ -5,11 +5,18 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.ilseon.data.task.SchedulingType
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TimerState
 import com.ilseon.notifications.NotificationHelper
 import com.ilseon.notifications.NotificationTier
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,8 +34,28 @@ interface NotificationService {
 @Singleton
 class NotificationServiceImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val notificationHelper: NotificationHelper
+    private val notificationHelper: NotificationHelper,
+    private val settingsRepository: SettingsRepository
 ) : NotificationService {
+
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
+
+    private val nudgeEnabledState: StateFlow<Boolean> =
+        settingsRepository.nudgeNotificationsEnabled.stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true
+        )
+
+    private val naggingEnabledState: StateFlow<Boolean> =
+        settingsRepository.naggingNotificationsEnabled.stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false
+        )
+
+    private fun areNudgesEnabled(): Boolean = nudgeEnabledState.value
+    private fun areNaggingsEnabled(): Boolean = naggingEnabledState.value
 
     private fun sendNotification(
         title: String,
@@ -38,6 +65,7 @@ class NotificationServiceImpl @Inject constructor(
         taskId: String = UUID.randomUUID().toString(),
         timerState: TimerState = TimerState.NotStarted
     ) {
+        if (!areNudgesEnabled()) return
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
@@ -107,6 +135,7 @@ class NotificationServiceImpl @Inject constructor(
     }
 
     override fun sendNaggingNotification(task: Task) {
+        if (!areNaggingsEnabled()) return
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS

@@ -25,7 +25,9 @@ class TaskRepository @Inject constructor(
     private val taskContextDao: TaskContextDao,
     private val reminderManager: IReminderManager
 ) {
-    fun getIncompleteTasks(): Flow<List<Task>> {
+    fun getIncompleteTasks(): Flow<List<Task>> = taskDao.getIncompleteTasks()
+
+    fun getDashboardTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
 
@@ -91,10 +93,6 @@ class TaskRepository @Inject constructor(
         updateWidget()
     }
 
-    fun getActiveRecurringTasks(): Flow<List<Task>> {
-        return taskDao.getActiveRecurringTasks()
-    }
-
     fun getUnarchivedRecurringTaskSeries(): Flow<List<Task>> {
         return taskDao.getUnarchivedRecurringTaskSeries()
     }
@@ -140,7 +138,7 @@ class TaskRepository @Inject constructor(
     
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
-    fun getCurrentPriorityTask(): Flow<Task?> = taskDao.getCurrentPriorityTask()
+    fun getCurrentPriorityTask(): Flow<Task?> = getDashboardTasks().map { it.firstOrNull() }
 
     suspend fun getAllFocusBlocks(): List<FocusBlock> {
         return focusBlockDao.getAllFocusBlocks()

@@ -100,6 +100,7 @@ tasks.register("printVersionCodeAndName") {
 dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.rules)
+    implementation(libs.androidx.foundation)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

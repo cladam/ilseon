@@ -27,19 +27,34 @@ class TaskRepository @Inject constructor(
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()
+        val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
 
-        return tasksFlow.combine(getActiveFocusBlock()) { tasks, activeFocusBlock ->
+        return combine(tasksFlow, allFocusBlocksFlow) { tasks, allFocusBlocks ->
+            // Logic to find active focus block
+            val now = LocalTime.now()
+            val today = LocalDate.now().dayOfWeek.value
+            val formatter = DateTimeFormatter.ofPattern("HH:mm")
+
+            val activeFocusBlock = allFocusBlocks.find {
+                val startTime = LocalTime.parse(it.startTime, formatter)
+                val endTime = LocalTime.parse(it.endTime, formatter)
+                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(today)
+                !now.isBefore(startTime) && now.isBefore(endTime) && isTodayInRepeatDays
+            }
+
             if (activeFocusBlock != null) {
-                val filteredTasks = tasks.filter {
+                // Focus mode is ON. Show tasks for this context + high priority tasks.
+                val filtered = tasks.filter {
                     it.contextId == activeFocusBlock.contextId || it.priority == TaskPriority.High
                 }
-                // The DAO query already sorts by isCurrentPriority, this adds a secondary sort for display.
-                filteredTasks.sortedWith(
+                filtered.sortedWith(
                     compareBy<Task> { !it.isCurrentPriority }
                         .thenBy { it.contextId != activeFocusBlock.contextId }
                 )
             } else {
-                tasks
+                // Focus mode is OFF. Show tasks that DON'T belong to a focus-block context.
+                val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
+                tasks.filter { it.contextId !in focusBlockContextIds }
             }
         }
     }

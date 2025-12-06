@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -61,7 +62,11 @@ fun VoiceMemoCard(
                 Slider(
                     value = progress,
                     onValueChange = onSeek,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.secondary,
+                        activeTrackColor = MaterialTheme.colorScheme.secondary
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -78,12 +83,6 @@ fun VoiceMemoCard(
                 )
                 // Action Icons
                 Row {
-                    IconButton(onClick = { onEditTitle(memo) }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Title"
-                        )
-                    }
                     IconButton(onClick = { onPlayPause(memo) }) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
@@ -95,6 +94,12 @@ fun VoiceMemoCard(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Convert to Task",
                             tint = MutedTeal
+                        )
+                    }
+                    IconButton(onClick = { onEditTitle(memo) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Title"
                         )
                     }
                     IconButton(onClick = { onDelete(memo) }) {

@@ -78,6 +78,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.components.NavigationDrawerHeader
@@ -119,9 +121,12 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val contextViewModel: TaskContextViewModel by viewModels()
 
+    private val intentState = mutableStateOf<Intent?>(null)
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        intentState.value = intent
         installSplashScreen()
         // enableEdgeToEdge()
 
@@ -336,16 +341,30 @@ class MainActivity : ComponentActivity() {
                     }
                 )
 
-                LaunchedEffect(intent) {
-                    handleIntent(intent,
-                        onShowTaskSheet = { scope.launch { sheetState.show() } },
-                        onShowIdeaDialog = {
-                            navController.navigate(Screen.IdeaInbox.route)
-                            showAddIdeaDialog = true
+                val intentToShow by remember { intentState }
+                LaunchedEffect(intentToShow) {
+                    intentToShow?.let { currentIntent ->
+                        if (currentIntent.action == Intent.ACTION_VIEW && currentIntent.data != null) {
+                            navController.handleDeepLink(currentIntent)
+                        } else {
+                            // Handle other custom intents
+                            when (currentIntent.getStringExtra("capture_type")) {
+                                "task" -> scope.launch { sheetState.show() }
+                                "idea" -> {
+                                    navController.navigate(Screen.IdeaInbox.route)
+                                    showAddIdeaDialog = true
+                                }
+                            }
+                            if (currentIntent.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
+                                val taskIdString = currentIntent.getStringExtra("EXTRA_TASK_ID")
+                                if (taskIdString != null) {
+                                    viewModel.onShowReflectionDialog(UUID.fromString(taskIdString))
+                                }
+                            }
                         }
-                    )
-                    // Clear the extra to avoid re-triggering
-                    intent?.removeExtra("capture_type")
+                        // Clear intent after handling to prevent re-triggering
+                        intentState.value = null
+                    }
                 }
 
                 ModalNavigationDrawer(
@@ -388,15 +407,16 @@ class MainActivity : ComponentActivity() {
                         },
                         floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
-                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route || currentRoute == Screen.VoiceInbox.route) {
+                            val isVoiceInbox = currentRoute?.startsWith(Screen.VoiceInbox.route) == true
+                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route || isVoiceInbox) {
                                 LargeFloatingActionButton(
                                     onClick = {
                                         val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
-                                        when (currentRoute) {
-                                            Screen.VoiceInbox.route -> {
+                                        when {
+                                            isVoiceInbox -> {
                                                 navController.navigate(Screen.Recorder.route)
                                             }
-                                            Screen.IdeaInbox.route -> {
+                                            currentRoute == Screen.IdeaInbox.route -> {
                                                 vttTarget = "idea_content"
                                                 if (useVtt) {
                                                     startVtt()
@@ -426,7 +446,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        if (currentRoute == Screen.VoiceInbox.route) {
+                                        if (isVoiceInbox) {
                                             Icon(
                                                 Icons.Filled.Mic,
                                                 contentDescription = "Record"
@@ -605,15 +625,19 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            composable(Screen.VoiceInbox.route) {
+                            composable(
+                                route = "${Screen.VoiceInbox.route}?memoId={memoId}",
+                                arguments = listOf(navArgument("memoId") { nullable = true }),
+                                deepLinks = listOf(navDeepLink { uriPattern = "ilseon://play-voice-memo/{memoId}" })
+                            ) { backStackEntry ->
                                 VoiceInboxScreen(
                                     onNavigateToNewTask = { title, description ->
                                         vttTitleResult = title
                                         vttDescriptionResult = description
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
-                                    }
-
+                                    },
+                                    initialMemoIdToPlay = backStackEntry.arguments?.getString("memoId")
                                 )
                             }
                             composable(Screen.Recorder.route) {
@@ -717,25 +741,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent,
-            onShowTaskSheet = { /* We need a coroutine scope here, but can't get one. Will be handled by LaunchedEffect. */ },
-            onShowIdeaDialog = { /* Same as above. */ }
-        )
-    }
-
-    private fun handleIntent(intent: Intent?, onShowTaskSheet: () -> Unit, onShowIdeaDialog: () -> Unit) {
-        if (intent == null) return
-        when (intent.getStringExtra("capture_type")) {
-            "task" -> onShowTaskSheet()
-            "idea" -> onShowIdeaDialog()
-        }
-        
-        if (intent.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
-            val taskIdString = intent.getStringExtra("EXTRA_TASK_ID")
-            if (taskIdString != null) {
-                viewModel.onShowReflectionDialog(UUID.fromString(taskIdString))
-            }
-        }
+        intentState.value = intent
     }
 }
 

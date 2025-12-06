@@ -9,6 +9,11 @@ class VoiceMemoRepository @Inject constructor(
 ) {
     fun getVoiceMemos() = voiceMemoDao.getVoiceMemos()
 
+    suspend fun getVoiceMemo(id: String): VoiceMemo? {
+        return voiceMemoDao.getVoiceMemo(id)
+    }
+
+
     suspend fun insert(voiceMemo: VoiceMemo) {
         voiceMemoDao.insert(voiceMemo)
     }

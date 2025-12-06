@@ -20,4 +20,7 @@ interface VoiceMemoDao {
 
     @Query("SELECT * FROM voice_memos ORDER BY timestamp DESC")
     fun getVoiceMemos(): Flow<List<VoiceMemo>>
+
+    @Query("SELECT * FROM voice_memos WHERE id = :id")
+    suspend fun getVoiceMemo(id: String): VoiceMemo?
 }

@@ -612,9 +612,6 @@ class MainActivity : ComponentActivity() {
                                         vttDescriptionResult = description
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
-                                    },
-                                    onStartRecording = {
-                                        navController.navigate(Screen.Recorder.route)
                                     }
                                 )
                             }

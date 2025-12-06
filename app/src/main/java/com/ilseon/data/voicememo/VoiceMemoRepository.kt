@@ -13,6 +13,10 @@ class VoiceMemoRepository @Inject constructor(
         voiceMemoDao.insert(voiceMemo)
     }
 
+    suspend fun update(voiceMemo: VoiceMemo) {
+        voiceMemoDao.update(voiceMemo)
+    }
+
     suspend fun delete(id: String) {
         voiceMemoDao.delete(id)
     }

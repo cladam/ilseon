@@ -46,19 +46,30 @@ class AudioHandlerImpl @Inject constructor(
     override suspend fun startRecording() {
         if (mediaRecorder != null) return // Already recording
 
-        // 1. Setup MediaRecorder for file saving to a public directory
-        val dir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RECORDINGS), "Ilseon")
+        // 1. Setup MediaRecorder to save to app-specific external storage
+        val outputDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)
         } else {
-            TODO("VERSION.SDK_INT < S")
+            val dir = File(context.getExternalFilesDir(null), "Recordings")
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
+            dir
         }
-        if (!dir.exists()) {
-            dir.mkdirs()
+        if (outputDir == null) {
+            // Handle case where external storage is not available
+            return
         }
-        val outputFile = File(dir, "voice_memo_${UUID.randomUUID()}.m4a")
+
+        val outputFile = File(outputDir, "voice_memo_${UUID.randomUUID()}.m4a")
         activeOutputFile = outputFile
 
-        mediaRecorder = (MediaRecorder(context)).apply {
+        mediaRecorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }).apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)

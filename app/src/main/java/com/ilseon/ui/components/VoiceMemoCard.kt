@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Icon
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.ui.theme.MutedTeal
@@ -34,13 +36,24 @@ fun VoiceMemoCard(
     onSeek: (Float) -> Unit,
     onConvertToTask: (VoiceMemo) -> Unit,
     onDelete: (VoiceMemo) -> Unit,
+    onEditTitle: (VoiceMemo) -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppCard(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
+                text = memo.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 text = memo.transcription,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             if (isPlaying) {
@@ -65,6 +78,12 @@ fun VoiceMemoCard(
                 )
                 // Action Icons
                 Row {
+                    IconButton(onClick = { onEditTitle(memo) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Title"
+                        )
+                    }
                     IconButton(onClick = { onPlayPause(memo) }) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,

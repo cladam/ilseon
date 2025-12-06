@@ -58,7 +58,7 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19)
                 .build()
         }
 
@@ -102,6 +102,22 @@ abstract class AppModule {
         private val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE voice_memos ADD COLUMN title TEXT NOT NULL DEFAULT 'Voice Memo'")
+            }
+        }
+
+        private val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create a new table with the desired schema (without the transcription column)
+                db.execSQL("CREATE TABLE `voice_memos_new` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `filePath` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+
+                // Copy the data from the old table to the new table
+                db.execSQL("INSERT INTO `voice_memos_new` (`id`, `title`, `filePath`, `durationSeconds`, `timestamp`) SELECT `id`, `title`, `filePath`, `durationSeconds`, `timestamp` FROM `voice_memos`")
+
+                // Remove the old table
+                db.execSQL("DROP TABLE `voice_memos`")
+
+                // Rename the new table to the original table name
+                db.execSQL("ALTER TABLE `voice_memos_new` RENAME TO `voice_memos`")
             }
         }
 

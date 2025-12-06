@@ -48,7 +48,6 @@ fun VoiceMemoCard(
     onConvertToTask: (VoiceMemo) -> Unit,
     onDelete: (VoiceMemo) -> Unit,
     onEditTitle: (VoiceMemo) -> Unit,
-    onShowTranscription: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppCard(modifier = modifier) {
@@ -67,15 +66,6 @@ fun VoiceMemoCard(
                 text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(memo.timestamp)),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = memo.transcription,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 8.dp)
             )
             if (isPlaying) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -107,12 +97,6 @@ fun VoiceMemoCard(
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "Stop Playback" else "Play Voice Memo"
-                        )
-                    }
-                    IconButton(onClick = { onShowTranscription(memo.transcription) }) {
-                        Icon(
-                            imageVector = Icons.Default.Article,
-                            contentDescription = "Show Transcription"
                         )
                     }
                     IconButton(onClick = { onConvertToTask(memo) }) {

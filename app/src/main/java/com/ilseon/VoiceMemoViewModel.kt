@@ -116,20 +116,15 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
-    fun saveVoiceMemo(filePath: String, transcription: String, durationSeconds: Int) {
+    fun saveVoiceMemo(filePath: String, durationSeconds: Int) {
         viewModelScope.launch {
-            val title = if (transcription.isNotBlank() && transcription != "(Transcription failed)") {
-                transcription.substringBefore('\n').take(50)
-            } else {
-                "Voice Memo"
-            }
+            val title = "Voice Memo"
 
             val finalUri = saveRecordingToMediaStore(filePath, title)
 
             if (finalUri != null) {
                 val voiceMemo = VoiceMemo(
                     title = title,
-                    transcription = transcription,
                     filePath = finalUri.toString(),
                     durationSeconds = durationSeconds
                 )
@@ -234,7 +229,7 @@ class VoiceMemoViewModel @Inject constructor(
             }
             val task = Task(
                 title = voiceMemo.title,
-                description = voiceMemo.transcription,
+                description = "",
                 priority = TaskPriority.Medium,
                 contextId = UUID.randomUUID() // Or fetch a default context
             )

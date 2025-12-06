@@ -9,7 +9,6 @@ data class VoiceMemo(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     var title: String,
-    val transcription: String,
     var filePath: String,
     val durationSeconds: Int,
     val timestamp: Long = System.currentTimeMillis()

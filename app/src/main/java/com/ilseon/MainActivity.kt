@@ -642,7 +642,6 @@ class MainActivity : ComponentActivity() {
                                         if (result != null) {
                                             voiceMemoViewModel.saveVoiceMemo(
                                                 filePath = result.filePath,
-                                                transcription = result.transcription,
                                                 durationSeconds = result.durationSeconds
                                             )
                                         }

@@ -44,7 +44,6 @@ fun VoiceInboxScreen(
     val currentlyPlayingId by viewModel.currentlyPlayingId.collectAsState()
     val progress by viewModel.playbackProgress.collectAsState()
     var memoToEdit by remember { mutableStateOf<VoiceMemo?>(null) }
-    var transcriptionToShow by remember { mutableStateOf<String?>(null) }
 
     if (memoToEdit != null) {
         EditTitleDialog(
@@ -54,13 +53,6 @@ fun VoiceInboxScreen(
                 viewModel.updateVoiceMemoTitle(updatedMemo, newTitle)
                 memoToEdit = null
             }
-        )
-    }
-
-    if (transcriptionToShow != null) {
-        TranscriptionDialog(
-            transcription = transcriptionToShow!!,
-            onDismiss = { transcriptionToShow = null }
         )
     }
 
@@ -107,11 +99,10 @@ fun VoiceInboxScreen(
                     onSeek = { newProgress -> viewModel.seekTo(newProgress) },
                     onConvertToTask = {
                         viewModel.convertToTask(it)
-                        onNavigateToNewTask(it.title, it.transcription)
+                        onNavigateToNewTask(it.title, "")
                     },
                     onDelete = { viewModel.deleteVoiceMemo(it) },
                     onEditTitle = { memoToEdit = it },
-                    onShowTranscription = { transcriptionToShow = it },
                     modifier = Modifier.animateItem()
                 )
             }
@@ -146,34 +137,6 @@ private fun EditTitleDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-private fun TranscriptionDialog(
-    transcription: String,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Transcription") },
-        text = {
-            val scrollState = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .heightIn(max = 400.dp) // Set a max height for the dialog content
-                    .verticalScroll(scrollState)
-            ) {
-                SelectionContainer {
-                    Text(transcription)
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
             }
         }
     )

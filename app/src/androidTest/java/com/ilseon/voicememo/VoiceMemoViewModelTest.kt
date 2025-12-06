@@ -13,7 +13,6 @@ import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoDao
 import com.ilseon.data.voicememo.VoiceMemoRepository
 import com.ilseon.notifications.IReminderManager
-import com.ilseon.service.ISpeechTranscriber
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -25,13 +24,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-
-// Fake transcriber that returns a predictable result for testing
-class FakeSpeechTranscriber(private val transcription: String) : ISpeechTranscriber {
-    override suspend fun transcribe(filePath: String, onResult: (String) -> Unit, onError: (String) -> Unit) {
-        onResult(transcription)
-    }
-}
 
 @RunWith(AndroidJUnit4::class)
 class VoiceMemoViewModelTest {
@@ -54,6 +46,7 @@ class VoiceMemoViewModelTest {
         voiceMemoDao = db.voiceMemoDao()
         taskRepository = TaskRepository(context, db.taskDao(), db.focusBlockDao(), db.taskContextDao(), FakeReminderManager())
         voiceMemoRepository = VoiceMemoRepository(voiceMemoDao)
+        viewModel = VoiceMemoViewModel(context, voiceMemoRepository, taskRepository)
 
         // For this test, we don't need a real audio file, just a placeholder path
         testFile = File(context.cacheDir, "test_audio.m4a")
@@ -69,28 +62,25 @@ class VoiceMemoViewModelTest {
     }
 
     @Test
-    fun testTranscriptionAndStorage() = runBlocking {
+    fun testSaveAndStorage() = runBlocking {
         // Arrange
-        val expectedTranscription = "This is a test transcription."
-        val fakeTranscriber = FakeSpeechTranscriber(expectedTranscription)
-        viewModel = VoiceMemoViewModel(voiceMemoRepository, taskRepository, fakeTranscriber)
+        val duration = 5
 
         // Act
-        viewModel.startTranscription(testFile.absolutePath, 5)
+        viewModel.saveVoiceMemo(testFile.absolutePath, duration)
 
         // Assert
         val memos = viewModel.voiceMemos.first { it.isNotEmpty() }
         assertEquals(1, memos.size)
-        assertEquals(expectedTranscription, memos[0].transcription)
-        assertEquals(testFile.absolutePath, memos[0].filePath)
+        assertEquals("Voice Memo", memos[0].title)
+        assertTrue(memos[0].filePath.startsWith("content://"))
+        assertEquals(duration, memos[0].durationSeconds)
     }
 
     @Test
     fun deleteVoiceMemo_deletesFileAndDatabaseEntry() = runBlocking {
-        // Arrange - a viewmodel with a dummy transcriber and an existing memo
-        viewModel =
-            VoiceMemoViewModel(voiceMemoRepository, taskRepository, FakeSpeechTranscriber(""))
-        val existingMemo = VoiceMemo(transcription = "memo to delete", filePath = testFile.absolutePath, durationSeconds = 1)
+        // Arrange
+        val existingMemo = VoiceMemo(title = "memo to delete", filePath = testFile.absolutePath, durationSeconds = 1)
         voiceMemoDao.insert(existingMemo)
         // Wait for the memo to appear in the flow
         val memosBefore = viewModel.voiceMemos.first { it.isNotEmpty() }
@@ -109,9 +99,7 @@ class VoiceMemoViewModelTest {
     @Test
     fun convertToTask_deletesFileAndDatabaseEntryAndCreatesTask() = runBlocking {
         // Arrange
-        viewModel =
-            VoiceMemoViewModel(voiceMemoRepository, taskRepository, FakeSpeechTranscriber(""))
-        val existingMemo = VoiceMemo(transcription = "This will become a task", filePath = testFile.absolutePath, durationSeconds = 1)
+        val existingMemo = VoiceMemo(title = "This will become a task", filePath = testFile.absolutePath, durationSeconds = 1)
         voiceMemoDao.insert(existingMemo)
         // Wait for the memo to appear in the flow
         val memosBefore = viewModel.voiceMemos.first { it.isNotEmpty() }
@@ -129,7 +117,8 @@ class VoiceMemoViewModelTest {
         // 2. A new task was created
         val tasks = taskRepository.getIncompleteTasks().first()
         assertEquals(1, tasks.size)
-        assertEquals(existingMemo.transcription, tasks[0].title)
+        assertEquals(existingMemo.title, tasks[0].title)
+        assertEquals("", tasks[0].description)
     }
 }
 

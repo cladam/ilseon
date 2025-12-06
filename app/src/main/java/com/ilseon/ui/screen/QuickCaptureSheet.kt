@@ -317,17 +317,15 @@ fun QuickCaptureSheet(
         }
 
         // --- TOMORROW CHECKBOX ---
-        AnimatedVisibility(visible = schedulingType != SchedulingType.None) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { isForTomorrow = !isForTomorrow }
-            ) {
-                Checkbox(
-                    checked = isForTomorrow,
-                    onCheckedChange = { isForTomorrow = it }
-                )
-                Text("Tomorrow?")
-            }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { isForTomorrow = !isForTomorrow }
+        ) {
+            Checkbox(
+                checked = isForTomorrow,
+                onCheckedChange = { isForTomorrow = it }
+            )
+            Text("Tomorrow?")
         }
 
         Spacer(Modifier.height(16.dp))

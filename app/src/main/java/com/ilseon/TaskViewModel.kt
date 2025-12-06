@@ -112,6 +112,13 @@ class TaskViewModel @Inject constructor(
         )
 
     val tasks: StateFlow<List<Task>> = allIncompleteTasks.map { tasks ->
+        val startOfToday = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
         val startOfTomorrow = Calendar.getInstance().apply {
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 0)
@@ -121,6 +128,7 @@ class TaskViewModel @Inject constructor(
         }.timeInMillis
 
         tasks.filter {
+            // Include tasks with no start time, or tasks that start before tomorrow.
             it.startTime == null || it.startTime < startOfTomorrow
         }
     }.stateIn(
@@ -402,6 +410,16 @@ class TaskViewModel @Inject constructor(
                             startTime = startCal.timeInMillis
                             dueTime = startTime
                         }
+                    } else if (isForTomorrow) {
+                        // If it's a regular task for tomorrow, set the start time to the beginning of the next day.
+                        val tomorrow = Calendar.getInstance().apply {
+                            add(Calendar.DAY_OF_YEAR, 1)
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        startTime = tomorrow.timeInMillis
                     }
                 }
 

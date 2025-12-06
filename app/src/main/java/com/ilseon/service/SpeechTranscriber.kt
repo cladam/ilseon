@@ -123,6 +123,8 @@ class AudioHandlerImpl @Inject constructor(
                         if (latestTranscription.isBlank()) {
                             latestTranscription = "(Transcription failed)"
                         }
+                        // This might be called automatically.
+                        // The UI should handle the stop.
                     }
                     override fun onReadyForSpeech(params: Bundle?) {}
                     override fun onBeginningOfSpeech() {}
@@ -144,13 +146,24 @@ class AudioHandlerImpl @Inject constructor(
 
     override fun stopRecording(): RecordingResult? {
         val duration = ((System.currentTimeMillis() - startTime - totalPausedMillis) / 1000).toInt()
-
+        
+        // Gracefully stop and release the MediaRecorder
         mediaRecorder?.apply {
-            stop()
-            release()
+            try {
+                stop()
+            } catch (e: IllegalStateException) {
+                // This can happen if the recorder is already stopped.
+                e.printStackTrace()
+            }
+            try {
+                release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         mediaRecorder = null
 
+        // Stop and destroy the SpeechRecognizer
         speechRecognizer?.apply {
             stopListening()
             destroy()
@@ -169,15 +182,30 @@ class AudioHandlerImpl @Inject constructor(
     }
 
     override fun cancelRecording() {
+        // Gracefully stop and release the MediaRecorder
         mediaRecorder?.apply {
-            stop()
-            release()
+            try {
+                stop()
+            } catch (e: IllegalStateException) {
+                e.printStackTrace()
+            }
+            try {
+                release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         mediaRecorder = null
+
+        // Stop and destroy the SpeechRecognizer
         speechRecognizer?.destroy()
         speechRecognizer = null
+
+        // Clean up the created file
         activeOutputFile?.delete()
         activeOutputFile = null
+
+        // Reset state
         latestTranscription = ""
         startTime = 0
         totalPausedMillis = 0

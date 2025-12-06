@@ -65,7 +65,11 @@ class VoiceMemoViewModel @Inject constructor(
         stopPlayback() // Stop any previous playback
         mediaPlayer = MediaPlayer().apply {
             try {
-                val uri = Uri.parse(memo.filePath)
+                val uri = if (memo.filePath.startsWith("content://")) {
+                    Uri.parse(memo.filePath)
+                } else {
+                    Uri.fromFile(File(memo.filePath))
+                }
                 setDataSource(context, uri)
                 prepareAsync()
                 setOnPreparedListener { player ->
@@ -174,18 +178,21 @@ class VoiceMemoViewModel @Inject constructor(
 
     fun updateVoiceMemoTitle(memo: VoiceMemo, newTitle: String) {
         viewModelScope.launch {
-            val uri = Uri.parse(memo.filePath)
-            val sanitizedTitle = newTitle
-                .replace(Regex("[^a-zA-Z0-9.-]+"), "_")
-                .trim('_')
-                .let { if (it.isBlank()) "voicememo" else it }
-                .take(100)
+            if (memo.filePath.startsWith("content://")) {
+                val uri = Uri.parse(memo.filePath)
+                val sanitizedTitle = newTitle
+                    .replace(Regex("[^a-zA-Z0-9.-]+"), "_")
+                    .trim('_')
+                    .let { if (it.isBlank()) "voicememo" else it }
+                    .take(100)
 
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, "$sanitizedTitle.m4a")
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$sanitizedTitle.m4a")
+                }
+                context.contentResolver.update(uri, contentValues, null, null)
             }
-            context.contentResolver.update(uri, contentValues, null, null)
-
+            // Note: Renaming for old file paths is complex and not handled here to avoid more issues.
+            // The title in the database will be updated regardless.
             val updatedMemo = memo.copy(title = newTitle)
             voiceMemoRepository.update(updatedMemo)
         }
@@ -198,8 +205,15 @@ class VoiceMemoViewModel @Inject constructor(
             }
             withContext(Dispatchers.IO) {
                 try {
-                    val uri = Uri.parse(voiceMemo.filePath)
-                    context.contentResolver.delete(uri, null, null)
+                    if (voiceMemo.filePath.startsWith("content://")) {
+                        val uri = Uri.parse(voiceMemo.filePath)
+                        context.contentResolver.delete(uri, null, null)
+                    } else {
+                        val file = File(voiceMemo.filePath)
+                        if (file.exists()) {
+                            file.delete()
+                        }
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -220,15 +234,7 @@ class VoiceMemoViewModel @Inject constructor(
                 contextId = UUID.randomUUID() // Or fetch a default context
             )
             taskRepository.insertTask(task)
-            withContext(Dispatchers.IO) {
-                try {
-                    val uri = Uri.parse(voiceMemo.filePath)
-                    context.contentResolver.delete(uri, null, null)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            voiceMemoRepository.delete(voiceMemo.id)
+            deleteVoiceMemo(voiceMemo) // Re-use delete logic
         }
     }
 

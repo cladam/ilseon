@@ -13,7 +13,12 @@ import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.data.voicememo.VoiceMemoDao
+import com.ilseon.data.voicememo.VoiceMemoRepository
+import com.ilseon.notifications.IReminderManager
 import com.ilseon.notifications.ReminderManager
+import com.ilseon.service.AudioHandler
+import com.ilseon.service.AudioHandlerImpl
 import com.ilseon.service.HapticManager
 import com.ilseon.service.HapticManagerImpl
 import dagger.Binds
@@ -32,6 +37,14 @@ abstract class AppModule {
     @Singleton
     abstract fun bindHapticManager(impl: HapticManagerImpl): HapticManager
 
+    @Binds
+    @Singleton
+    abstract fun bindReminderManager(impl: ReminderManager): IReminderManager
+
+    @Binds
+    @Singleton
+    abstract fun bindAudioHandler(impl: AudioHandlerImpl): AudioHandler
+
     companion object {
         @Provides
         @Singleton
@@ -45,7 +58,7 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                 .build()
         }
 
@@ -80,6 +93,12 @@ abstract class AppModule {
             }
         }
 
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `voice_memos` (`id` TEXT NOT NULL, `transcription` TEXT NOT NULL, `filePath` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            }
+        }
+
         @Provides
         @Singleton
         fun provideTaskDao(appDatabase: AppDatabase): TaskDao {
@@ -90,6 +109,12 @@ abstract class AppModule {
         @Singleton
         fun provideIdeaDao(appDatabase: AppDatabase): IdeaDao {
             return appDatabase.ideaDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideVoiceMemoDao(appDatabase: AppDatabase): VoiceMemoDao {
+            return appDatabase.voiceMemoDao()
         }
 
         @Provides
@@ -105,9 +130,15 @@ abstract class AppModule {
             taskDao: TaskDao,
             focusBlockDao: FocusBlockDao,
             taskContextDao: TaskContextDao,
-            reminderManager: ReminderManager
+            reminderManager: IReminderManager
         ): TaskRepository {
             return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager)
+        }
+
+        @Provides
+        @Singleton
+        fun provideVoiceMemoRepository(voiceMemoDao: VoiceMemoDao): VoiceMemoRepository {
+            return VoiceMemoRepository(voiceMemoDao)
         }
 
         @Provides

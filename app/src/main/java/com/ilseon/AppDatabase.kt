@@ -16,10 +16,12 @@ import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.data.voicememo.VoiceMemo
+import com.ilseon.data.voicememo.VoiceMemoDao
 import java.util.UUID
 
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class], version = 16, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class], version = 17, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -27,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskContextDao(): TaskContextDao
     abstract fun focusBlockDao(): FocusBlockDao
     abstract fun ideaDao(): IdeaDao
+    abstract fun voiceMemoDao(): VoiceMemoDao
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.

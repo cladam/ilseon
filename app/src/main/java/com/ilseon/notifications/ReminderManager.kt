@@ -17,7 +17,7 @@ import javax.inject.Singleton
 class ReminderManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val alarmManager: AlarmManager
-) {
+) : IReminderManager {
 
     companion object {
         const val PRE_BLOCK_WARNING_MINUTES = 5
@@ -26,7 +26,7 @@ class ReminderManager @Inject constructor(
         val NAGGING_DELAY_MINUTES = TimeUnit.MINUTES.toMillis(5)
     }
 
-    fun rescheduleReminders(task: Task) {
+    override fun rescheduleReminders(task: Task) {
         cancelReminder(task)
         when (task.schedulingType) {
             SchedulingType.TimeBlock -> scheduleTimedTaskReminders(task)
@@ -37,7 +37,7 @@ class ReminderManager @Inject constructor(
         }
     }
 
-    fun scheduleTimedTaskReminders(task: Task) {
+    override fun scheduleTimedTaskReminders(task: Task) {
         val now = System.currentTimeMillis()
         val startTime = task.startTime ?: return
         val dueTime = task.dueTime ?: task.endTime ?: return
@@ -67,7 +67,7 @@ class ReminderManager @Inject constructor(
         scheduleNaggingReminder(task, overdueTime)
     }
 
-    fun scheduleDurationTaskReminders(task: Task) {
+    override fun scheduleDurationTaskReminders(task: Task) {
         if (task.remainingTimeInSeconds <= 0) return
         val now = System.currentTimeMillis()
         val remainingMillis = task.remainingTimeInSeconds * 1000L
@@ -84,11 +84,11 @@ class ReminderManager @Inject constructor(
         // End Time Overdue (1 minute after duration expires)
         val overdueTime = now + remainingMillis + (END_TIME_OVERDUE_MINUTES * 60 * 1000)
         scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
-        
+
         // Rule 3: Schedule the nagging follow-up
         scheduleNaggingReminder(task, overdueTime)
     }
-    
+
     // Rule 1 Implementation
     private fun scheduleAnchorReminders(task: Task) {
         val intent = createHapticIntent(task, NotificationTier.SubtleAnchor)
@@ -124,7 +124,7 @@ class ReminderManager @Inject constructor(
         )
     }
 
-    fun cancelReminder(task: Task) {
+    override fun cancelReminder(task: Task) {
         // Cancel notification-based alarms
         NotificationTier.entries.forEach { tier ->
             val pendingIntent = createNotificationIntent(task, tier)

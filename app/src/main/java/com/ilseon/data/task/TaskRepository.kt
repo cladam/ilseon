@@ -2,7 +2,7 @@ package com.ilseon.data.task
 
 import android.content.Context
 import android.content.Intent
-import com.ilseon.notifications.ReminderManager
+import com.ilseon.notifications.IReminderManager
 import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +23,7 @@ class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
-    private val reminderManager: ReminderManager
+    private val reminderManager: IReminderManager
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()

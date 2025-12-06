@@ -12,10 +12,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -29,14 +27,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -60,7 +57,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -97,7 +94,9 @@ import com.ilseon.ui.screen.NextTaskActivationScreen
 import com.ilseon.ui.screen.OngoingTasksScreen
 import com.ilseon.ui.screen.ReflectionScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
+import com.ilseon.ui.screen.RecorderScreen
 import com.ilseon.ui.screen.SettingsScreen
+import com.ilseon.ui.screen.VoiceInboxScreen
 import com.ilseon.ui.theme.IlseonTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -372,38 +371,47 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            TopAppBar(
-                                title = { },
-                                navigationIcon = {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                            // Hide top bar for recorder screen for a more immersive experience
+                            if (currentRoute != Screen.Recorder.route) {
+                                TopAppBar(
+                                    title = { },
+                                    navigationIcon = {
+                                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                            Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                                        }
+                                    },
+                                    actions = {
+                                        StreakIndicator(streak = completionStreak)
                                     }
-                                },
-                                actions = {
-                                    StreakIndicator(streak = completionStreak)
-                                }
-                            )
+                                )
+                            }
                         },
                         floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
-                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route) {
+                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route || currentRoute == Screen.VoiceInbox.route) {
                                 LargeFloatingActionButton(
                                     onClick = {
                                         val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
-                                        if (currentRoute == Screen.IdeaInbox.route) {
-                                            vttTarget = "idea_content"
-                                            if (useVtt) {
-                                                startVtt()
-                                            } else {
-                                                vttIdeaContentResult = ""
-                                                showAddIdeaDialog = true
+                                        when (currentRoute) {
+                                            Screen.VoiceInbox.route -> {
+                                                navController.navigate(Screen.Recorder.route)
                                             }
-                                        } else { // Dashboard
-                                            vttTarget = "quick_capture_title"
-                                            if (useVtt) {
-                                                startVtt()
-                                            } else {
-                                                scope.launch { sheetState.show() }
+                                            Screen.IdeaInbox.route -> {
+                                                vttTarget = "idea_content"
+                                                if (useVtt) {
+                                                    startVtt()
+                                                } else {
+                                                    vttIdeaContentResult = ""
+                                                    showAddIdeaDialog = true
+                                                }
+                                            }
+                                            else -> { // Dashboard
+                                                vttTarget = "quick_capture_title"
+                                                if (useVtt) {
+                                                    startVtt()
+                                                } else {
+                                                    scope.launch { sheetState.show() }
+                                                }
                                             }
                                         }
                                     },
@@ -418,15 +426,27 @@ class MainActivity : ComponentActivity() {
                                         )
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            Icons.Filled.Add,
-                                            contentDescription = "Quick Capture"
-                                        )
-                                        Text(
-                                            text = "QUICK CAPTURE",
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                            fontSize = 12.sp
-                                        )
+                                        if (currentRoute == Screen.VoiceInbox.route) {
+                                            Icon(
+                                                Icons.Filled.Mic,
+                                                contentDescription = "Record"
+                                            )
+                                            Text(
+                                                text = "RECORD",
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                                fontSize = 12.sp
+                                            )
+                                        } else {
+                                            Icon(
+                                                Icons.Filled.Add,
+                                                contentDescription = "Quick Capture"
+                                            )
+                                            Text(
+                                                text = "QUICK CAPTURE",
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                                fontSize = 12.sp
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -582,6 +602,52 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onSwipeUp = {
                                         showAddIdeaDialog = true
+                                    }
+                                )
+                            }
+                            composable(Screen.VoiceInbox.route) {
+                                VoiceInboxScreen(
+                                    onNavigateToNewTask = { title, description ->
+                                        vttTitleResult = title
+                                        vttDescriptionResult = description
+                                        onTaskSavedFromIdea = true
+                                        scope.launch { sheetState.show() }
+                                    },
+                                    onStartRecording = {
+                                        navController.navigate(Screen.Recorder.route)
+                                    }
+                                )
+                            }
+                            composable(Screen.Recorder.route) {
+                                val recorderViewModel: RecorderViewModel = hiltViewModel()
+                                val voiceMemoViewModel: VoiceMemoViewModel = hiltViewModel()
+                                val recorderState by recorderViewModel.uiState.collectAsState()
+                                val duration by recorderViewModel.durationSeconds.collectAsState()
+
+                                LaunchedEffect(Unit) {
+                                    recorderViewModel.startRecording()
+                                }
+
+                                RecorderScreen(
+                                    isRecording = recorderState == RecorderState.Recording,
+                                    durationSeconds = duration,
+                                    onStartRecording = { /* Handled by LaunchedEffect */ },
+                                    onStopRecording = { recorderViewModel.stopRecording() },
+                                    onCancel = {
+                                        recorderViewModel.discardRecording()
+                                        navController.popBackStack()
+                                    },
+                                    onSave = {
+                                        val result = recorderViewModel.getRecordingResult()
+                                        if (result != null) {
+                                            voiceMemoViewModel.saveVoiceMemo(
+                                                filePath = result.filePath,
+                                                transcription = result.transcription,
+                                                durationSeconds = result.durationSeconds
+                                            )
+                                        }
+                                        recorderViewModel.resetState() // Reset for next recording
+                                        navController.popBackStack()
                                     }
                                 )
                             }
@@ -742,6 +808,7 @@ private fun DrawerContent(
     val navigationItems = listOf(
         "Dashboard" to Screen.DailyDashboard.route,
         "Idea Inbox" to Screen.IdeaInbox.route,
+        "Voice Inbox" to Screen.VoiceInbox.route,
         "Reflections" to Screen.Reflections.route,
         "Contexts" to Screen.ContextManagement.route,
         "Analytics" to Screen.Analytics.route

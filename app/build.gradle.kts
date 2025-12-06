@@ -14,6 +14,12 @@ android {
     namespace = "com.ilseon"
     compileSdk = 36
 
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDirs(file("src/androidTest/assets"))
+        }
+    }
+
     signingConfigs {
         create("release") {
             val signingStoreFilePath = System.getenv("SIGNING_STORE_FILE_PATH")
@@ -93,6 +99,7 @@ tasks.register("printVersionCodeAndName") {
 
 dependencies {
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.rules)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -1,0 +1,15 @@
+package com.ilseon.data.voicememo
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+@Entity(tableName = "voice_memos")
+data class VoiceMemo(
+    @PrimaryKey
+    val id: String = UUID.randomUUID().toString(),
+    val transcription: String,
+    val filePath: String,
+    val durationSeconds: Int,
+    val timestamp: Long = System.currentTimeMillis()
+)

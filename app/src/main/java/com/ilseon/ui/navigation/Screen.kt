@@ -11,4 +11,6 @@ sealed class Screen(val route: String) {
     object ContextManagement : Screen("context_management")
     object NextTaskActivation : Screen("next_task_activation")
     object IdeaInbox : Screen("idea_inbox")
+    object VoiceInbox : Screen("voice_inbox")
+    object Recorder : Screen("recorder")
 }

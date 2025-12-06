@@ -26,7 +26,8 @@ so attention stays anchored on what matters _right now_.
 * **Context Filtering**: Choose one life context, and all unrelated tasks are hidden.
 * **Single Priority View**: The dashboard displays only your current or next task; the one thing that needs your attention.
 * **Quick Capture**: A floating action button opens an instant input screen for adding tasks in seconds, helping to externalise thoughts before they become mental clutter.
-* **Idea Inbox**: Captures "non-task" mental clutter (fleeting ideas, random thoughts, or things to look up later). These entries can be converted to actionable tasks with a long-press action.
+* **Idea Inbox**: Captures "non-task" mental clutter (fleeting ideas, random thoughts, or things to look up later). These entries can be converted to actionable tasks.
+* **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later.
 * **Gentle Reminders**: Time-based notifications use vibration and visual cues instead of noisy alerts to respect sensory sensitivity.
 
 ## Tech Stack
@@ -59,7 +60,7 @@ Ilseon is 100% **open source**, built for the community.
 | **Download App (Android)** | [https://play.google.com/store/apps/details?id=com.ilseon](https://play.google.com/store/apps/details?id=com.ilseon) |
 | **Project Homepage**       | [https://cladam.github.io/projects/ilseon/](https://cladam.github.io/projects/ilseon/)                               |
 
-### Screenshots & Preview
+### Screenshots
 
 |                    Capture                     |                    Focus                     |                    Reflect                    |                     Review                      |                     Idea Inbox                      |
 |:----------------------------------------------:|:--------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:---------------------------------------------------:|

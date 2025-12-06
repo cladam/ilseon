@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,14 +41,17 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.RecorderState
 import com.ilseon.ui.theme.MutedTeal
 import kotlinx.coroutines.launch
 
 @Composable
 fun RecorderScreen(
-    isRecording: Boolean,
+    recorderState: RecorderState,
     durationSeconds: Int,
     onStartRecording: () -> Unit,
+    onPauseRecording: () -> Unit,
+    onResumeRecording: () -> Unit,
     onStopRecording: () -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit
@@ -57,90 +62,136 @@ fun RecorderScreen(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Main content aligned to the center
-        Box(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Timer
-                Text(
-                    text = formatDuration(durationSeconds),
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Light,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(48.dp))
+            // Timer
+            Text(
+                text = formatDuration(durationSeconds),
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Light,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(48.dp))
 
-                // Waveform Placeholder
-                if (isRecording) {
-                    PulsingWaveform()
-                } else {
-                    Box(modifier = Modifier.height(50.dp)) // Maintain space when not recording
-                }
-                Spacer(modifier = Modifier.height(48.dp))
+            // Waveform
+            if (recorderState == RecorderState.Recording) {
+                PulsingWaveform()
+            } else {
+                Box(modifier = Modifier.height(50.dp)) // Maintain space
+            }
+            Spacer(modifier = Modifier.height(48.dp))
 
-                // Buttons
-                if (isRecording) {
-                    // Large Stop Button
+            // Buttons based on state
+            when (recorderState) {
+                RecorderState.Idle -> {
+                    // Large Record Button
                     IconButton(
-                        onClick = onStopRecording,
+                        onClick = onStartRecording,
                         modifier = Modifier.size(80.dp),
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            containerColor = MutedTeal,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = "Stop Recording",
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Start Recording",
                             modifier = Modifier.size(40.dp)
                         )
                     }
-                } else {
-                    if (durationSeconds > 0) {
-                        // Save and Cancel Buttons
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = onCancel,
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.Cancel, contentDescription = "Cancel")
-                                Spacer(Modifier.width(8.dp))
-                                Text("Discard")
-                            }
-                            Spacer(Modifier.width(24.dp))
-                            Button(
-                                onClick = onSave,
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                            ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = "Save")
-                                Spacer(Modifier.width(8.dp))
-                                Text("Save")
-                            }
-                        }
-                    } else {
-                        // Large Record Button
+                }
+                RecorderState.Recording -> {
+                    // Pause and Stop Buttons
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         IconButton(
-                            onClick = onStartRecording,
+                            onClick = onPauseRecording,
+                            modifier = Modifier.size(80.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = "Pause Recording",
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(24.dp))
+                        IconButton(
+                            onClick = onStopRecording,
                             modifier = Modifier.size(80.dp),
                             colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MutedTeal,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
                             )
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = "Start Recording",
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "Stop Recording",
                                 modifier = Modifier.size(40.dp)
                             )
+                        }
+                    }
+                }
+                RecorderState.Paused -> {
+                    // Resume and Stop Buttons
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        IconButton(
+                            onClick = onResumeRecording,
+                            modifier = Modifier.size(80.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Resume Recording",
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(24.dp))
+                        IconButton(
+                            onClick = onStopRecording,
+                            modifier = Modifier.size(80.dp),
+                             colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "Stop Recording",
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+                }
+                RecorderState.Stopped -> {
+                    // Save and Discard Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = onCancel,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Cancel, contentDescription = "Cancel")
+                            Spacer(Modifier.width(8.dp))
+                            Text("Discard")
+                        }
+                        Spacer(Modifier.width(24.dp))
+                        Button(
+                            onClick = onSave,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = "Save")
+                            Spacer(Modifier.width(8.dp))
+                            Text("Save")
                         }
                     }
                 }

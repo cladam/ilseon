@@ -15,7 +15,8 @@ import javax.inject.Inject
 enum class RecorderState {
     Idle,      // Not recording
     Recording, // Actively recording
-    Paused     // Recording has stopped, result is available
+    Paused,    // Recording is paused
+    Stopped    // Recording has stopped, result is available for saving
 }
 
 @HiltViewModel
@@ -41,11 +42,29 @@ class RecorderViewModel @Inject constructor(
         }
     }
 
-    fun stopRecording() {
+    fun pauseRecording() {
         if (_uiState.value != RecorderState.Recording) return
+        viewModelScope.launch {
+            audioHandler.pauseRecording()
+            _uiState.value = RecorderState.Paused
+            stopTimer() // Pauses the timer
+        }
+    }
+
+    fun resumeRecording() {
+        if (_uiState.value != RecorderState.Paused) return
+        viewModelScope.launch {
+            audioHandler.resumeRecording()
+            _uiState.value = RecorderState.Recording
+            startTimer() // Resumes the timer
+        }
+    }
+
+    fun stopRecording() {
+        if (_uiState.value != RecorderState.Recording && _uiState.value != RecorderState.Paused) return
         recordingResult = audioHandler.stopRecording()
         stopTimer()
-        _uiState.value = RecorderState.Paused
+        _uiState.value = RecorderState.Stopped
     }
 
     fun discardRecording() {
@@ -54,7 +73,7 @@ class RecorderViewModel @Inject constructor(
     }
 
     fun getRecordingResult(): RecordingResult? {
-        return if (_uiState.value == RecorderState.Paused) {
+        return if (_uiState.value == RecorderState.Stopped) {
             recordingResult
         } else {
             null
@@ -69,7 +88,6 @@ class RecorderViewModel @Inject constructor(
 
     private fun startTimer() {
         timerJob?.cancel()
-        _durationSeconds.value = 0
         timerJob = viewModelScope.launch {
             while (_uiState.value == RecorderState.Recording) {
                 delay(1000)
@@ -83,7 +101,7 @@ class RecorderViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        if (_uiState.value == RecorderState.Recording) {
+        if (_uiState.value == RecorderState.Recording || _uiState.value == RecorderState.Paused) {
             audioHandler.cancelRecording()
         }
         super.onCleared()

@@ -29,6 +29,8 @@ interface AudioHandler {
     suspend fun startRecording()
     fun stopRecording(): RecordingResult?
     fun cancelRecording()
+    fun pauseRecording()
+    suspend fun resumeRecording()
 }
 
 @Singleton
@@ -42,34 +44,26 @@ class AudioHandlerImpl @Inject constructor(
     private var activeOutputFile: File? = null
     private var latestTranscription: String = ""
     private var startTime: Long = 0
+    private var totalPausedMillis: Long = 0
+    private var pauseStartTime: Long = 0
 
     override suspend fun startRecording() {
         if (mediaRecorder != null) return // Already recording
 
-        // 1. Setup MediaRecorder to save to app-specific external storage
         val outputDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)
         } else {
             val dir = File(context.getExternalFilesDir(null), "Recordings")
-            if (!dir.exists()) {
-                dir.mkdirs()
-            }
+            if (!dir.exists()) dir.mkdirs()
             dir
         }
-        if (outputDir == null) {
-            // Handle case where external storage is not available
-            return
-        }
+        if (outputDir == null) return
 
         val outputFile = File(outputDir, "voice_memo_${UUID.randomUUID()}.m4a")
         activeOutputFile = outputFile
 
-        mediaRecorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
-        } else {
-            @Suppress("DEPRECATION")
-            MediaRecorder()
-        }).apply {
+        mediaRecorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context)
+        else @Suppress("DEPRECATION") MediaRecorder()).apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)
@@ -82,7 +76,30 @@ class AudioHandlerImpl @Inject constructor(
             }
         }
 
-        // 2. Setup SpeechRecognizer for live transcription
+        startSpeechRecognizer()
+
+        mediaRecorder?.start()
+        startTime = System.currentTimeMillis()
+        totalPausedMillis = 0
+    }
+
+    override fun pauseRecording() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            mediaRecorder?.pause()
+            speechRecognizer?.stopListening()
+            pauseStartTime = System.currentTimeMillis()
+        }
+    }
+
+    override suspend fun resumeRecording() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            totalPausedMillis += (System.currentTimeMillis() - pauseStartTime)
+            mediaRecorder?.resume()
+            startSpeechRecognizer()
+        }
+    }
+
+    private suspend fun startSpeechRecognizer() {
         if (SpeechRecognizer.isRecognitionAvailable(context)) {
             val language = settingsRepository.sstLanguage.first()
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
@@ -94,12 +111,12 @@ class AudioHandlerImpl @Inject constructor(
                 setRecognitionListener(object : RecognitionListener {
                     override fun onResults(results: Bundle?) {
                         results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let {
-                            latestTranscription = it
+                            appendTranscription(it)
                         }
                     }
                     override fun onPartialResults(partialResults: Bundle?) {
                         partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let {
-                            latestTranscription = it
+                            appendTranscription(it)
                         }
                     }
                     override fun onError(error: Int) {
@@ -117,14 +134,16 @@ class AudioHandlerImpl @Inject constructor(
                 startListening(intent)
             }
         }
+    }
 
-        // 3. Start both and record the time
-        mediaRecorder?.start()
-        startTime = System.currentTimeMillis()
+    private fun appendTranscription(newText: String) {
+        if (!latestTranscription.endsWith(newText)) {
+            latestTranscription = if (latestTranscription.isBlank()) newText else "$latestTranscription $newText"
+        }
     }
 
     override fun stopRecording(): RecordingResult? {
-        val duration = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+        val duration = ((System.currentTimeMillis() - startTime - totalPausedMillis) / 1000).toInt()
 
         mediaRecorder?.apply {
             stop()
@@ -139,13 +158,12 @@ class AudioHandlerImpl @Inject constructor(
         speechRecognizer = null
 
         val resultFile = activeOutputFile ?: return null
-        // Ensure we always have some text, even if transcription completely failed.
         if (latestTranscription.isBlank()) {
             latestTranscription = "(Transcription failed)"
         }
         return RecordingResult(
             filePath = resultFile.absolutePath,
-            transcription = latestTranscription,
+            transcription = latestTranscription.trim(),
             durationSeconds = duration
         )
     }
@@ -156,15 +174,12 @@ class AudioHandlerImpl @Inject constructor(
             release()
         }
         mediaRecorder = null
-
-        speechRecognizer?.apply {
-            destroy()
-        }
+        speechRecognizer?.destroy()
         speechRecognizer = null
-        
         activeOutputFile?.delete()
         activeOutputFile = null
         latestTranscription = ""
         startTime = 0
+        totalPausedMillis = 0
     }
 }

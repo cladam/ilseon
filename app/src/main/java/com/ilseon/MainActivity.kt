@@ -613,6 +613,7 @@ class MainActivity : ComponentActivity() {
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
                                     }
+
                                 )
                             }
                             composable(Screen.Recorder.route) {
@@ -626,9 +627,11 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 RecorderScreen(
-                                    isRecording = recorderState == RecorderState.Recording,
+                                    recorderState = recorderState,
                                     durationSeconds = duration,
-                                    onStartRecording = { /* Handled by LaunchedEffect */ },
+                                    onStartRecording = { recorderViewModel.startRecording() },
+                                    onPauseRecording = { recorderViewModel.pauseRecording() },
+                                    onResumeRecording = { recorderViewModel.resumeRecording() },
                                     onStopRecording = { recorderViewModel.stopRecording() },
                                     onCancel = {
                                         recorderViewModel.discardRecording()
@@ -643,7 +646,7 @@ class MainActivity : ComponentActivity() {
                                                 durationSeconds = result.durationSeconds
                                             )
                                         }
-                                        recorderViewModel.resetState() // Reset for next recording
+                                        recorderViewModel.resetState()
                                         navController.popBackStack()
                                     }
                                 )

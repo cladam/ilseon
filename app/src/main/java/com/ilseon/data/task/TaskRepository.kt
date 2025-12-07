@@ -9,13 +9,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.compareTo
+import kotlin.ranges.rangeUntil
+import kotlin.text.compareTo
+import kotlin.text.set
+import kotlin.toString
+
 
 @Singleton
 class TaskRepository @Inject constructor(
@@ -32,34 +40,85 @@ class TaskRepository @Inject constructor(
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
 
         return combine(tasksFlow, allFocusBlocksFlow) { tasks, allFocusBlocks ->
-            // Logic to find active focus block
-            val now = LocalTime.now()
-            val today = LocalDate.now().dayOfWeek.value
+            // Log all incomplete tasks before filtering
+            android.util.Log.d("TaskRepository", "All Incomplete Tasks: ${tasks.joinToString("\n")}")
+
+            val cal = Calendar.getInstance()
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val startOfToday = cal.timeInMillis
+
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            val startOfTomorrow = cal.timeInMillis
+
+            val now = System.currentTimeMillis()
+            val localNow = LocalTime.now()
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
 
             val activeFocusBlock = allFocusBlocks.find {
                 val startTime = LocalTime.parse(it.startTime, formatter)
                 val endTime = LocalTime.parse(it.endTime, formatter)
-                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(today)
-                !now.isBefore(startTime) && now.isBefore(endTime) && isTodayInRepeatDays
+                val todayDayOfWeek = LocalDate.now().dayOfWeek.value
+                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(todayDayOfWeek)
+                !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
+            }
+
+            val todayTasks = tasks.filter { task ->
+                if (task.startTime == null) {
+                    true // Always include tasks without a start time (e.g. Inbox tasks)
+                } else {
+                    val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
+                    if (!isScheduledForToday) {
+                        false // Exclude if not scheduled for today
+                    } else {
+                        // It is scheduled for today, now check if its start time has passed
+                        val hasStarted = task.startTime <= now
+                        if (!hasStarted) {
+                            false // Exclude if start time is in the future
+                        } else {
+                            // It's for today and has started. Now check recurrence.
+                            if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
+                                true // Not a recurring task, so include it
+                            } else {
+                                // It's a recurring task, check if today is a recurrence day
+                                val taskDate = Instant.ofEpochMilli(task.startTime)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                                val taskDayOfWeek = taskDate.dayOfWeek
+                                task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
+                            }
+                        }
+                    }
+                }
             }
 
             if (activeFocusBlock != null) {
-                // Focus mode is ON. Show tasks for this context + high priority tasks.
-                val filtered = tasks.filter {
-                    it.contextId == activeFocusBlock.contextId || it.priority == TaskPriority.High
+                val filtered = todayTasks.filter {
+                    it.contextId == activeFocusBlock.contextId
                 }
                 filtered.sortedWith(
-                    compareBy<Task> { !it.isCurrentPriority }
-                        .thenBy { it.contextId != activeFocusBlock.contextId }
+                    compareBy { !it.isCurrentPriority }
                 )
             } else {
-                // Focus mode is OFF. Show tasks that DON'T belong to a focus-block context.
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
-                tasks.filter { it.contextId !in focusBlockContextIds }
+                todayTasks.filter { task ->
+                    if (task.contextId !in focusBlockContextIds) {
+                        true
+                    } else {
+                        // If task is in a focus context, check if there's a block for its day
+                        val taskDate = Instant.ofEpochMilli(task.startTime ?: 0).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val taskDayOfWeek = taskDate.dayOfWeek.value
+                        !allFocusBlocks.any { fb ->
+                            fb.contextId == task.contextId && (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+                        }
+                    }
+                }
             }
         }
     }
+
 
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {
         return taskDao.getIncompleteTasksByContext(contextId)
@@ -135,7 +194,7 @@ class TaskRepository @Inject constructor(
     suspend fun getAllTasksForDebug(): List<Task> {
         return taskDao.getAllTasksForDebug()
     }
-    
+
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
     fun getCurrentPriorityTask(): Flow<Task?> = getDashboardTasks().map { it.firstOrNull() }
@@ -169,12 +228,12 @@ class TaskRepository @Inject constructor(
         if (task.startTime == null || task.recurrenceDays.isNullOrBlank()) {
             return
         }
-    
+
         val recurrenceDayStrings = task.recurrenceDays
             .replace("[", "").replace("]", "")
             .split(',')
             .map { it.trim().uppercase() }
-    
+
         val recurrenceDays = recurrenceDayStrings.mapNotNull { dayString ->
             try {
                 when (java.time.DayOfWeek.valueOf(dayString)) {
@@ -190,32 +249,41 @@ class TaskRepository @Inject constructor(
                 null
             }
         }.toSet()
-    
+
         if (recurrenceDays.isEmpty()) return
-    
+
         val originalStartCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
-    
-        // Start searching from the day after the original task's start date
-        val nextStartCal = (originalStartCal.clone() as Calendar).apply {
-            add(Calendar.DAY_OF_YEAR, 1)
+
+        // The search for the next recurrence should start from either today or the task's original
+        // start date, whichever is later. This handles both overdue and pre-completed tasks.
+        val nextStartCal = Calendar.getInstance() // Start with now
+        // Preserve the original time of day
+        nextStartCal.set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
+        nextStartCal.set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
+        nextStartCal.set(Calendar.SECOND, originalStartCal.get(Calendar.SECOND))
+        nextStartCal.set(Calendar.MILLISECOND, originalStartCal.get(Calendar.MILLISECOND))
+
+        // If the task was completed in advance, start searching from its original start date.
+        if (originalStartCal.after(nextStartCal)) {
+            nextStartCal.timeInMillis = originalStartCal.timeInMillis
         }
-    
-        var nextDayFound = false
+
+        // Now, find the next valid day, starting from the day *after* our calculated start date.
         for (i in 1..7) {
-            if (recurrenceDays.contains(nextStartCal.get(Calendar.DAY_OF_WEEK))) {
-                nextDayFound = true
-                break
-            }
             nextStartCal.add(Calendar.DAY_OF_YEAR, 1)
+            if (recurrenceDays.contains(nextStartCal.get(Calendar.DAY_OF_WEEK))) {
+                break // Found the next day
+            }
         }
-    
-        if (!nextDayFound) {
-            return
-        }
-    
+
         val duration = if (task.endTime != null && task.endTime > task.startTime) task.endTime - task.startTime else 0L
         val nextEndTime = if (task.endTime != null) nextStartCal.timeInMillis + duration else null
-    
+
+        val nextDueTime = when (task.schedulingType) {
+            SchedulingType.TimeBlock, SchedulingType.Duration -> nextEndTime
+            SchedulingType.None -> null
+        }
+
         val newTask = task.copy(
             id = UUID.randomUUID(),
             isComplete = false,
@@ -226,8 +294,8 @@ class TaskRepository @Inject constructor(
             remainingTimeInSeconds = task.totalTimeInMinutes?.times(60L) ?: 0,
             startTime = nextStartCal.timeInMillis,
             endTime = nextEndTime,
-            dueTime = nextEndTime ?: nextStartCal.timeInMillis,
-            seriesId = task.seriesId
+            dueTime = nextDueTime,
+            seriesId = task.seriesId ?: task.id // Ensure seriesId is set for the new instance
         )
         insertTask(newTask)
     }

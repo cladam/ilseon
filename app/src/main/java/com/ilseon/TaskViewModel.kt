@@ -32,8 +32,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
@@ -41,7 +43,10 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.compareTo
 import kotlin.math.max
+import kotlin.text.set
+import kotlin.text.toInt
 
 sealed class PostCompletionAction {
     object Idle : PostCompletionAction()
@@ -190,25 +195,75 @@ class TaskViewModel @Inject constructor(
     private suspend fun checkTasks() {
         val now = System.currentTimeMillis()
 
+        // Helper to decide if a task is active today and should run / notify
+        fun Task.isActiveForToday(): Boolean {
+            val cal = Calendar.getInstance()
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val startOfToday = cal.timeInMillis
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            val startOfTomorrow = cal.timeInMillis
+
+            val st = startTime ?: return true // inbox / unscheduled tasks: always eligible
+
+            // Must be scheduled for *today*
+            val isScheduledForToday = st in startOfToday until startOfTomorrow
+            if (!isScheduledForToday) return false
+
+            // Must have started
+            if (st > now) return false
+
+            // If not recurring or no recurrenceDays, we're done
+            if (!isRecurring || recurrenceDays.isNullOrBlank()) return true
+
+            // For recurring tasks, ensure today is in recurrenceDays
+            val taskDate = Instant.ofEpochMilli(st)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            val taskDayOfWeek = taskDate.dayOfWeek
+            return recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
+        }
+
         taskRepository.getIncompleteTasks().first().forEach { task ->
-            val isTaskActive = task.startTime == null || task.startTime <= now
-            if (isTaskActive) {
-                val shouldStart = task.startTime != null && task.startTime <= now && (task.endTime == null || now < task.endTime)
+            // Auto-start only if task is active for today
+            if (task.isActiveForToday()) {
+                val shouldStart =
+                    task.startTime != null && (task.endTime == null || now < task.endTime)
                 if ((task.timerState == TimerState.NotStarted || task.timerState == TimerState.Finished) && shouldStart) {
                     startTask(task)
                 }
             }
 
+            // "Starting soon" notification: only for tasks scheduled for today
             if (task.timerState == TimerState.NotStarted && task.startTime != null) {
-                val fiveMinutesInMillis = 5 * 60 * 1000
-                if (task.startTime > now && task.startTime - now < fiveMinutesInMillis && !notifiedTasksStartingSoon.contains(task.id)) {
-                    val minutesUntilStart = TimeUnit.MILLISECONDS.toMinutes(task.startTime - now) + 1
-                    notificationService.sendTaskStartingSoonNotification(
-                        task.title,
-                        minutesUntilStart.toInt()
-                    )
-                    hapticManager.performNudge()
-                    notifiedTasksStartingSoon.add(task.id)
+                val startTime = task.startTime
+                val cal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val startOfToday = cal.timeInMillis
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+                val startOfTomorrow = cal.timeInMillis
+                val isToday = startTime in startOfToday until startOfTomorrow
+
+                if (isToday) {
+                    val fiveMinutesInMillis = 5 * 60 * 1000
+                    if (startTime > now &&
+                        startTime - now < fiveMinutesInMillis &&
+                        !notifiedTasksStartingSoon.contains(task.id)
+                    ) {
+                        val minutesUntilStart = TimeUnit.MILLISECONDS.toMinutes(startTime - now) + 1
+                        notificationService.sendTaskStartingSoonNotification(
+                            task.title,
+                            minutesUntilStart.toInt()
+                        )
+                        hapticManager.performNudge()
+                        notifiedTasksStartingSoon.add(task.id)
+                    }
                 }
             }
         }
@@ -362,7 +417,6 @@ class TaskViewModel @Inject constructor(
                         val startCal = parseDateTime(startTimeStr, isForTomorrow)
                         if (startCal != null) {
                             startTime = startCal.timeInMillis
-                            dueTime = startTime
                         }
                     } else if (isForTomorrow) {
                         // If it's a regular task for tomorrow, set the start time to the beginning of the next day.

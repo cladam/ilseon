@@ -1,7 +1,6 @@
 package com.ilseon
 
 import android.app.Application
-import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -16,21 +15,16 @@ import javax.inject.Inject
 class IlseonApplication : Application(), Configuration.Provider {
 
     @Inject
-    lateinit var workerFactory: HiltWorkerFactory
-
-    @Inject
     lateinit var notificationHelper: NotificationHelper
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().build()
 
     override fun onCreate() {
         super.onCreate()
         notificationHelper.createNotificationChannels()
         setupHapticWorker()
     }
-
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
 
     private fun setupHapticWorker() {
         val workRequest = PeriodicWorkRequestBuilder<HapticWorker>(15, TimeUnit.MINUTES)

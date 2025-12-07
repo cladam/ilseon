@@ -99,6 +99,7 @@ fun QuickCaptureSheet(
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
 
     val titleFocusRequester = remember { FocusRequester() }
+    var hasRequestedInitialFocus by remember { mutableStateOf(false) }
     val descriptionFocusRequester = remember { FocusRequester() }
 
     // Initialize selected context when contexts are loaded
@@ -108,16 +109,19 @@ fun QuickCaptureSheet(
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (initialTitle.isEmpty()) {
-            // A small delay helps ensure the keyboard appears smoothly
-            delay(100)
-            titleFocusRequester.requestFocus()
+    LaunchedEffect(titleFocusRequester) {
+        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
+            hasRequestedInitialFocus = true
+            // Wait for multiple frames to ensure the view is fully composed and focusable
+            delay(300)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                try {
+                    titleFocusRequester.requestFocus()
+                } catch (e: Exception) {
+                    // Silently ignore - the view might not be ready
+                }
+            }
         }
-    }
-
-    LaunchedEffect(initialTitle) {
-        title = initialTitle
     }
 
     LaunchedEffect(initialDescription) {

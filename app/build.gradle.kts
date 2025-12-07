@@ -46,8 +46,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 51
-        versionName = "0.21.2"
+        versionCode = 52
+        versionName = "0.21.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -129,8 +129,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation("androidx.work:work-runtime-ktx:2.11.0")
-    implementation("androidx.hilt:hilt-work:1.3.0")
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
 
 
     // Room (Database Persistence) **

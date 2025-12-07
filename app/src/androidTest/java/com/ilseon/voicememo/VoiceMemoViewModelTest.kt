@@ -33,7 +33,6 @@ class VoiceMemoViewModelTest {
 
     private lateinit var db: AppDatabase
     private lateinit var voiceMemoDao: VoiceMemoDao
-    private lateinit var taskRepository: TaskRepository
     private lateinit var voiceMemoRepository: VoiceMemoRepository
     private lateinit var viewModel: VoiceMemoViewModel
 
@@ -44,9 +43,8 @@ class VoiceMemoViewModelTest {
     fun setup() {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         voiceMemoDao = db.voiceMemoDao()
-        taskRepository = TaskRepository(context, db.taskDao(), db.focusBlockDao(), db.taskContextDao(), FakeReminderManager())
         voiceMemoRepository = VoiceMemoRepository(voiceMemoDao)
-        viewModel = VoiceMemoViewModel(context, voiceMemoRepository, taskRepository)
+        viewModel = VoiceMemoViewModel(context, voiceMemoRepository)
 
         // For this test, we don't need a real audio file, just a placeholder path
         testFile = File(context.cacheDir, "test_audio.m4a")
@@ -96,30 +94,7 @@ class VoiceMemoViewModelTest {
         assertFalse("Audio file should be deleted from storage", testFile.exists())
     }
 
-    @Test
-    fun convertToTask_deletesFileAndDatabaseEntryAndCreatesTask() = runBlocking {
-        // Arrange
-        val existingMemo = VoiceMemo(title = "This will become a task", filePath = testFile.absolutePath, durationSeconds = 1)
-        voiceMemoDao.insert(existingMemo)
-        // Wait for the memo to appear in the flow
-        val memosBefore = viewModel.voiceMemos.first { it.isNotEmpty() }
-        assertEquals(1, memosBefore.size)
-        assertTrue("Test file must exist before conversion", testFile.exists())
 
-        // Act
-        viewModel.convertToTask(memosBefore[0])
-
-        // Assert
-        // 1. Voice memo and file are deleted
-        viewModel.voiceMemos.first { it.isEmpty() }
-        assertFalse("Audio file should be deleted after conversion", testFile.exists())
-
-        // 2. A new task was created
-        val tasks = taskRepository.getIncompleteTasks().first()
-        assertEquals(1, tasks.size)
-        assertEquals(existingMemo.title, tasks[0].title)
-        assertEquals("", tasks[0].description)
-    }
 }
 
 class FakeReminderManager : IReminderManager {

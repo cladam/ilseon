@@ -56,6 +56,8 @@ class AudioHandlerImpl @Inject constructor(
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)
+            setAudioEncodingBitRate(128_000)
+            setAudioSamplingRate(44_100)
             setOutputFile(outputFile.absolutePath)
             try {
                 prepare()
@@ -71,17 +73,13 @@ class AudioHandlerImpl @Inject constructor(
     }
 
     override fun pauseRecording() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            mediaRecorder?.pause()
-            pauseStartTime = System.currentTimeMillis()
-        }
+        mediaRecorder?.pause()
+        pauseStartTime = System.currentTimeMillis()
     }
 
     override suspend fun resumeRecording() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            totalPausedMillis += (System.currentTimeMillis() - pauseStartTime)
-            mediaRecorder?.resume()
-        }
+        totalPausedMillis += (System.currentTimeMillis() - pauseStartTime)
+        mediaRecorder?.resume()
     }
 
     override fun stopRecording(): RecordingResult? {

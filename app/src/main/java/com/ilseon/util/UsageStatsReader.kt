@@ -24,14 +24,21 @@ class UsageStatsReader(private val context: Context) {
 
         val events = usageStatsManager.queryEvents(startTime, endTime)
         var pickupCount = 0
+        var lastPackage: String? = null
 
-        // This logic is a proxy. A "pickup" is defined as any app's activity
-        // moving to the foreground.
         while (events.hasNextEvent()) {
             val event = android.app.usage.UsageEvents.Event()
             events.getNextEvent(event)
-            if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+
+            val isPickupEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED
+            } else {
+                event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND
+            }
+
+            if (isPickupEvent && event.packageName != null && event.packageName != lastPackage) {
                 pickupCount++
+                lastPackage = event.packageName
             }
         }
         return pickupCount

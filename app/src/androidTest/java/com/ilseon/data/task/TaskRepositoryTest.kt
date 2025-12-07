@@ -24,6 +24,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.UUID
+import kotlin.text.format
+import kotlin.text.insert
 
 @RunWith(AndroidJUnit4::class)
 class TaskRepositoryTest {
@@ -181,11 +183,12 @@ class TaskRepositoryTest {
             title = "Timed Task",
             contextId = UUID.randomUUID(),
             priority = TaskPriority.High,
-            startTime = System.currentTimeMillis() + 10000,
-            endTime = System.currentTimeMillis() + 20000
+            startTime = System.currentTimeMillis() + 10_000,
+            endTime = System.currentTimeMillis() + 20_000
         )
         repository.insertTask(task)
-        coVerify { reminderManager.scheduleTimedTaskReminders(task) }
+
+        coVerify { reminderManager.rescheduleReminders(task) }
     }
 
     @Test
@@ -299,13 +302,10 @@ class TaskRepositoryTest {
         repository.insertTask(highPriorityPersonalTask)
         repository.insertTask(completedWorkTask)
 
-        // 3. Act and Assert
-        val filteredTasks = repository.getIncompleteTasks().first()
-        for (task in filteredTasks) {
-            println("Task: ${task.title}, Priority: ${task.priority}")
-            println(task)
-        }
-        
+        // 3. Act: use dashboard tasks (focus\-aware)
+        val filteredTasks = repository.getDashboardTasks().first()
+
+        // 4. Assert
         assertEquals(2, filteredTasks.size)
         assertTrue(filteredTasks.any { it.title == "Work Task" })
         assertTrue(filteredTasks.any { it.title == "High Priority Personal" })

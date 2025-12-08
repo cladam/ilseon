@@ -1,6 +1,7 @@
 package com.ilseon.ui.screen
 
 import android.text.format.DateFormat
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -95,13 +96,21 @@ fun QuickCaptureSheet(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
 
-    val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
+    val context = LocalContext.current
+    val is24HourFormat = remember(context) {
+        try {
+            DateFormat.is24HourFormat(context)
+        } catch (e: Exception) {
+            Log.d("QuickCaptureSheet", "Error getting 24 hour format: $e")
+            true
+        }
+    }
     val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
     val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
 
     val titleFocusRequester = remember { FocusRequester() }
     var hasRequestedInitialFocus by remember { mutableStateOf(false) }
-    var isTitleFieldReady by remember { mutableStateOf(false) }
+
     val descriptionFocusRequester = remember { FocusRequester() }
 
     // Initialize selected context when contexts are loaded
@@ -111,18 +120,31 @@ fun QuickCaptureSheet(
         }
     }
 
-    LaunchedEffect(isTitleFieldReady, initialTitle) {
-        if (
-            isTitleFieldReady &&
-            initialTitle.isEmpty() &&
-            !hasRequestedInitialFocus
-        ) {
+    LaunchedEffect(titleFocusRequester, initialTitle) {
+        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
             hasRequestedInitialFocus = true
-            // Wait one frame so layout is fully committed
-            kotlinx.coroutines.android.awaitFrame()
-            titleFocusRequester.requestFocus()
+            try {
+                // Small delay to ensure the view is attached and focusable
+                delay(200)
+                titleFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                Log.d("QuickCaptureSheet", "Error requesting focus: $e")
+            }
         }
     }
+
+//    LaunchedEffect(isTitleFieldReady, initialTitle) {
+//        if (
+//            isTitleFieldReady &&
+//            initialTitle.isEmpty() &&
+//            !hasRequestedInitialFocus
+//        ) {
+//            hasRequestedInitialFocus = true
+//            // Wait one frame so layout is fully committed
+//            kotlinx.coroutines.android.awaitFrame()
+//            titleFocusRequester.requestFocus()
+//        }
+//    }
 //    LaunchedEffect(titleFocusRequester) {
 //        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
 //            hasRequestedInitialFocus = true
@@ -187,12 +209,12 @@ fun QuickCaptureSheet(
             label = { Text("What's on your mind?") },
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(titleFocusRequester)
-                .onGloballyPositioned {
-                    if (!isTitleFieldReady) {
-                        isTitleFieldReady = true
-                    }
-                },
+                .focusRequester(titleFocusRequester),
+//                .onGloballyPositioned {
+//                    if (!isTitleFieldReady) {
+//                        isTitleFieldReady = true
+//                    }
+//                },
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = MaterialTheme.colorScheme.secondary,

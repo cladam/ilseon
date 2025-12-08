@@ -18,11 +18,6 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.compareTo
-import kotlin.ranges.rangeUntil
-import kotlin.text.compareTo
-import kotlin.text.set
-import kotlin.toString
 
 
 @Singleton
@@ -106,17 +101,48 @@ class TaskRepository @Inject constructor(
             } else {
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
                 todayTasks.filter { task ->
-                    if (task.contextId !in focusBlockContextIds) {
+                    val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
+                    if (isUrgentHigh) {
+                        // Always show urgent+high tasks
+                        true
+                    } else if (task.contextId !in focusBlockContextIds) {
+                        // No focus block at all for this context
                         true
                     } else {
-                        // If task is in a focus context, check if there's a block for its day
-                        val taskDate = Instant.ofEpochMilli(task.startTime ?: 0).atZone(ZoneId.systemDefault()).toLocalDate()
-                        val taskDayOfWeek = taskDate.dayOfWeek.value
-                        !allFocusBlocks.any { fb ->
-                            fb.contextId == task.contextId && (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+                        // Context has focus blocks; check if any apply to the task's day
+                        val taskStart = task.startTime
+                        if (taskStart == null) {
+                            false
+                        } else {
+                            val taskDate = Instant.ofEpochMilli(taskStart)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val taskDayOfWeek = taskDate.dayOfWeek.value
+
+                            // If there is any block for this context whose repeatDays is empty (every day)
+                            // or contains the task's day -> hide the task outside of active block mode
+                            val hasBlockForTaskDay = allFocusBlocks.any { fb ->
+                                fb.contextId == task.contextId &&
+                                        (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+                            }
+
+                            !hasBlockForTaskDay
                         }
                     }
                 }
+
+//                todayTasks.filter { task ->
+//                    if (task.contextId !in focusBlockContextIds) {
+//                        true
+//                    } else {
+//                        // If task is in a focus context, check if there's a block for its day
+//                        val taskDate = Instant.ofEpochMilli(task.startTime ?: 0).atZone(ZoneId.systemDefault()).toLocalDate()
+//                        val taskDayOfWeek = taskDate.dayOfWeek.value
+//                        !allFocusBlocks.any { fb ->
+//                            fb.contextId == task.contextId && (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+//                        }
+//                    }
+//                }
             }
         }
     }

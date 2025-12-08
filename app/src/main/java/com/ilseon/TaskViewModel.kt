@@ -124,8 +124,8 @@ class TaskViewModel @Inject constructor(
             initialValue = 0
         )
 
-    private val notifiedFocusBlocksStartingSoon = mutableSetOf<UUID>()
-    private val notifiedFocusBlocksEndingSoon = mutableSetOf<UUID>()
+    private val notifiedFocusBlocksStartingSoon = mutableSetOf<String>()
+    private val notifiedFocusBlocksEndingSoon = mutableSetOf<String>()
     private val notifiedTasksStartingSoon = mutableSetOf<UUID>()
     private val taskPauseTimes = ConcurrentHashMap<UUID, Long>()
 
@@ -281,8 +281,9 @@ class TaskViewModel @Inject constructor(
                 val endTime = LocalTime.parse(focusBlock.endTime, formatter)
                 val fiveMinutes = 5L
 
+                val startingSoonKey = "start-${focusBlock.startTime}-${it.name}"
                 if (now.isBefore(startTime) && now.plusMinutes(fiveMinutes)
-                        .isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(focusBlock.id)
+                        .isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(startingSoonKey)
                 ) {
                     val minutesUntilStart = java.time.Duration.between(now, startTime).toMinutes() + 1
                     notificationService.sendFocusBlockStartingSoonNotification(
@@ -290,11 +291,12 @@ class TaskViewModel @Inject constructor(
                         minutesUntilStart.toInt()
                     )
                     hapticManager.performNudge()
-                    notifiedFocusBlocksStartingSoon.add(focusBlock.id)
+                    notifiedFocusBlocksStartingSoon.add(startingSoonKey)
                 }
 
+                val endingSoonKey = "end-${focusBlock.endTime}-${it.name}"
                 if (now.isBefore(endTime) && now.plusMinutes(fiveMinutes)
-                        .isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(focusBlock.id)
+                        .isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(endingSoonKey)
                 ) {
                     val minutesUntilEnd = java.time.Duration.between(now, endTime).toMinutes() + 1
                     notificationService.sendFocusBlockEndingSoonNotification(
@@ -302,7 +304,7 @@ class TaskViewModel @Inject constructor(
                         minutesUntilEnd.toInt()
                     )
                     hapticManager.performNudge()
-                    notifiedFocusBlocksEndingSoon.add(focusBlock.id)
+                    notifiedFocusBlocksEndingSoon.add(endingSoonKey)
                 }
             }
         }

@@ -9,6 +9,7 @@ import com.ilseon.di.WorkerEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 // TODO: Revert to @HiltWorker and @AssistedInject once androidx.hilt:hilt-compiler supports Kotlin 2.2+
 class HapticWorker(
@@ -40,18 +41,33 @@ class HapticWorker(
         val incompleteTasks = taskRepository.getIncompleteTasks().first()
         val activeFocusBlock = taskRepository.getActiveFocusBlock().first()
 
-        val overdueHighPriorityTasks = incompleteTasks.filter {
-            !it.isComplete &&
-                    it.priority == TaskPriority.High &&
-                    it.dueTime != null &&
-                    it.dueTime >= startOfToday && // Due today
-                    it.dueTime < now // And is overdue
+        val fourHoursAgo = now - TimeUnit.HOURS.toMillis(4)
+        val twentyFourHoursAgo = now - TimeUnit.HOURS.toMillis(24)
+
+        val tasksToNudge = incompleteTasks.filter { task ->
+            if (task.isComplete || task.priority != TaskPriority.High) {
+                false
+            } else {
+                val isOverdue = task.dueTime != null &&
+                        task.dueTime >= startOfToday &&
+                        task.dueTime < now
+
+                val isUnscheduledUrgent = task.dueTime == null &&
+                        task.isUrgent &&
+                        task.createdAt < fourHoursAgo
+
+                val isUnscheduledNotUrgent = task.dueTime == null &&
+                        !task.isUrgent &&
+                        task.createdAt < twentyFourHoursAgo
+
+                isOverdue || isUnscheduledUrgent || isUnscheduledNotUrgent
+            }
         }
 
         val tasksToNotify = if (activeFocusBlock != null) {
-            overdueHighPriorityTasks.filter { it.contextId == activeFocusBlock.contextId }
+            tasksToNudge.filter { it.contextId == activeFocusBlock.contextId }
         } else {
-            overdueHighPriorityTasks
+            tasksToNudge
         }
 
         tasksToNotify.forEach { task ->

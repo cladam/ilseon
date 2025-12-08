@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -100,6 +101,7 @@ fun QuickCaptureSheet(
 
     val titleFocusRequester = remember { FocusRequester() }
     var hasRequestedInitialFocus by remember { mutableStateOf(false) }
+    var isTitleFieldReady by remember { mutableStateOf(false) }
     val descriptionFocusRequester = remember { FocusRequester() }
 
     // Initialize selected context when contexts are loaded
@@ -109,20 +111,32 @@ fun QuickCaptureSheet(
         }
     }
 
-    LaunchedEffect(titleFocusRequester) {
-        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
+    LaunchedEffect(isTitleFieldReady, initialTitle) {
+        if (
+            isTitleFieldReady &&
+            initialTitle.isEmpty() &&
+            !hasRequestedInitialFocus
+        ) {
             hasRequestedInitialFocus = true
-            // Wait for multiple frames to ensure the view is fully composed and focusable
-            delay(300)
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                try {
-                    titleFocusRequester.requestFocus()
-                } catch (e: Exception) {
-                    // Silently ignore - the view might not be ready
-                }
-            }
+            // Wait one frame so layout is fully committed
+            kotlinx.coroutines.android.awaitFrame()
+            titleFocusRequester.requestFocus()
         }
     }
+//    LaunchedEffect(titleFocusRequester) {
+//        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
+//            hasRequestedInitialFocus = true
+//            // Wait for multiple frames to ensure the view is fully composed and focusable
+//            delay(300)
+//            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+//                try {
+//                    titleFocusRequester.requestFocus()
+//                } catch (e: Exception) {
+//                    // Silently ignore - the view might not be ready
+//                }
+//            }
+//        }
+//    }
 
     LaunchedEffect(initialDescription) {
         if (initialDescription.isNotEmpty()) {
@@ -173,7 +187,12 @@ fun QuickCaptureSheet(
             label = { Text("What's on your mind?") },
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(titleFocusRequester),
+                .focusRequester(titleFocusRequester)
+                .onGloballyPositioned {
+                    if (!isTitleFieldReady) {
+                        isTitleFieldReady = true
+                    }
+                },
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = MaterialTheme.colorScheme.secondary,

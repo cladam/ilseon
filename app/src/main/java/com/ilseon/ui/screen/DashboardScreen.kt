@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,8 +31,8 @@ import com.ilseon.TaskViewModel
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
+import com.ilseon.ui.theme.MutedRed
 import java.util.UUID
-import kotlin.math.abs
 
 @Composable
 fun DashboardScreen(
@@ -49,11 +53,20 @@ fun DashboardScreen(
         contextsWithFocusBlock.associate { it.context.id to it.context }
     }
 
-    val (priorityTask, nextUpTasks) = remember(tasks) {
-        val priorityTask = tasks.firstOrNull()
-        val nextUp = tasks.drop(1)
+    val (focusTasks, urgentOutOfContextTasks) = remember(tasks, activeFocusBlock) {
+        if (activeFocusBlock != null) {
+            tasks.partition { it.contextId == activeFocusBlock.contextId }
+        } else {
+            tasks to emptyList()
+        }
+    }
+
+    val (priorityTask, nextUpTasks) = remember(focusTasks) {
+        val priorityTask = focusTasks.firstOrNull()
+        val nextUp = focusTasks.drop(1)
         priorityTask to nextUp
     }
+
 
     val focusContextName = activeFocusBlock?.let { block -> contextMap[block.contextId]?.name }
 
@@ -75,7 +88,7 @@ fun DashboardScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        if (priorityTask == null) {
+        if (priorityTask == null && urgentOutOfContextTasks.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (focusContextName != null) "No tasks for $focusContextName" else "All clear!",
@@ -88,26 +101,65 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    AnimatedTaskItem(
-                        task = priorityTask,
-                        isVisible = !completedTaskIds.contains(priorityTask.id),
-                        onComplete = { onAnimateComplete(priorityTask) }
-                    ) { task ->
-                        CurrentPriorityTask(
-                            task = task,
-                            contextName = contextMap[task.contextId]?.name ?: "General",
-                            onComplete = { onTaskComplete(task) },
-                            onTimerFinished = onTaskTimerFinished,
-                            onStartTask = onStartTask,
-                            onPauseTask = onPauseTask,
-                            onUpdate = { updatedTask, reason -> taskViewModel.updateTask(updatedTask) },
-                            focusContextName = focusContextName
+                if (priorityTask != null) {
+                    item {
+                        AnimatedTaskItem(
+                            task = priorityTask,
+                            isVisible = !completedTaskIds.contains(priorityTask.id),
+                            onComplete = { onAnimateComplete(priorityTask) }
+                        ) { task ->
+                            CurrentPriorityTask(
+                                task = task,
+                                contextName = contextMap[task.contextId]?.name ?: "General",
+                                onComplete = { onTaskComplete(task) },
+                                onTimerFinished = onTaskTimerFinished,
+                                onStartTask = onStartTask,
+                                onPauseTask = onPauseTask,
+                                onUpdate = { updatedTask, reason ->
+                                    taskViewModel.updateTask(
+                                        updatedTask
+                                    )
+                                },
+                                focusContextName = focusContextName
+                            )
+                        }
+                    }
+                }
+
+                if (urgentOutOfContextTasks.isNotEmpty()) {
+                    item {
+                        Column {
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                text = "Urgent Outside Focus",
+                                color = MutedRed,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                    item {
+                        NextUpTasks(
+                            tasks = urgentOutOfContextTasks,
+                            completedTaskIds = completedTaskIds,
+                            onComplete = { onTaskComplete(it) },
+                            onAnimationFinished = onAnimateComplete,
+                            contextMap = contextMap,
+                            viewModel = taskViewModel,
+                            header = "Urgent Tasks Awaiting",
+                            isUrgentList = true
                         )
                     }
                 }
 
+
                 if (nextUpTasks.isNotEmpty()) {
+                    if (urgentOutOfContextTasks.isNotEmpty()) {
+                        item {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                        }
+                    }
                     item {
                         NextUpTasks(
                             tasks = nextUpTasks,
@@ -115,7 +167,8 @@ fun DashboardScreen(
                             onComplete = { onTaskComplete(it) },
                             onAnimationFinished = onAnimateComplete,
                             contextMap = contextMap,
-                            viewModel = taskViewModel
+                            viewModel = taskViewModel,
+                            header = ""
                         )
                     }
                 }

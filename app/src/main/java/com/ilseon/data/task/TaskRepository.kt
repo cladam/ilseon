@@ -95,12 +95,14 @@ class TaskRepository @Inject constructor(
             }
 
             if (activeFocusBlock != null) {
-                val filtered = todayTasks.filter {
-                    it.contextId == activeFocusBlock.contextId
+                val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
+                val urgentHighPriorityTasks = todayTasks.filter {
+                    it.isUrgent && it.priority == TaskPriority.High && it.contextId != activeFocusBlock.contextId
                 }
-                filtered.sortedWith(
+                val sortedFocusTasks = focusContextTasks.sortedWith(
                     compareBy { !it.isCurrentPriority }
                 )
+                sortedFocusTasks + urgentHighPriorityTasks
             } else {
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
                 todayTasks.filter { task ->

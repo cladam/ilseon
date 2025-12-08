@@ -34,7 +34,8 @@ fun TaskDetailsDialog(
     task: Task,
     context: TaskContext?,
     onDismiss: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    isViewOnly: Boolean = false
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -86,12 +87,14 @@ fun TaskDetailsDialog(
                     TextButton(onClick = onDismiss) {
                         Text("Close")
                     }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = {
-                        onDismiss()
-                        onEdit()
-                    }) {
-                        Text("Edit")
+                    if (!isViewOnly) {
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            onDismiss()
+                            onEdit()
+                        }) {
+                            Text("Edit")
+                        }
                     }
                 }
             }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,6 +46,7 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.TaskDetailsDialog
+import com.ilseon.ui.theme.MutedRed
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -56,8 +58,12 @@ fun NextUpTasks(
     onComplete: (Task) -> Unit,
     onAnimationFinished: (Task) -> Unit,
     contextMap: Map<UUID, TaskContext>,
-    viewModel: TaskViewModel
+    viewModel: TaskViewModel,
+    header: String,
+    isUrgentList: Boolean = false
 ) {
+    var headerText = header
+    if (headerText == "") headerText = "Next Up"
     var isExpanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(targetValue = if (isExpanded) 90f else 0f, label = "")
     var taskToShowDetails by remember { mutableStateOf<Task?>(null) }
@@ -68,7 +74,8 @@ fun NextUpTasks(
             task = task,
             context = contextMap[task.contextId],
             onDismiss = { taskToShowDetails = null },
-            onEdit = { taskToEdit = task }
+            onEdit = { taskToEdit = task },
+            isViewOnly = isUrgentList
         )
     }
 
@@ -95,7 +102,7 @@ fun NextUpTasks(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Next Up (${tasks.size})",
+                text = "$headerText (${tasks.size})",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
@@ -111,7 +118,8 @@ fun NextUpTasks(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .padding(top = 8.dp)
+                    .heightIn(max = 200.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 tasks.forEach { task ->
@@ -122,8 +130,14 @@ fun NextUpTasks(
                         isVisible = !completedTaskIds.contains(task.id),
                         onComplete = onAnimationFinished
                     ) {
-                        Row(
-                            modifier = Modifier
+                        val rowModifier = if (isUrgentList) {
+                            Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, MutedRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .clickable { taskToShowDetails = it }
+                                .padding(vertical = 8.dp, horizontal = 12.dp)
+                        } else {
+                            Modifier
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     onClick = {},
@@ -131,7 +145,10 @@ fun NextUpTasks(
                                         taskToShowDetails = it
                                     }
                                 )
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 8.dp)
+                        }
+                        Row(
+                            modifier = rowModifier,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -147,16 +164,18 @@ fun NextUpTasks(
                                 fontSize = 16.sp,
                                 modifier = Modifier.weight(1f)
                             )
-                            Spacer(Modifier.width(16.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .border(1.dp, borderColor, CircleShape)
-                                    .clickable { onComplete(it) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                // Empty, for the checkmark to appear after click
+                            if (!isUrgentList) {
+                                Spacer(Modifier.width(16.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .border(1.dp, borderColor, CircleShape)
+                                        .clickable { onComplete(it) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Empty, for the checkmark to appear after click
+                                }
                             }
                         }
                     }

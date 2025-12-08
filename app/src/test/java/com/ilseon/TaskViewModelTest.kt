@@ -274,7 +274,7 @@ class TaskViewModelTest {
         assertNotNull(capturedTask.seriesId)
         assertNotNull(capturedTask.startTime)
         assertNull(capturedTask.endTime) // No end time for normal tasks
-        assertNotNull(capturedTask.dueTime) // Due time is the start time
+        assertNull(capturedTask.dueTime) // dueTime is null for normal tasks
         assertEquals("FRIDAY", capturedTask.recurrenceDays)
 
         viewModel.viewModelScope.cancel()

@@ -81,6 +81,12 @@ android {
             excludes += "META-INF/LICENSE*"
         }
     }
+    testOptions {
+        unitTests.all {
+            it.forkEvery = 1
+            it.jvmArgs("-Xmx1g")
+        }
+    }
 }
 
 kotlin {
@@ -99,8 +105,7 @@ tasks.register("printVersionCodeAndName") {
 }
 
 dependencies {
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.rules)
+    androidTestImplementation(libs.androidx.rules)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

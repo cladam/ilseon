@@ -16,12 +16,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -34,8 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
@@ -66,7 +58,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,6 +75,7 @@ import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.components.ReflectionDialog
+import com.ilseon.ui.components.StreakIndicator
 import com.ilseon.ui.navigation.Screen
 import com.ilseon.ui.screen.AboutScreen
 import com.ilseon.ui.screen.AnalyticsScreen
@@ -400,7 +392,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     actions = {
-                                        StreakIndicator(streak = completionStreak)
+                                        StreakIndicator(
+                                            streak = completionStreak,
+                                            modifier = Modifier.padding(end = 16.dp).size(24.dp)
+                                        )
                                     }
                                 )
                             }
@@ -747,63 +742,6 @@ class MainActivity : ComponentActivity() {
 
 private val lightScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 private val darkScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
-
-@Composable
-fun StreakIndicator(streak: Int) {
-    val mutedGold = androidx.compose.ui.graphics.Color(0xFFC9B464)
-
-    Box(
-        modifier = Modifier
-            .padding(end = 16.dp)
-            .size(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        when {
-            streak >= 7 -> { // Mastery Badge
-                Icon(
-                    imageVector = Icons.Filled.WorkspacePremium,
-                    contentDescription = "Mastery Badge: $streak",
-                    tint = mutedGold,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            streak >= 5 -> { // Deep Focus - Subtle Alpha Pulse (Breathing Effect)
-                val infiniteTransition = rememberInfiniteTransition(label = "streak-pulse")
-                
-                val pulseAlpha by infiniteTransition.animateFloat(
-                    initialValue = 0.7f,
-                    targetValue = 1.0f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(2500, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "streak-pulse-alpha"
-                )
-
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Deep Focus Streak: $streak",
-                    tint = mutedGold,
-                    modifier = Modifier.alpha(pulseAlpha)
-                )
-            }
-            streak >= 3 -> { // Momentum
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Momentum Streak: $streak",
-                    tint = mutedGold
-                )
-            }
-            streak >= 1 -> { // Initiation
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(mutedGold, CircleShape)
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun DrawerContent(

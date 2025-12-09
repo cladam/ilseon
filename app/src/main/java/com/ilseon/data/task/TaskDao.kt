@@ -129,6 +129,9 @@ interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND completionReflection IS NOT NULL AND completedAt >= :startTime AND isArchived = 0")
     fun getSuccessfulCompletionsCount(startTime: Long): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
+    suspend fun getSuccessfulCompletionsCountForDate(startTime: Long, endTime: Long): Int
+
     @Query("SELECT completedAt FROM tasks WHERE isComplete = 1 AND completedAt IS NOT NULL AND isArchived = 0 ORDER BY completedAt DESC")
     fun getCompletionDates(): Flow<List<Long>>
 }

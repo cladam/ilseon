@@ -3,12 +3,14 @@ package com.ilseon
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import app.cash.turbine.test
 import com.ilseon.data.task.AnalyticsRepository
+import com.ilseon.data.task.TaskRepository
 import com.ilseon.ui.screen.AnalyticsData
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -16,10 +18,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 @ExperimentalCoroutinesApi
 class AnalyticsViewModelTest {
@@ -28,18 +30,47 @@ class AnalyticsViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var taskRepository: TaskRepository
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         analyticsRepository = mockk(relaxed = true)
+        taskRepository = mockk(relaxed = true)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `init loads momentum data correctly`() = runTest(testDispatcher) {
+        // Arrange
+        val today = LocalDate.now()
+        val streakData = mapOf(
+            today to 2,
+            today.minusDays(1) to 1,
+            today.minusDays(3) to 1
+        )
+        coEvery { taskRepository.getHistoricalCompletionStreaks(7) } returns flowOf(streakData)
+
+        // Act
+        val viewModel = AnalyticsViewModel(analyticsRepository, taskRepository)
+        advanceUntilIdle()
+
+        // Assert
+        viewModel.momentumData.test {
+            val loadedData = awaitItem()
+            assertEquals(7, loadedData.size)
+            assertEquals(2, loadedData.find { it.date == today }?.streak)
+            assertEquals(1, loadedData.find { it.date == today.minusDays(1) }?.streak)
+            assertEquals(0, loadedData.find { it.date == today.minusDays(2) }?.streak) // Day with no completions
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
 
     @Test
     fun `selecting time interval calls repository and updates data`() = runTest(testDispatcher) {
@@ -63,21 +94,20 @@ class AnalyticsViewModelTest {
 
         coEvery { analyticsRepository.getAnalyticsData(TimeInterval.WEEK) } returns weeklyData
         coEvery { analyticsRepository.getAnalyticsData(TimeInterval.MONTH) } returns monthlyData
+        // Required for the init block
+        coEvery { taskRepository.getHistoricalCompletionStreaks(any()) } returns flowOf(emptyMap())
 
-        val viewModel = AnalyticsViewModel(analyticsRepository)
-        advanceUntilIdle() // Let the initial loadAnalyticsData() in init {} finish
+
+        val viewModel = AnalyticsViewModel(analyticsRepository, taskRepository)
+        advanceUntilIdle()
 
         viewModel.analyticsData.test {
-            // Assert initial state from init{}
             assertEquals(weeklyData, awaitItem())
 
-            // Act: Change the time interval
             viewModel.selectTimeInterval(TimeInterval.MONTH)
 
-            // Assert new data
             assertEquals(monthlyData, awaitItem())
 
-            // Verify the repository was called with the new interval
             coVerify { analyticsRepository.getAnalyticsData(TimeInterval.MONTH) }
 
             cancelAndIgnoreRemainingEvents()

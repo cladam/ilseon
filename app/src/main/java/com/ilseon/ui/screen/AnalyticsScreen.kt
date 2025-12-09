@@ -42,6 +42,7 @@ fun AnalyticsScreen(
     onNavigateToCompletedTasks: () -> Unit
 ) {
     val data by viewModel.analyticsData.collectAsState()
+    val momentumData by viewModel.momentumData.collectAsState()
     val selectedInterval by viewModel.selectedInterval.collectAsState()
 
     Scaffold(
@@ -54,6 +55,19 @@ fun AnalyticsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text(
+                        text = "My Momentum",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+            }
+
+            item {
+                MomentumTimeline(momentumData)
+            }
+
             item {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     Text(

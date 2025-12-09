@@ -191,6 +191,22 @@ class TaskRepository @Inject constructor(
         return taskDao.getSuccessfulCompletionsCount(twentyFourHoursAgo)
     }
 
+    fun getHistoricalCompletionStreaks(days: Int): Flow<Map<LocalDate, Int>> {
+        val today = LocalDate.now()
+        val dates = (0 until days).map { today.minusDays(it.toLong()) }
+        
+        return taskDao.getCompletedTasks().map { completedTasks ->
+            dates.associateWith { date ->
+                val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                completedTasks.count { task ->
+                    task.completedAt != null && task.completedAt in startOfDay..endOfDay
+                }
+            }
+        }
+    }
+
+
     suspend fun archiveTaskSeries(task: Task) {
         task.seriesId?.let {
             taskDao.archiveTaskSeries(it)

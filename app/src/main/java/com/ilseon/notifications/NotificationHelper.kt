@@ -117,6 +117,7 @@ class NotificationHelper @Inject constructor(
     fun showHapticFeedback(tier: NotificationTier) {
         when (tier) {
             NotificationTier.CriticalDecision -> hapticManager.performAlert()
+            NotificationTier.PreStartWarning -> hapticManager.performWarning()
             NotificationTier.PreBlockWarning -> hapticManager.performWarning()
             NotificationTier.SubtleAnchor -> hapticManager.performNudge()
             NotificationTier.Nagging -> hapticManager.performNagging()
@@ -135,6 +136,7 @@ class NotificationHelper @Inject constructor(
     ) {
         val channelId = when (tier) {
             NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
+            NotificationTier.PreStartWarning -> WARNING_CHANNEL_ID
             NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
             NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
             NotificationTier.Nagging -> NAGGING_CHANNEL_ID
@@ -143,6 +145,7 @@ class NotificationHelper @Inject constructor(
 
         val priority = when (tier) {
             NotificationTier.CriticalDecision -> NotificationCompat.PRIORITY_HIGH
+            NotificationTier.PreStartWarning -> NotificationCompat.PRIORITY_DEFAULT
             NotificationTier.PreBlockWarning -> NotificationCompat.PRIORITY_DEFAULT
             NotificationTier.SubtleAnchor -> NotificationCompat.PRIORITY_LOW
             NotificationTier.Nagging -> NotificationCompat.PRIORITY_HIGH

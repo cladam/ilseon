@@ -110,7 +110,7 @@ fun QuickCaptureSheet(
 
     val titleFocusRequester = remember { FocusRequester() }
     var hasRequestedInitialFocus by remember { mutableStateOf(false) }
-
+    var isTitleFieldLaidOut by remember { mutableStateOf(false) }
     val descriptionFocusRequester = remember { FocusRequester() }
 
     // Initialize selected context when contexts are loaded
@@ -120,18 +120,35 @@ fun QuickCaptureSheet(
         }
     }
 
-    LaunchedEffect(titleFocusRequester, initialTitle) {
-        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
+    LaunchedEffect(isTitleFieldLaidOut, initialTitle, initialDescription) {
+        if (!hasRequestedInitialFocus &&
+            isTitleFieldLaidOut &&
+            initialTitle.isEmpty() &&
+            initialDescription.isEmpty()
+        ) {
             hasRequestedInitialFocus = true
             try {
-                // Small delay to ensure the view is attached and focusable
-                delay(200)
+                // Extra delay so it's after the bottom sheet animation
+                delay(250)
                 titleFocusRequester.requestFocus()
             } catch (e: Exception) {
                 Log.d("QuickCaptureSheet", "Error requesting focus: $e")
             }
         }
     }
+
+//    LaunchedEffect(titleFocusRequester, initialTitle) {
+//        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
+//            hasRequestedInitialFocus = true
+//            // Small delay to ensure the view is attached and focusable
+//            delay(200)
+//            try {
+//                titleFocusRequester.requestFocus()
+//            } catch (e: Exception) {
+//                Log.d("QuickCaptureSheet", "Error requesting focus: $e")
+//            }
+//        }
+//    }
 
 //    LaunchedEffect(isTitleFieldReady, initialTitle) {
 //        if (
@@ -209,12 +226,12 @@ fun QuickCaptureSheet(
             label = { Text("What's on your mind?") },
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(titleFocusRequester),
-//                .onGloballyPositioned {
-//                    if (!isTitleFieldReady) {
-//                        isTitleFieldReady = true
-//                    }
-//                },
+                .focusRequester(titleFocusRequester)
+                .onGloballyPositioned {
+                    if (!isTitleFieldLaidOut) {
+                        isTitleFieldLaidOut = true
+                    }
+                },
             colors = TextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = MaterialTheme.colorScheme.secondary,

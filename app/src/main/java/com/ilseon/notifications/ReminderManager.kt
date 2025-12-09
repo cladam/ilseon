@@ -45,7 +45,7 @@ class ReminderManager @Inject constructor(
         // Pre-start warning
         val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
         if (preStartTime > now) {
-            scheduleAlarm(task, preStartTime, NotificationTier.PreBlockWarning)
+            scheduleAlarm(task, preStartTime, NotificationTier.PreStartWarning)
         }
 
         // Start Time Alert

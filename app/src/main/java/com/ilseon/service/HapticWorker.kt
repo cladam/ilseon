@@ -49,6 +49,7 @@ class HapticWorker(
                 false
             } else {
                 val isOverdue = task.dueTime != null &&
+                        (task.startTime == null || task.startTime <= now) &&
                         task.dueTime >= startOfToday &&
                         task.dueTime < now
 

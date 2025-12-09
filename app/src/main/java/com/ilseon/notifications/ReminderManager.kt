@@ -20,8 +20,8 @@ class ReminderManager @Inject constructor(
 ) : IReminderManager {
 
     companion object {
-        const val PRE_BLOCK_WARNING_MINUTES = 5
-        const val END_TIME_OVERDUE_MINUTES = 1
+        val PRE_BLOCK_WARNING_MINUTES = TimeUnit.MINUTES.toMillis(5)
+        val END_TIME_OVERDUE_MINUTES = TimeUnit.MINUTES.toMillis(1)
         val ANCHOR_INTERVAL_MINUTES = TimeUnit.MINUTES.toMillis(15)
         val NAGGING_DELAY_MINUTES = TimeUnit.MINUTES.toMillis(5)
     }
@@ -43,7 +43,7 @@ class ReminderManager @Inject constructor(
         val dueTime = task.dueTime ?: task.endTime ?: return
 
         // Pre-start warning
-        val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
         if (preStartTime > now) {
             scheduleAlarm(task, preStartTime, NotificationTier.PreStartWarning)
         }
@@ -54,14 +54,16 @@ class ReminderManager @Inject constructor(
         }
 
         // Pre-Block Warning (5 minutes before due time)
-        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES * 60 * 1000
+        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES
         if (preBlockWarningTime > now) {
             scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
         }
 
         // End Time Overdue (1 minute after due time)
-        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES * 60 * 1000
-        scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
+        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES
+        if (overdueTime > now) {
+            scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
+        }
 
         // Schedule the nagging follow-up
         scheduleNaggingReminder(task, overdueTime)
@@ -76,14 +78,18 @@ class ReminderManager @Inject constructor(
         scheduleAnchorReminders(task)
 
         // Pre-Block Warning (5 minutes before the end)
-        if (remainingMillis > PRE_BLOCK_WARNING_MINUTES * 60 * 1000) {
-            val preBlockWarningTime = now + remainingMillis - (PRE_BLOCK_WARNING_MINUTES * 60 * 1000)
-            scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
+        if (remainingMillis > PRE_BLOCK_WARNING_MINUTES) {
+            val preBlockWarningTime = now + remainingMillis - PRE_BLOCK_WARNING_MINUTES
+            if (preBlockWarningTime > now) {
+                scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
+            }
         }
 
         // End Time Overdue (1 minute after duration expires)
-        val overdueTime = now + remainingMillis + (END_TIME_OVERDUE_MINUTES * 60 * 1000)
-        scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
+        val overdueTime = now + remainingMillis + END_TIME_OVERDUE_MINUTES
+        if (overdueTime > now) {
+            scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
+        }
 
         // Rule 3: Schedule the nagging follow-up
         scheduleNaggingReminder(task, overdueTime)
@@ -103,7 +109,9 @@ class ReminderManager @Inject constructor(
     // Rule 3 Implementation
     private fun scheduleNaggingReminder(task: Task, originalOverdueTime: Long) {
         val naggingTriggerTime = originalOverdueTime + NAGGING_DELAY_MINUTES
-        scheduleAlarm(task, naggingTriggerTime, NotificationTier.Nagging)
+        if (naggingTriggerTime > System.currentTimeMillis()) {
+            scheduleAlarm(task, naggingTriggerTime, NotificationTier.Nagging)
+        }
     }
 
     private fun scheduleAlarm(

@@ -48,6 +48,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -112,6 +113,7 @@ fun QuickCaptureSheet(
     var hasRequestedInitialFocus by remember { mutableStateOf(false) }
     var isTitleFieldLaidOut by remember { mutableStateOf(false) }
     val descriptionFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     // Initialize selected context when contexts are loaded
     LaunchedEffect(contexts) {
@@ -127,12 +129,13 @@ fun QuickCaptureSheet(
             initialDescription.isEmpty()
         ) {
             hasRequestedInitialFocus = true
-            try {
-                // Extra delay so it's after the bottom sheet animation
-                delay(250)
-                titleFocusRequester.requestFocus()
-            } catch (e: Exception) {
-                Log.d("QuickCaptureSheet", "Error requesting focus: $e")
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                try {
+                    delay(100) // Short delay for layout
+                    titleFocusRequester.requestFocus()
+                } catch (e: Exception) {
+                    Log.d("QuickCaptureSheet", "Error requesting focus: $e")
+                }
             }
         }
     }

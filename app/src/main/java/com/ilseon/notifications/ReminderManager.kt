@@ -27,7 +27,7 @@ class ReminderManager @Inject constructor(
     }
 
     override fun rescheduleReminders(task: Task) {
-        cancelReminder(task)
+        cancelAllReminders(task)
         when (task.schedulingType) {
             SchedulingType.TimeBlock -> scheduleTimedTaskReminders(task)
             SchedulingType.Duration -> scheduleDurationTaskReminders(task)
@@ -124,7 +124,7 @@ class ReminderManager @Inject constructor(
             return
         }
 
-        val pendingIntent = createNotificationIntent(task, tier)
+        val pendingIntent = createNotificationIntent(task, tier, triggerAtMillis)
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerAtMillis,
@@ -132,11 +132,13 @@ class ReminderManager @Inject constructor(
         )
     }
 
-    override fun cancelReminder(task: Task) {
+    override fun cancelAllReminders(task: Task) {
         // Cancel notification-based alarms
         NotificationTier.entries.forEach { tier ->
-            val pendingIntent = createNotificationIntent(task, tier)
+            val pendingIntent = createNotificationIntent(task, tier, task.startTime ?: 0)
             alarmManager.cancel(pendingIntent)
+            val pendingIntent2 = createNotificationIntent(task, tier, task.dueTime ?: 0)
+            alarmManager.cancel(pendingIntent2)
         }
         // Cancel haptic-only alarms
         NotificationTier.entries.forEach { tier ->
@@ -145,7 +147,7 @@ class ReminderManager @Inject constructor(
         }
     }
 
-    private fun createNotificationIntent(task: Task, tier: NotificationTier): PendingIntent {
+    private fun createNotificationIntent(task: Task, tier: NotificationTier, triggerAtMillis: Long): PendingIntent {
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             action = "com.ilseon.REMINDER_NOTIFICATION"
             putExtra("EXTRA_TASK_ID", task.id.toString())
@@ -155,7 +157,7 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TIMER_STATE", task.timerState.name)
             putExtra("EXTRA_SCHEDULING_TYPE", task.schedulingType.name)
         }
-        val requestCode = (task.id.toString() + tier.name + "_NOTIFICATION").hashCode()
+        val requestCode = (task.id.toString() + tier.name + triggerAtMillis + "_NOTIFICATION").hashCode()
         return PendingIntent.getBroadcast(
             context,
             requestCode,

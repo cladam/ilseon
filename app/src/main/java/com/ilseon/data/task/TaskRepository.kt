@@ -352,7 +352,7 @@ class TaskRepository @Inject constructor(
         } else {
             taskDao.delete(task)
         }
-        reminderManager.cancelReminder(task)
+        reminderManager.cancelAllReminders(task)
         updatePriorityAndWidget()
     }
 
@@ -385,14 +385,14 @@ class TaskRepository @Inject constructor(
 
     private fun updateRemindersForTask(task: Task) {
         if (task.isComplete) {
-            reminderManager.cancelReminder(task)
+            reminderManager.cancelAllReminders(task)
             return
         }
 
         if (task.startTime != null) {
             reminderManager.rescheduleReminders(task)
         } else {
-            reminderManager.cancelReminder(task)
+            reminderManager.cancelAllReminders(task)
         }
     }
 

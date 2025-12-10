@@ -6,5 +6,5 @@ interface IReminderManager {
     fun rescheduleReminders(task: Task)
     fun scheduleTimedTaskReminders(task: Task)
     fun scheduleDurationTaskReminders(task: Task)
-    fun cancelReminder(task: Task)
+    fun cancelAllReminders(task: Task)
 }

@@ -102,13 +102,8 @@ class TaskViewModel @Inject constructor(
         _taskForReflection.value = null
     }
 
-    val activeFocusBlock: StateFlow<FocusBlock?> = taskRepository.getActiveFocusBlock()
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _activeFocusBlock = MutableStateFlow<FocusBlock?>(null)
+    val activeFocusBlock: StateFlow<FocusBlock?> = _activeFocusBlock.asStateFlow()
 
     val tasks: StateFlow<List<Task>> = taskRepository.getDashboardTasks()
         .stateIn(
@@ -144,6 +139,7 @@ class TaskViewModel @Inject constructor(
             }.launchIn(viewModelScope)
 
             while (isActive) {
+                _activeFocusBlock.value = taskRepository.getActiveFocusBlock().first()
                 checkTasks()
                 checkFocusBlocks()
                 delay(1000) // Check every second
@@ -363,7 +359,7 @@ class TaskViewModel @Inject constructor(
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()
         notificationService.sendTaskFinishedNotification(task)
-        reminderManager.cancelReminder(task)
+        reminderManager.cancelAllReminders(task)
     }
 
     override fun onCleared() {
@@ -533,7 +529,7 @@ class TaskViewModel @Inject constructor(
                 timerState = TimerState.Finished
             )
             taskRepository.updateTask(updatedTask)
-            reminderManager.cancelReminder(updatedTask)
+            reminderManager.cancelAllReminders(updatedTask)
             taskRepository.updatePriorityAndWidget()
             prepareForNextTaskTransition(updatedTask)
         }
@@ -627,7 +623,7 @@ class TaskViewModel @Inject constructor(
                         updatedTask.copy(remainingTimeInSeconds = max(0, newRemaining))
                 }
                 taskRepository.updateTask(updatedTask)
-                reminderManager.cancelReminder(updatedTask)
+                reminderManager.cancelAllReminders(updatedTask)
             }
         }
     }

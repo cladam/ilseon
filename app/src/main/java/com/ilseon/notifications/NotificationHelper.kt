@@ -90,6 +90,8 @@ class NotificationHelper @Inject constructor(
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = NAGGING_CHANNEL_DESCRIPTION
+                setSound(null, null)
+                enableVibration(false)
             }
             
             val successChannel = NotificationChannel(

@@ -6,9 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,6 +26,7 @@ class ReminderManager @Inject constructor(
         val END_TIME_OVERDUE_MINUTES = TimeUnit.MINUTES.toMillis(1)
         val ANCHOR_INTERVAL_MINUTES = TimeUnit.MINUTES.toMillis(15)
         val NAGGING_DELAY_MINUTES = TimeUnit.MINUTES.toMillis(5)
+        val UNSCHEDULED_NUDGE_HOURS = TimeUnit.HOURS.toMillis(1)
     }
 
     override fun rescheduleReminders(task: Task) {
@@ -31,16 +34,26 @@ class ReminderManager @Inject constructor(
         when (task.schedulingType) {
             SchedulingType.TimeBlock -> scheduleTimedTaskReminders(task)
             SchedulingType.Duration -> scheduleDurationTaskReminders(task)
-            SchedulingType.None -> {
-                // No reminders for unscheduled tasks
-            }
+            SchedulingType.None -> scheduleUnscheduledTaskReminders(task)
+        }
+    }
+
+    private fun scheduleUnscheduledTaskReminders(task: Task) {
+        val now = System.currentTimeMillis()
+        val nudgeTime = task.createdAt + UNSCHEDULED_NUDGE_HOURS
+        if (nudgeTime > now) {
+            scheduleAlarm(task, nudgeTime, NotificationTier.Nagging)
         }
     }
 
     override fun scheduleTimedTaskReminders(task: Task) {
         val now = System.currentTimeMillis()
-        val startTime = task.startTime ?: return
-        val dueTime = task.dueTime ?: task.endTime ?: return
+
+        val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
+            calculateNextOccurrence(task) ?: return
+        } else {
+            Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
+        }
 
         // Pre-start warning
         val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
@@ -95,7 +108,6 @@ class ReminderManager @Inject constructor(
         scheduleNaggingReminder(task, overdueTime)
     }
 
-    // Rule 1 Implementation
     private fun scheduleAnchorReminders(task: Task) {
         val intent = createHapticIntent(task, NotificationTier.SubtleAnchor)
         alarmManager.setRepeating(
@@ -106,12 +118,54 @@ class ReminderManager @Inject constructor(
         )
     }
 
-    // Rule 3 Implementation
     private fun scheduleNaggingReminder(task: Task, originalOverdueTime: Long) {
         val naggingTriggerTime = originalOverdueTime + NAGGING_DELAY_MINUTES
         if (naggingTriggerTime > System.currentTimeMillis()) {
             scheduleAlarm(task, naggingTriggerTime, NotificationTier.Nagging)
         }
+    }
+
+    private fun calculateNextOccurrence(task: Task): Pair<Long, Long>? {
+        if (!task.isRecurring || task.recurrenceDays.isNullOrEmpty() || task.startTime == null || task.dueTime == null) {
+            return null
+        }
+
+        val recurrenceDayStrings = task.recurrenceDays.split(',').map { it.trim() }
+        val recurrenceDays = recurrenceDayStrings.mapNotNull {
+            try {
+                DayOfWeek.valueOf(it).toCalendarDay()
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }.toSet()
+
+        if (recurrenceDays.isEmpty()) {
+            return null
+        }
+
+        val taskStartTimeCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
+        val now = Calendar.getInstance()
+
+        for (i in 0..7) { // Check for the next 8 days (today + 7)
+            val checkCal = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
+            val dayOfWeek = checkCal.get(Calendar.DAY_OF_WEEK)
+
+            if (dayOfWeek in recurrenceDays) {
+                val nextOccurrenceTry = (checkCal.clone() as Calendar).apply {
+                    set(Calendar.HOUR_OF_DAY, taskStartTimeCal.get(Calendar.HOUR_OF_DAY))
+                    set(Calendar.MINUTE, taskStartTimeCal.get(Calendar.MINUTE))
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                if (nextOccurrenceTry.after(now)) {
+                    val duration = task.dueTime - task.startTime
+                    val nextDueTime = nextOccurrenceTry.timeInMillis + duration
+                    return Pair(nextOccurrenceTry.timeInMillis, nextDueTime)
+                }
+            }
+        }
+
+        return null // No upcoming occurrence found in the next week.
     }
 
     private fun scheduleAlarm(
@@ -124,7 +178,7 @@ class ReminderManager @Inject constructor(
             return
         }
 
-        val pendingIntent = createNotificationIntent(task, tier, triggerAtMillis)
+        val pendingIntent = createNotificationIntent(task, tier)
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerAtMillis,
@@ -133,21 +187,17 @@ class ReminderManager @Inject constructor(
     }
 
     override fun cancelAllReminders(task: Task) {
-        // Cancel notification-based alarms
+        // Since request codes are stable per task and tier, we can reliably cancel them.
         NotificationTier.entries.forEach { tier ->
-            val pendingIntent = createNotificationIntent(task, tier, task.startTime ?: 0)
-            alarmManager.cancel(pendingIntent)
-            val pendingIntent2 = createNotificationIntent(task, tier, task.dueTime ?: 0)
-            alarmManager.cancel(pendingIntent2)
-        }
-        // Cancel haptic-only alarms
-        NotificationTier.entries.forEach { tier ->
+            val notificationIntent = createNotificationIntent(task, tier)
+            alarmManager.cancel(notificationIntent)
+
             val hapticIntent = createHapticIntent(task, tier)
             alarmManager.cancel(hapticIntent)
         }
     }
 
-    private fun createNotificationIntent(task: Task, tier: NotificationTier, triggerAtMillis: Long): PendingIntent {
+    private fun createNotificationIntent(task: Task, tier: NotificationTier): PendingIntent {
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             action = "com.ilseon.REMINDER_NOTIFICATION"
             putExtra("EXTRA_TASK_ID", task.id.toString())
@@ -157,7 +207,10 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TIMER_STATE", task.timerState.name)
             putExtra("EXTRA_SCHEDULING_TYPE", task.schedulingType.name)
         }
-        val requestCode = (task.id.toString() + tier.name + triggerAtMillis + "_NOTIFICATION").hashCode()
+        // The triggerAtMillis is intentionally not part of the request code to ensure that
+        // rescheduling a reminder for the same task and tier updates the existing alarm
+        // instead of creating a new one.
+        val requestCode = (task.id.toString() + tier.name + "_NOTIFICATION").hashCode()
         return PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -172,6 +225,7 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TASK_ID", task.id.toString())
             putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
         }
+        // The request code is stable per task and tier.
         val requestCode = (task.id.toString() + tier.name + "_HAPTIC").hashCode()
         return PendingIntent.getBroadcast(
             context,
@@ -179,5 +233,17 @@ class ReminderManager @Inject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+}
+
+private fun DayOfWeek.toCalendarDay(): Int {
+    return when (this) {
+        DayOfWeek.SUNDAY -> Calendar.SUNDAY
+        DayOfWeek.MONDAY -> Calendar.MONDAY
+        DayOfWeek.TUESDAY -> Calendar.TUESDAY
+        DayOfWeek.WEDNESDAY -> Calendar.WEDNESDAY
+        DayOfWeek.THURSDAY -> Calendar.THURSDAY
+        DayOfWeek.FRIDAY -> Calendar.FRIDAY
+        DayOfWeek.SATURDAY -> Calendar.SATURDAY
     }
 }

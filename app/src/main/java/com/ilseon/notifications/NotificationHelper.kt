@@ -164,12 +164,25 @@ class NotificationHelper @Inject constructor(
             NotificationTier.Success -> NotificationCompat.PRIORITY_DEFAULT
         }
 
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            action = "com.ilseon.ACTION_SHOW_TASK"
+            putExtra("EXTRA_TASK_ID", taskId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            taskId.hashCode(),
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(description)
             .setPriority(priority)
             .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
 
         if (tier == NotificationTier.CriticalDecision) {
             // Only show "Start" action for tasks that can be started

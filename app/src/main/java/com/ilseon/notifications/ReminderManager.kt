@@ -214,10 +214,8 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_TIMER_STATE", task.timerState.name)
             putExtra("EXTRA_SCHEDULING_TYPE", task.schedulingType.name)
         }
-        // The triggerAtMillis is intentionally not part of the request code to ensure that
-        // rescheduling a reminder for the same task and tier updates the existing alarm
-        // instead of creating a new one.
-        val requestCode = (task.id.toString() + tier.name + "_NOTIFICATION").hashCode()
+        // The request code must be stable for a given task and tier to allow for cancellation.
+        val requestCode = (task.id.toString() + tier.name).hashCode()
         return PendingIntent.getBroadcast(
             context,
             requestCode,

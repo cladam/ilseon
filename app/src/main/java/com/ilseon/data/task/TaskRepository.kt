@@ -35,19 +35,6 @@ class TaskRepository @Inject constructor(
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
 
         return combine(tasksFlow, allFocusBlocksFlow) { tasks, allFocusBlocks ->
-            // Log all incomplete tasks before filtering
-            android.util.Log.d("TaskRepository", "All Incomplete Tasks: ${tasks.joinToString("\n")}")
-
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            val startOfToday = cal.timeInMillis
-
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-            val startOfTomorrow = cal.timeInMillis
-
             val now = System.currentTimeMillis()
             val localNow = LocalTime.now()
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -60,45 +47,59 @@ class TaskRepository @Inject constructor(
                 !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
             }
 
-            val todayTasks = tasks.filter { task ->
-                if (task.startTime == null) {
-                    true // Always include tasks without a start time (e.g. Inbox tasks)
-                } else {
-                    val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
-                    if (!isScheduledForToday) {
-                        false // Exclude if not scheduled for today
+            // Tasks that are not scheduled for the future
+            val presentTasks = tasks.filter { task ->
+                task.startTime == null || task.startTime <= now
+            }
+
+            if (activeFocusBlock != null) {
+                // Active focus block: show tasks from the same context + urgent/high-priority tasks from other contexts
+                val focusContextTasks = presentTasks.filter { it.contextId == activeFocusBlock.contextId }
+                val urgentHighPriorityTasks = presentTasks.filter {
+                    it.isUrgent && it.priority == TaskPriority.High && it.contextId != activeFocusBlock.contextId
+                }
+                (focusContextTasks + urgentHighPriorityTasks).sortedWith(compareBy { !it.isCurrentPriority })
+            } else {
+                // No active focus block: apply default filtering logic
+                val cal = Calendar.getInstance()
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
+                cal.set(Calendar.MILLISECOND, 0)
+                val startOfToday = cal.timeInMillis
+
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+                val startOfTomorrow = cal.timeInMillis
+
+                val todayTasks = tasks.filter { task ->
+                    if (task.startTime == null) {
+                        true // Always include tasks without a start time (e.g. Inbox tasks)
                     } else {
-                        // It is scheduled for today, now check if its start time has passed
-                        val hasStarted = task.startTime <= now
-                        if (!hasStarted) {
-                            false // Exclude if start time is in the future
+                        val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
+                        if (!isScheduledForToday) {
+                            false // Exclude if not scheduled for today
                         } else {
-                            // It's for today and has started. Now check recurrence.
-                            if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
-                                true // Not a recurring task, so include it
+                            // It is scheduled for today, now check if its start time has passed
+                            val hasStarted = task.startTime <= now
+                            if (!hasStarted) {
+                                false // Exclude if start time is in the future
                             } else {
-                                // It's a recurring task, check if today is a recurrence day
-                                val taskDate = Instant.ofEpochMilli(task.startTime)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                val taskDayOfWeek = taskDate.dayOfWeek
-                                task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
+                                // It's for today and has started. Now check recurrence.
+                                if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
+                                    true // Not a recurring task, so include it
+                                } else {
+                                    // It's a recurring task, check if today is a recurrence day
+                                    val taskDate = Instant.ofEpochMilli(task.startTime)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                    val taskDayOfWeek = taskDate.dayOfWeek
+                                    task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (activeFocusBlock != null) {
-                val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
-                val urgentHighPriorityTasks = todayTasks.filter {
-                    it.isUrgent && it.priority == TaskPriority.High && it.contextId != activeFocusBlock.contextId
-                }
-                val sortedFocusTasks = focusContextTasks.sortedWith(
-                    compareBy { !it.isCurrentPriority }
-                )
-                sortedFocusTasks + urgentHighPriorityTasks
-            } else {
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
                 todayTasks.filter { task ->
                     val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
@@ -130,19 +131,6 @@ class TaskRepository @Inject constructor(
                         }
                     }
                 }
-
-//                todayTasks.filter { task ->
-//                    if (task.contextId !in focusBlockContextIds) {
-//                        true
-//                    } else {
-//                        // If task is in a focus context, check if there's a block for its day
-//                        val taskDate = Instant.ofEpochMilli(task.startTime ?: 0).atZone(ZoneId.systemDefault()).toLocalDate()
-//                        val taskDayOfWeek = taskDate.dayOfWeek.value
-//                        !allFocusBlocks.any { fb ->
-//                            fb.contextId == task.contextId && (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
-//                        }
-//                    }
-//                }
             }
         }
     }
@@ -165,7 +153,19 @@ class TaskRepository @Inject constructor(
                         TaskPriority.Medium -> 1
                         TaskPriority.Low -> 2
                     }
-                }.thenBy { it.createdAt }
+                }
+                .thenBy {
+                    if (it.priority == TaskPriority.High) {
+                        when (it.schedulingType) {
+                            SchedulingType.TimeBlock -> 0
+                            SchedulingType.Duration -> 1
+                            SchedulingType.None -> 2
+                        }
+                    } else {
+                        0
+                    }
+                }
+                .thenBy { it.createdAt }
         )
 
         val newPriorityTask = sortedTasks.firstOrNull()

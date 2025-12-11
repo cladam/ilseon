@@ -10,6 +10,9 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import kotlin.compareTo
+import kotlin.text.compareTo
+import kotlin.text.set
 
 // TODO: Revert to @HiltWorker and @AssistedInject once androidx.hilt:hilt-compiler supports Kotlin 2.2+
 class HapticWorker(
@@ -31,11 +34,12 @@ class HapticWorker(
 
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
         val startOfToday = cal.timeInMillis
 
         val incompleteTasks = taskRepository.getIncompleteTasks().first()
@@ -45,24 +49,29 @@ class HapticWorker(
         val twentyFourHoursAgo = now - TimeUnit.HOURS.toMillis(24)
 
         val tasksToNudge = incompleteTasks.filter { task ->
+            // Always skip completed or non\-high\-priority
             if (task.isComplete || task.priority != TaskPriority.High) {
-                false
-            } else {
-                val isOverdue = task.dueTime != null &&
-                        (task.startTime == null || task.startTime <= now) &&
-                        task.dueTime >= startOfToday &&
-                        task.dueTime < now
-
-                val isUnscheduledUrgent = task.dueTime == null &&
-                        task.isUrgent &&
-                        task.createdAt < fourHoursAgo
-
-                val isUnscheduledNotUrgent = task.dueTime == null &&
-                        !task.isUrgent &&
-                        task.createdAt < twentyFourHoursAgo
-
-                isOverdue || isUnscheduledUrgent || isUnscheduledNotUrgent
+                return@filter false
             }
+
+            // Skip any task that has a startTime in the future
+            if (task.startTime != null && task.startTime > now) {
+                return@filter false
+            }
+
+            val isOverdue = task.dueTime != null &&
+                    task.dueTime >= startOfToday &&
+                    task.dueTime < now
+
+            val isUnscheduledUrgent = task.dueTime == null &&
+                    task.isUrgent &&
+                    task.createdAt < fourHoursAgo
+
+            val isUnscheduledNotUrgent = task.dueTime == null &&
+                    !task.isUrgent &&
+                    task.createdAt < twentyFourHoursAgo
+
+            isOverdue || isUnscheduledUrgent || isUnscheduledNotUrgent
         }
 
         val tasksToNotify = if (activeFocusBlock != null) {
@@ -77,4 +86,5 @@ class HapticWorker(
 
         return Result.success()
     }
+
 }

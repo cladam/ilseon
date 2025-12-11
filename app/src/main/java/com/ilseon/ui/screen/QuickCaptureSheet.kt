@@ -29,6 +29,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -70,6 +72,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(
+    sheetState: SheetState,
     onSave: (String, String?, UUID?, TaskPriority, Boolean, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
@@ -122,23 +125,46 @@ fun QuickCaptureSheet(
         }
     }
 
-    LaunchedEffect(isTitleFieldLaidOut, initialTitle, initialDescription) {
+    LaunchedEffect(
+        sheetState.currentValue,
+        isTitleFieldLaidOut,
+        initialTitle,
+        initialDescription
+    ) {
         if (!hasRequestedInitialFocus &&
+            sheetState.currentValue == SheetValue.Expanded &&
             isTitleFieldLaidOut &&
             initialTitle.isEmpty() &&
             initialDescription.isEmpty()
         ) {
             hasRequestedInitialFocus = true
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
-                try {
-                    delay(100) // Short delay for layout
-                    titleFocusRequester.requestFocus()
-                } catch (e: Exception) {
-                    Log.d("QuickCaptureSheet", "Error requesting focus: $e")
-                }
+            try {
+                // tiny delay for safety; you can tune/remove once stable
+                delay(50)
+                titleFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                Log.d("QuickCaptureSheet", "Error requesting focus: $e")
             }
         }
     }
+
+//    LaunchedEffect(isTitleFieldLaidOut, initialTitle, initialDescription) {
+//        if (!hasRequestedInitialFocus &&
+//            isTitleFieldLaidOut &&
+//            initialTitle.isEmpty() &&
+//            initialDescription.isEmpty()
+//        ) {
+//            hasRequestedInitialFocus = true
+//            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+//                try {
+//                    delay(100) // Short delay for layout
+//                    titleFocusRequester.requestFocus()
+//                } catch (e: Exception) {
+//                    Log.d("QuickCaptureSheet", "Error requesting focus: $e")
+//                }
+//            }
+//        }
+//    }
 
 //    LaunchedEffect(titleFocusRequester, initialTitle) {
 //        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {

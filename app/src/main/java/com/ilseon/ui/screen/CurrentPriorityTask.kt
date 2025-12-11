@@ -148,7 +148,7 @@ fun CurrentPriorityTask(
                     VisualCountdownTimer(
                         totalTimeInMillis = totalTimeMillis,
                         remainingTimeInMillis = remainingTime,
-                        size = 150.dp
+                        size = 175.dp
                     )
                     Spacer(Modifier.height(16.dp))
                 }

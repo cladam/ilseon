@@ -146,8 +146,15 @@ class ReminderManager @Inject constructor(
         val taskStartTimeCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
         val now = Calendar.getInstance()
 
-        for (i in 0..7) { // Check for the next 8 days (today + 7)
-            val checkCal = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
+        // Determine the starting point for our search. If the task's start time is in the future,
+        // we should start searching from that day. Otherwise, we start from the current time.
+        val searchStartCal = Calendar.getInstance()
+        if (task.startTime > searchStartCal.timeInMillis) {
+            searchStartCal.timeInMillis = task.startTime
+        }
+
+        for (i in 0..7) { // Check for the next 8 days from the search start date
+            val checkCal = (searchStartCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
             val dayOfWeek = checkCal.get(Calendar.DAY_OF_WEEK)
 
             if (dayOfWeek in recurrenceDays) {

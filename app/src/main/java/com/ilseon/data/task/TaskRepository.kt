@@ -47,70 +47,64 @@ class TaskRepository @Inject constructor(
                 !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
             }
 
-            // Tasks that are not scheduled for the future
             val presentTasks = tasks.filter { task ->
                 task.startTime == null || task.startTime <= now
             }
 
             if (activeFocusBlock != null) {
-                // Active focus block: show tasks from the same context + urgent/high-priority tasks from other contexts
                 val focusContextTasks = presentTasks.filter { it.contextId == activeFocusBlock.contextId }
                 val urgentHighPriorityTasks = presentTasks.filter {
                     it.isUrgent && it.priority == TaskPriority.High && it.contextId != activeFocusBlock.contextId
                 }
-                (focusContextTasks + urgentHighPriorityTasks).sortedWith(compareBy { !it.isCurrentPriority })
+                (focusContextTasks + urgentHighPriorityTasks)
+                    .sortedWith(compareBy { !it.isCurrentPriority })
             } else {
-                // No active focus block: apply default filtering logic
+                // When no active focus block:
+                // 1. Take all tasks for today (including future) + unscheduled.
+                // 2. Then remove only those that are "hidden" by focus blocks.
                 val cal = Calendar.getInstance()
                 cal.set(Calendar.HOUR_OF_DAY, 0)
                 cal.set(Calendar.MINUTE, 0)
                 cal.set(Calendar.SECOND, 0)
                 cal.set(Calendar.MILLISECOND, 0)
                 val startOfToday = cal.timeInMillis
-
                 cal.add(Calendar.DAY_OF_YEAR, 1)
                 val startOfTomorrow = cal.timeInMillis
 
                 val todayTasks = tasks.filter { task ->
                     if (task.startTime == null) {
-                        true // Always include tasks without a start time (e.g. Inbox tasks)
+                        true // unscheduled (Inbox) always visible
                     } else {
                         val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
                         if (!isScheduledForToday) {
-                            false // Exclude if not scheduled for today
+                            false
                         } else {
-                            // It is scheduled for today, now check if its start time has passed
-                            val hasStarted = task.startTime <= now
-                            if (!hasStarted) {
-                                false // Exclude if start time is in the future
+                            // For recurring tasks, keep your recurrence\-day check
+                            if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
+                                true
                             } else {
-                                // It's for today and has started. Now check recurrence.
-                                if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
-                                    true // Not a recurring task, so include it
-                                } else {
-                                    // It's a recurring task, check if today is a recurrence day
-                                    val taskDate = Instant.ofEpochMilli(task.startTime)
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                    val taskDayOfWeek = taskDate.dayOfWeek
-                                    task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
-                                }
+                                val taskDate = Instant.ofEpochMilli(task.startTime)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                                val taskDayOfWeek = taskDate.dayOfWeek
+                                task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
                             }
                         }
                     }
                 }
 
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
+
                 todayTasks.filter { task ->
                     val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
                     if (isUrgentHigh) {
-                        // Always show urgent+high tasks
+                        // Urgent+high are *never* hidden
                         true
                     } else if (task.contextId !in focusBlockContextIds) {
-                        // No focus block at all for this context
+                        // No focus block defined for this context → never hidden
                         true
                     } else {
-                        // Context has focus blocks; check if any apply to the task's day
+                        // Context has focus blocks; hide only if a block applies to the task's day
                         val taskStart = task.startTime
                         if (taskStart == null) {
                             false
@@ -120,8 +114,6 @@ class TaskRepository @Inject constructor(
                                 .toLocalDate()
                             val taskDayOfWeek = taskDate.dayOfWeek.value
 
-                            // If there is any block for this context whose repeatDays is empty (every day)
-                            // or contains the task's day -> hide the task outside of active block mode
                             val hasBlockForTaskDay = allFocusBlocks.any { fb ->
                                 fb.contextId == task.contextId &&
                                         (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
@@ -131,10 +123,14 @@ class TaskRepository @Inject constructor(
                         }
                     }
                 }
+                    // Optionally sort here if needed, e.g. by startTime then priority
+                    .sortedWith(
+                        compareBy<Task> { it.startTime ?: Long.MAX_VALUE }
+                            .thenBy { !it.isCurrentPriority }
+                    )
             }
         }
     }
-
 
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {
         return taskDao.getIncompleteTasksByContext(contextId)

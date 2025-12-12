@@ -18,6 +18,8 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.ranges.rangeUntil
+import kotlin.text.set
 
 
 @Singleton
@@ -60,13 +62,12 @@ class TaskRepository @Inject constructor(
 
             val todayTasks = tasks.filter { task ->
                 if (task.startTime == null) {
-                    true // unscheduled (Inbox) always visible
+                    true
                 } else {
                     val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
                     if (!isScheduledForToday) {
                         false
                     } else {
-                        // For recurring tasks, keep your recurrence-day check
                         if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
                             true
                         } else {
@@ -80,6 +81,12 @@ class TaskRepository @Inject constructor(
                 }
             }
 
+            // Eisenhower sorting: urgent first, then by priority (High > Medium > Low)
+            val eisenhowerComparator = compareByDescending<Task> { it.isUrgent }
+                .thenBy { it.priority.ordinal }  // Changed from thenByDescending to thenBy
+                .thenBy { it.startTime ?: Long.MAX_VALUE }
+                .thenBy { it.createdAt }
+
             if (activeFocusBlock != null) {
                 val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
                 val urgentOutOfContext = todayTasks.filter { task ->
@@ -87,23 +94,17 @@ class TaskRepository @Inject constructor(
                             task.isUrgent &&
                             !task.isComplete
                 }
-                (focusContextTasks + urgentOutOfContext).sortedWith(compareBy { !it.isCurrentPriority })
+                (focusContextTasks + urgentOutOfContext).sortedWith(eisenhowerComparator)
             } else {
-                // When no active focus block:
-                // 1. Take all tasks for today (including future) + unscheduled.
-                // 2. Then remove only those that are "hidden" by focus blocks.
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
 
                 todayTasks.filter { task ->
                     val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
                     if (isUrgentHigh) {
-                        // Urgent+high are *never* hidden
                         true
                     } else if (task.contextId !in focusBlockContextIds) {
-                        // No focus block defined for this context → never hidden
                         true
                     } else {
-                        // Context has focus blocks; hide only if a block applies to the task's day
                         val taskStart = task.startTime
                         if (taskStart == null) {
                             false
@@ -121,12 +122,7 @@ class TaskRepository @Inject constructor(
                             !hasBlockForTaskDay
                         }
                     }
-                }
-                    // Optionally sort here if needed, e.g. by startTime then priority
-                    .sortedWith(
-                        compareBy<Task> { it.startTime ?: Long.MAX_VALUE }
-                            .thenBy { !it.isCurrentPriority }
-                    )
+                }.sortedWith(eisenhowerComparator)
             }
         }
     }

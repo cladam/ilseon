@@ -33,6 +33,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.theme.MutedRed
 import java.util.UUID
+import kotlin.compareTo
 
 @Composable
 fun DashboardScreen(
@@ -54,17 +55,26 @@ fun DashboardScreen(
     }
 
     val (focusTasks, urgentOutOfContextTasks) = remember(tasks, activeFocusBlock) {
+        val currentTime = System.currentTimeMillis()
+
         if (activeFocusBlock != null) {
-            val inContext = tasks.filter { it.contextId == activeFocusBlock.contextId }
-            val urgentOutOfContext = tasks.filter {
-                it.contextId != activeFocusBlock.contextId && it.isUrgent
+            val inContext = tasks.filter { task ->
+                task.contextId == activeFocusBlock.contextId &&
+                        (task.startTime == null || task.startTime <= currentTime)
+            }
+            val urgentOutOfContext = tasks.filter { task ->
+                task.contextId != activeFocusBlock.contextId &&
+                        task.isUrgent &&
+                        (task.startTime == null || task.startTime <= currentTime)
             }
             inContext to urgentOutOfContext
         } else {
-            tasks to emptyList()
+            val filtered = tasks.filter { task ->
+                task.startTime == null || task.startTime <= currentTime
+            }
+            filtered to emptyList()
         }
     }
-
 
     val (priorityTask, nextUpTasks) = remember(focusTasks) {
         val priorityTask = focusTasks.firstOrNull()

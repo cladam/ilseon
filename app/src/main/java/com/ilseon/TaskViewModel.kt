@@ -11,6 +11,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
+import com.ilseon.di.TestModule
 import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
@@ -65,7 +66,8 @@ class TaskViewModel @Inject constructor(
     private val soundManager: SoundManager,
     private val notificationService: NotificationService,
     private val reminderManager: ReminderManager,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val isTest: Boolean
 ) : ViewModel() {
 
     private val usageStatsReader = UsageStatsReader(context)
@@ -135,20 +137,22 @@ class TaskViewModel @Inject constructor(
     private var lastNotifiedFocusBlockId: UUID? = null
 
     init {
-        viewModelScope.launch {
-            restoreRunningTasksState()
-            monitorFocusBlockChanges()
-            // This is the correct way to handle this.
-            // When the active block changes, we need to re-evaluate the priority.
-            activeFocusBlock.onEach {
-                taskRepository.updatePriorityAndWidget()
-            }.launchIn(viewModelScope)
+        if (!isTest) {
+            viewModelScope.launch {
+                restoreRunningTasksState()
+                monitorFocusBlockChanges()
+                // This is the correct way to handle this.
+                // When the active block changes, we need to re-evaluate the priority.
+                activeFocusBlock.onEach {
+                    taskRepository.updatePriorityAndWidget()
+                }.launchIn(viewModelScope)
 
-            while (isActive) {
-                _activeFocusBlock.value = taskRepository.getActiveFocusBlock().first()
-                checkTasks()
-                checkFocusBlocks()
-                delay(1000) // Check every second
+                while (isActive) {
+                    _activeFocusBlock.value = taskRepository.getActiveFocusBlock().first()
+                    checkTasks()
+                    checkFocusBlocks()
+                    delay(1000) // Check every second
+                }
             }
         }
     }

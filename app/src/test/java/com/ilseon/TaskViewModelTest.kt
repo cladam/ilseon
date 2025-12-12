@@ -4,7 +4,6 @@ import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.viewModelScope
 import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.SchedulingType
@@ -25,7 +24,6 @@ import io.mockk.runs
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -83,6 +81,7 @@ class TaskViewModelTest {
         coEvery { taskRepository.getIncompleteTasks() } returns MutableStateFlow<List<Task>>(emptyList())
         coEvery { taskRepository.getAllFocusBlocks() } returns emptyList()
         coEvery { taskRepository.getRunningTasks() } returns emptyList()
+        coEvery { taskRepository.getSubTasks(any()) } returns flowOf(emptyList())
         coEvery { settingsRepository.naggingNotificationsEnabled } returns flowOf(false)
     }
 
@@ -93,7 +92,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with time block creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -116,12 +115,11 @@ class TaskViewModelTest {
         assert(capturedTask.title == "Test Task with Time Block")
         assert(capturedTask.startTime != null)
         assert(capturedTask.endTime != null)
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with duration creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -143,12 +141,11 @@ class TaskViewModelTest {
         val capturedTask = taskSlot.captured
         assert(capturedTask.title == "Test Task with Duration")
         assert(capturedTask.totalTimeInMinutes == 45)
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with basic info creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -173,12 +170,11 @@ class TaskViewModelTest {
         assert(capturedTask.totalTimeInMinutes == null)
         assert(capturedTask.startTime == null)
         assert(capturedTask.endTime == null)
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with recurring time block task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -206,13 +202,11 @@ class TaskViewModelTest {
         assertNotNull(capturedTask.startTime)
         assertNotNull(capturedTask.endTime)
         assertEquals("TUESDAY,THURSDAY", capturedTask.recurrenceDays)
-
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with recurring duration task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -241,13 +235,11 @@ class TaskViewModelTest {
         assertNotNull(capturedTask.endTime)
         assertNotNull(capturedTask.dueTime)
         assertEquals("MONDAY,WEDNESDAY", capturedTask.recurrenceDays)
-
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with recurring normal task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -276,13 +268,11 @@ class TaskViewModelTest {
         assertNull(capturedTask.endTime) // No end time for normal tasks
         assertNull(capturedTask.dueTime) // dueTime is null for normal tasks
         assertEquals("FRIDAY", capturedTask.recurrenceDays)
-
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `addTask with urgent flag sets isUrgent to true`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -304,13 +294,11 @@ class TaskViewModelTest {
         val capturedTask = taskSlot.captured
         assertEquals("Urgent Task", capturedTask.title)
         assertEquals(true, capturedTask.isUrgent)
-
-        viewModel.viewModelScope.cancel()
     }
 
     @Test
     fun `completeTask updates task to complete and sets reflection`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.updateTask(capture(taskSlot)) } just runs
 
@@ -330,7 +318,5 @@ class TaskViewModelTest {
         assert(capturedTask.isComplete)
         assert(capturedTask.completionReflection == reflection)
         assert(capturedTask.completedAt != null)
-
-        viewModel.viewModelScope.cancel()
     }
 }

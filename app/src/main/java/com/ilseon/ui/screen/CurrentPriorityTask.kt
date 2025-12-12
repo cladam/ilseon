@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,12 +25,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +44,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.TaskViewModel
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
@@ -53,6 +59,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.inc
 import kotlin.math.max
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -66,7 +73,8 @@ fun CurrentPriorityTask(
     onStartTask: (Task) -> Unit,
     onPauseTask: (Task) -> Unit,
     onUpdate: (Task, String) -> Unit,
-    focusContextName: String?
+    focusContextName: String?,
+    viewModel: TaskViewModel,
 ) {
     var remainingTime by remember(task.id) {
         mutableStateOf(task.remainingTimeInSeconds * 1000L)
@@ -75,6 +83,13 @@ fun CurrentPriorityTask(
     val isInFocusBlock = focusContextName != null
     var isOverdue by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Task?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
+
+    val subTasks by viewModel.subTasks.collectAsState()
+
+    LaunchedEffect(task.id, refreshTrigger) {
+        viewModel.loadSubTasks(task.id)
+    }
 
     taskToEdit?.let {
         EditTaskDialog(
@@ -83,8 +98,10 @@ fun CurrentPriorityTask(
             onDismiss = { taskToEdit = null },
             onSave = { updatedTask ->
                 onUpdate(updatedTask, "manual update")
+                refreshTrigger++
                 taskToEdit = null
-            }
+            },
+            viewModel = viewModel
         )
     }
 
@@ -241,13 +258,18 @@ fun CurrentPriorityTask(
                     }
                 }
 
+                val allSubTasksComplete = subTasks.all { it.isComplete }
 
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondary)
-                        .clickable { onComplete(task) },
+                        .background(
+                            if (allSubTasksComplete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(
+                                alpha = 0.5f
+                            )
+                        )
+                        .clickable(enabled = allSubTasksComplete) { onComplete(task) },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -256,6 +278,29 @@ fun CurrentPriorityTask(
                         tint = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.size(24.dp)
                     )
+                }
+            }
+            if (subTasks.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Sub-Tasks Remaining (${subTasks.count { !it.isComplete }}/${subTasks.size})",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                    items(subTasks) { subTask ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = subTask.isComplete,
+                                onCheckedChange = { isChecked ->
+                                    viewModel.updateTask(subTask.copy(isComplete = isChecked))
+                                }
+                            )
+                            Text(subTask.title)
+                        }
+                    }
                 }
             }
         }

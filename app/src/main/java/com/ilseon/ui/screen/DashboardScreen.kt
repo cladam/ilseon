@@ -126,7 +126,8 @@ fun DashboardScreen(
                                         updatedTask
                                     )
                                 },
-                                focusContextName = focusContextName
+                                focusContextName = focusContextName,
+                                viewModel = taskViewModel
                             )
                         }
                     }

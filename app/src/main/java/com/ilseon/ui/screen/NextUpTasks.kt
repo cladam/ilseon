@@ -84,6 +84,7 @@ fun NextUpTasks(
             task = task,
             contexts = contextMap.values.toList(),
             onDismiss = { taskToEdit = null },
+            viewModel = viewModel,
             onSave = {
                 viewModel.updateTask(it)
                 taskToEdit = null

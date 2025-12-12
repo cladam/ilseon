@@ -19,7 +19,7 @@ data class FocusDistribution(
 interface TaskDao {
     @Query("""
         SELECT * FROM tasks
-        WHERE isComplete = 0 AND isArchived = 0
+        WHERE isComplete = 0 AND isArchived = 0 AND parentId IS NULL
         ORDER BY
             isCurrentPriority DESC,
             CASE priority
@@ -35,6 +35,9 @@ interface TaskDao {
             createdAt ASC
     """)
     fun getIncompleteTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE parentId = :parentId ORDER BY orderIndex ASC")
+    fun getSubTasks(parentId: UUID): Flow<List<Task>>
 
     @Query("SELECT * FROM tasks WHERE contextId = :contextId AND isComplete = 0 AND isArchived = 0 ORDER BY createdAt DESC")
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>>

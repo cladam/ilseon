@@ -70,7 +70,9 @@ data class Task(
     val isRecurring: Boolean = false,
     val recurrenceDays: String? = null, // Comma-separated days, e.g., "TUESDAY,THURSDAY"
     val isArchived: Boolean = false,
-    val seriesId: UUID? = null
+    val seriesId: UUID? = null,
+    val parentId: UUID? = null,
+    val orderIndex: Int = 0
 )
 
 @Entity(tableName = "task_contexts")

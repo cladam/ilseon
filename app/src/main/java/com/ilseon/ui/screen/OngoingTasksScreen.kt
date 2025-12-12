@@ -40,9 +40,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.OngoingTasksViewModel
 import com.ilseon.TaskContextViewModel
+import com.ilseon.TaskViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
@@ -56,6 +57,7 @@ import java.util.Locale
 fun OngoingTasksScreen(
     viewModel: OngoingTasksViewModel = hiltViewModel(),
     contextViewModel: TaskContextViewModel = hiltViewModel(),
+    taskViewModel: TaskViewModel = hiltViewModel(),
     contextId: String?
 ) {
     val ongoingTasks by viewModel.ongoingTasks.collectAsState()
@@ -83,7 +85,8 @@ fun OngoingTasksScreen(
             onSave = { updatedTask ->
                 viewModel.updateTask(updatedTask)
                 editingTask = null
-            }
+            },
+            viewModel = taskViewModel
         )
     }
 }

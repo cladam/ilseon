@@ -18,6 +18,7 @@ import com.ilseon.service.SoundManager
 import com.ilseon.util.UsageStatsReader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -75,6 +76,11 @@ class TaskViewModel @Inject constructor(
 
     private val _postCompletionAction = MutableStateFlow<PostCompletionAction>(PostCompletionAction.Idle)
     val postCompletionAction: StateFlow<PostCompletionAction> = _postCompletionAction.asStateFlow()
+
+    private val _subTasks = MutableStateFlow<List<Task>>(emptyList())
+    val subTasks: StateFlow<List<Task>> = _subTasks.asStateFlow()
+
+    private var subTaskJob: Job? = null
 
     fun onShowReflectionDialog(taskId: UUID) {
         viewModelScope.launch {
@@ -266,45 +272,53 @@ class TaskViewModel @Inject constructor(
     }
 
     private suspend fun checkFocusBlocks() {
-        val now = LocalTime.now()
-        val allFocusBlocks = taskRepository.getAllFocusBlocks()
-        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    val now = LocalTime.now()
+    val today = LocalDate.now()
+    val allFocusBlocks = taskRepository.getAllFocusBlocks()
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
 
-        allFocusBlocks.forEach { focusBlock ->
-            val context = taskRepository.getContextById(focusBlock.contextId)
-            context?.let {
-                val startTime = LocalTime.parse(focusBlock.startTime, formatter)
-                val endTime = LocalTime.parse(focusBlock.endTime, formatter)
-                val fiveMinutes = 5L
+    allFocusBlocks.forEach { focusBlock ->
+        // Check if the focus block is scheduled for today
+        val isTodayInRepeatDays = focusBlock.repeatDays.isEmpty() || focusBlock.repeatDays.contains(today.dayOfWeek.value)
+        if (!isTodayInRepeatDays) {
+            return@forEach
+        }
 
-                val startingSoonKey = "start-${focusBlock.startTime}-${it.name}"
-                if (now.isBefore(startTime) && now.plusMinutes(fiveMinutes)
-                        .isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(startingSoonKey)
-                ) {
-                    val minutesUntilStart = java.time.Duration.between(now, startTime).toMinutes() + 1
-                    notificationService.sendFocusBlockStartingSoonNotification(
-                        it.name,
-                        minutesUntilStart.toInt()
-                    )
-                    hapticManager.performNudge()
-                    notifiedFocusBlocksStartingSoon.add(startingSoonKey)
-                }
+        val context = taskRepository.getContextById(focusBlock.contextId)
+        context?.let {
+            val startTime = LocalTime.parse(focusBlock.startTime, formatter)
+            val endTime = LocalTime.parse(focusBlock.endTime, formatter)
+            val fiveMinutes = 5L
 
-                val endingSoonKey = "end-${focusBlock.endTime}-${it.name}"
-                if (now.isBefore(endTime) && now.plusMinutes(fiveMinutes)
-                        .isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(endingSoonKey)
-                ) {
-                    val minutesUntilEnd = java.time.Duration.between(now, endTime).toMinutes() + 1
-                    notificationService.sendFocusBlockEndingSoonNotification(
-                        it.name,
-                        minutesUntilEnd.toInt()
-                    )
-                    hapticManager.performNudge()
-                    notifiedFocusBlocksEndingSoon.add(endingSoonKey)
-                }
+            val startingSoonKey = "start-${focusBlock.startTime}-${it.name}"
+            if (now.isBefore(startTime) && now.plusMinutes(fiveMinutes)
+                    .isAfter(startTime) && !notifiedFocusBlocksStartingSoon.contains(startingSoonKey)
+            ) {
+                val minutesUntilStart = java.time.Duration.between(now, startTime).toMinutes() + 1
+                notificationService.sendFocusBlockStartingSoonNotification(
+                    it.name,
+                    minutesUntilStart.toInt()
+                )
+                hapticManager.performNudge()
+                notifiedFocusBlocksStartingSoon.add(startingSoonKey)
+            }
+
+            val endingSoonKey = "end-${focusBlock.endTime}-${it.name}"
+            if (now.isBefore(endTime) && now.plusMinutes(fiveMinutes)
+                    .isAfter(endTime) && !notifiedFocusBlocksEndingSoon.contains(endingSoonKey)
+            ) {
+                val minutesUntilEnd = java.time.Duration.between(now, endTime).toMinutes() + 1
+                notificationService.sendFocusBlockEndingSoonNotification(
+                    it.name,
+                    minutesUntilEnd.toInt()
+                )
+                hapticManager.performNudge()
+                notifiedFocusBlocksEndingSoon.add(endingSoonKey)
             }
         }
     }
+}
+
 
     private fun restoreRunningTasksState() {
         viewModelScope.launch {
@@ -365,6 +379,7 @@ class TaskViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         soundManager.release()
+        subTaskJob?.cancel()
     }
 
     fun addTask(
@@ -520,6 +535,12 @@ class TaskViewModel @Inject constructor(
 
     fun completeTask(task: Task, completionReflection: String) {
         viewModelScope.launch {
+            val subTasks = taskRepository.getSubTasks(task.id).first()
+            if (subTasks.any { !it.isComplete }) {
+                // TODO: Show an error to the user
+                return@launch
+            }
+
             hapticManager.performSuccess()
             val reflectionToSave = if (completionReflection.isBlank()) null else completionReflection
             val updatedTask = task.copy(
@@ -551,8 +572,6 @@ class TaskViewModel @Inject constructor(
     fun postCompletionActionHandled() {
         _postCompletionAction.value = PostCompletionAction.Idle
     }
-
-
 
     fun startNextTask(task: Task) {
         viewModelScope.launch {
@@ -625,6 +644,47 @@ class TaskViewModel @Inject constructor(
                 taskRepository.updateTask(updatedTask)
                 reminderManager.cancelAllReminders(updatedTask)
             }
+        }
+    }
+
+    fun loadSubTasks(parentId: UUID) {
+        subTaskJob?.cancel()
+        subTaskJob = viewModelScope.launch {
+            taskRepository.getSubTasks(parentId).distinctUntilChanged().collect {
+                _subTasks.value = it
+            }
+        }
+    }
+
+    fun clearSubTasks() {
+        subTaskJob?.cancel()
+        _subTasks.value = emptyList()
+    }
+
+    fun addSubTask(parentTask: Task, title: String) {
+        viewModelScope.launch {
+            val lastOrderIndex = _subTasks.value.maxOfOrNull { it.orderIndex } ?: 0
+            val newSubTask = Task(
+                title = title,
+                contextId = parentTask.contextId,
+                priority = parentTask.priority,
+                isUrgent = parentTask.isUrgent,
+                parentId = parentTask.id,
+                orderIndex = lastOrderIndex + 1,
+                description = null,
+                schedulingType = SchedulingType.None,
+                startTime = null,
+                endTime = null,
+                totalTimeInMinutes = null,
+                isRecurring = false
+            )
+            taskRepository.insertTask(newSubTask)
+        }
+    }
+
+    fun deleteSubTask(task: Task) {
+        viewModelScope.launch {
+            taskRepository.deleteTask(task)
         }
     }
 }

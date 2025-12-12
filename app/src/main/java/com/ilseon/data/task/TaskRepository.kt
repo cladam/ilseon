@@ -30,6 +30,8 @@ class TaskRepository @Inject constructor(
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> = taskDao.getIncompleteTasks()
 
+    fun getSubTasks(parentId: UUID): Flow<List<Task>> = taskDao.getSubTasks(parentId)
+
     fun getDashboardTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()

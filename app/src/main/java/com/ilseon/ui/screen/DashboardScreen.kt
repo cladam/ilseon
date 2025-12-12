@@ -55,11 +55,16 @@ fun DashboardScreen(
 
     val (focusTasks, urgentOutOfContextTasks) = remember(tasks, activeFocusBlock) {
         if (activeFocusBlock != null) {
-            tasks.partition { it.contextId == activeFocusBlock.contextId }
+            val inContext = tasks.filter { it.contextId == activeFocusBlock.contextId }
+            val urgentOutOfContext = tasks.filter {
+                it.contextId != activeFocusBlock.contextId && it.isUrgent
+            }
+            inContext to urgentOutOfContext
         } else {
             tasks to emptyList()
         }
     }
+
 
     val (priorityTask, nextUpTasks) = remember(focusTasks) {
         val priorityTask = focusTasks.firstOrNull()

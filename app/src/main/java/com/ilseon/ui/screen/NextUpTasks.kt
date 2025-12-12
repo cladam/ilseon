@@ -82,6 +82,7 @@ fun NextUpTasks(
     taskToEdit?.let { task ->
         EditTaskDialog(
             task = task,
+            contexts = contextMap.values.toList(),
             onDismiss = { taskToEdit = null },
             onSave = {
                 viewModel.updateTask(it)

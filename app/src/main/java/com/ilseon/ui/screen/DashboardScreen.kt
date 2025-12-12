@@ -116,6 +116,7 @@ fun DashboardScreen(
                             CurrentPriorityTask(
                                 task = task,
                                 contextName = contextMap[task.contextId]?.name ?: "General",
+                                contexts = contextMap.values.toList(),
                                 onComplete = { onTaskComplete(task) },
                                 onTimerFinished = onTaskTimerFinished,
                                 onStartTask = onStartTask,

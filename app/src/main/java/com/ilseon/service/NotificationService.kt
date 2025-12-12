@@ -1,6 +1,5 @@
 package com.ilseon.service
 
-import NAG_COOLDOWN_MS
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -18,12 +17,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import lastNaggedTimes
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.toString
 
 interface NotificationService {
     fun sendTaskFinishedNotification(task: Task)
@@ -148,7 +145,7 @@ class NotificationServiceImpl @Inject constructor(
         if (now - lastNagged < NAG_COOLDOWN_MS) return
 
         lastNaggedTimes[task.id.toString()] = now
-        
+
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TimerState
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
@@ -59,6 +60,7 @@ import kotlin.math.max
 fun CurrentPriorityTask(
     task: Task,
     contextName: String,
+    contexts: List<TaskContext>,
     onComplete: (Task) -> Unit,
     onTimerFinished: (Task) -> Unit,
     onStartTask: (Task) -> Unit,
@@ -77,6 +79,7 @@ fun CurrentPriorityTask(
     taskToEdit?.let {
         EditTaskDialog(
             task = it,
+            contexts = contexts,
             onDismiss = { taskToEdit = null },
             onSave = { updatedTask ->
                 onUpdate(updatedTask, "manual update")

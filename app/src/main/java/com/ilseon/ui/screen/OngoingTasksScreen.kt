@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.OngoingTasksViewModel
+import com.ilseon.TaskContextViewModel
 import com.ilseon.data.task.Task
+import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.QuietAmber
 import dev.jeziellago.compose.markdowntext.MarkdownText
@@ -53,9 +55,14 @@ import java.util.Locale
 @Composable
 fun OngoingTasksScreen(
     viewModel: OngoingTasksViewModel = hiltViewModel(),
+    contextViewModel: TaskContextViewModel = hiltViewModel(),
     contextId: String?
 ) {
     val ongoingTasks by viewModel.ongoingTasks.collectAsState()
+    val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
+    val contexts = remember(contextsWithFocusBlock) {
+        contextsWithFocusBlock.map { it.context }
+    }
     var editingTask by remember { mutableStateOf<Task?>(null) }
 
     LaunchedEffect(contextId) {
@@ -71,6 +78,7 @@ fun OngoingTasksScreen(
     if (editingTask != null) {
         EditTaskDialog(
             task = editingTask!!,
+            contexts = contexts,
             onDismiss = { editingTask = null },
             onSave = { updatedTask ->
                 viewModel.updateTask(updatedTask)
@@ -78,53 +86,6 @@ fun OngoingTasksScreen(
             }
         )
     }
-}
-
-@Composable
-private fun EditTaskDialog(
-    task: Task,
-    onDismiss: () -> Unit,
-    onSave: (Task) -> Unit
-) {
-    var title by remember { mutableStateOf(task.title) }
-    var description by remember { mutableStateOf(task.description ?: "") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Edit Task") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val updatedTask = task.copy(title = title, description = description)
-                    onSave(updatedTask)
-                }
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
 
 @Composable

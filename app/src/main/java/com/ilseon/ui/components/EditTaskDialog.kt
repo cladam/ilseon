@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -24,68 +29,118 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskPriority
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskDialog(
     task: Task,
+    contexts: List<TaskContext>, // Add this parameter
     onDismiss: () -> Unit,
     onSave: (Task) -> Unit
 ) {
     var title by remember { mutableStateOf(task.title) }
     var description by remember { mutableStateOf(task.description ?: "") }
+    var selectedPriority by remember { mutableStateOf(task.priority) }
+    var selectedContextId by remember { mutableStateOf(task.contextId) }
+    var priorityExpanded by remember { mutableStateOf(false) }
+    var contextExpanded by remember { mutableStateOf(false) }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = "Edit Task",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(Modifier.height(16.dp))
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Task") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Title") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+
+                // Priority Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = priorityExpanded,
+                    onExpandedChange = { priorityExpanded = it }
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                    OutlinedTextField(
+                        value = selectedPriority.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Priority") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = priorityExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = priorityExpanded,
+                        onDismissRequest = { priorityExpanded = false }
+                    ) {
+                        TaskPriority.entries.forEach { priority ->
+                            DropdownMenuItem(
+                                text = { Text(priority.name) },
+                                onClick = {
+                                    selectedPriority = priority
+                                    priorityExpanded = false
+                                }
+                            )
+                        }
                     }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = {
-                        val updatedTask = task.copy(
-                            title = title,
-                            description = description
-                        )
-                        onSave(updatedTask)
-                        onDismiss()
-                    }) {
-                        Text("Save")
+                }
+
+                // Context Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = contextExpanded,
+                    onExpandedChange = { contextExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = contexts.find { it.id == selectedContextId }?.name ?: "General",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Context") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = contextExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = contextExpanded,
+                        onDismissRequest = { contextExpanded = false }
+                    ) {
+                        contexts.forEach { context ->
+                            DropdownMenuItem(
+                                text = { Text(context.name) },
+                                onClick = {
+                                    selectedContextId = context.id
+                                    contextExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(task.copy(
+                    title = title,
+                    description = description.ifBlank { null },
+                    priority = selectedPriority,
+                    contextId = selectedContextId
+                ))
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
-    }
+    )
 }

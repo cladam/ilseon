@@ -1,5 +1,6 @@
 package com.ilseon.service
 
+import NAG_COOLDOWN_MS
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -17,9 +18,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import lastNaggedTimes
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.toString
 
 interface NotificationService {
     fun sendTaskFinishedNotification(task: Task)
@@ -39,6 +43,9 @@ class NotificationServiceImpl @Inject constructor(
 ) : NotificationService {
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
+    private val lastNaggedTimes = mutableMapOf<String, Long>()
+    private val NAG_COOLDOWN_MS = TimeUnit.HOURS.toMillis(1)
+
 
     private val nudgeEnabledState: StateFlow<Boolean> =
         settingsRepository.nudgeNotificationsEnabled.stateIn(
@@ -136,6 +143,12 @@ class NotificationServiceImpl @Inject constructor(
 
     override fun sendNaggingNotification(task: Task) {
         if (!areNaggingsEnabled()) return
+        val now = System.currentTimeMillis()
+        val lastNagged = lastNaggedTimes[task.id.toString()] ?: 0L
+        if (now - lastNagged < NAG_COOLDOWN_MS) return
+
+        lastNaggedTimes[task.id.toString()] = now
+        
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS

@@ -10,8 +10,10 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import kotlin.collections.contains
 import kotlin.compareTo
 import kotlin.text.compareTo
+import kotlin.text.get
 import kotlin.text.set
 
 // TODO: Revert to @HiltWorker and @AssistedInject once androidx.hilt:hilt-compiler supports Kotlin 2.2+
@@ -41,6 +43,7 @@ class HapticWorker(
             set(Calendar.MILLISECOND, 0)
         }
         val startOfToday = cal.timeInMillis
+        val todayDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
 
         val incompleteTasks = taskRepository.getIncompleteTasks().first()
         val activeFocusBlock = taskRepository.getActiveFocusBlock().first()
@@ -49,14 +52,40 @@ class HapticWorker(
         val twentyFourHoursAgo = now - TimeUnit.HOURS.toMillis(24)
 
         val tasksToNudge = incompleteTasks.filter { task ->
-            // Always skip completed or non\-high\-priority
             if (task.isComplete || task.priority != TaskPriority.High) {
                 return@filter false
             }
 
-            // Skip any task that has a startTime in the future
             if (task.startTime != null && task.startTime > now) {
                 return@filter false
+            }
+
+            // Skip recurring tasks not scheduled for today
+            if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
+                val recurrenceDayStrings = task.recurrenceDays
+                    .replace("[", "").replace("]", "")
+                    .split(',')
+                    .map { it.trim().uppercase() }
+
+                val recurrenceDays = recurrenceDayStrings.mapNotNull { dayString ->
+                    try {
+                        when (java.time.DayOfWeek.valueOf(dayString)) {
+                            java.time.DayOfWeek.SUNDAY -> Calendar.SUNDAY
+                            java.time.DayOfWeek.MONDAY -> Calendar.MONDAY
+                            java.time.DayOfWeek.TUESDAY -> Calendar.TUESDAY
+                            java.time.DayOfWeek.WEDNESDAY -> Calendar.WEDNESDAY
+                            java.time.DayOfWeek.THURSDAY -> Calendar.THURSDAY
+                            java.time.DayOfWeek.FRIDAY -> Calendar.FRIDAY
+                            java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
+                        }
+                    } catch (e: IllegalArgumentException) {
+                        null
+                    }
+                }.toSet()
+
+                if (recurrenceDays.isNotEmpty() && !recurrenceDays.contains(todayDayOfWeek)) {
+                    return@filter false
+                }
             }
 
             val isOverdue = task.dueTime != null &&

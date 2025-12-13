@@ -16,18 +16,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.data.idea.Idea
@@ -38,7 +44,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun IdeaInboxScreen(
     viewModel: IdeaInboxViewModel = hiltViewModel(),
@@ -51,6 +57,8 @@ fun IdeaInboxScreen(
 ) {
     val ideas by viewModel.ideas.collectAsState()
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
+    var currentView by remember { mutableStateOf("Inbox") }
+    val selectedTabIndex = if (currentView == "Inbox") 0 else 1
 
     if (showAddIdeaDialog) {
         AddIdeaDialog(
@@ -91,19 +99,44 @@ fun IdeaInboxScreen(
                 text = "Your Ideas",
                 style = MaterialTheme.typography.headlineSmall
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "You have ${ideas.size} ideas. Keep them coming!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        PrimaryTabRow(
+            selectedTabIndex = selectedTabIndex,
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+        ) {
+            Tab(
+                text = { Text("Inbox") },
+                selected = currentView == "Inbox",
+                onClick = { currentView = "Inbox" },
+                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Tab(
+                text = { Text("Notes") },
+                selected = currentView == "Notes",
+                onClick = { currentView = "Notes" },
+                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+
+        val filteredIdeas = ideas.filter {
+            if (currentView == "Inbox") !it.isReference else it.isReference
+        }.sortedByDescending { it.isPinned }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (ideas.isEmpty()) {
+            if (filteredIdeas.isEmpty()) {
                 item {
                     Text(
                         text = "No ideas yet. Jot down your thoughts and ideas here.",
@@ -113,7 +146,7 @@ fun IdeaInboxScreen(
                     )
                 }
             } else {
-                items(ideas, key = { it.id }) { idea ->
+                items(filteredIdeas, key = { it.id }) { idea ->
                     AppCard(
                         modifier = Modifier
                             .animateItem(),
@@ -136,18 +169,33 @@ fun IdeaInboxScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Row {
+                                    if (currentView == "Inbox") {
+                                        IconButton(onClick = { viewModel.saveAsReference(idea) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Save,
+                                                contentDescription = "Save as Note",
+                                                tint = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    } else {
+                                        IconButton(onClick = { viewModel.togglePin(idea) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.PushPin,
+                                                contentDescription = "Pin Idea",
+                                                tint = if (idea.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                     IconButton(onClick = {
                                         viewModel.convertToTask(idea)
                                         val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
-                                        val title = sentences?.firstOrNull() ?: idea.content
-                                        val description = sentences?.size?.let {
-                                            if (it > 1) {
-                                                sentences.drop(1).joinToString(" ")
-                                            } else {
-                                                ""
-                                            }
+                                        val title = sentences?.firstOrNull() ?: idea.content ?: ""
+                                        val description = if ((sentences?.size ?: 0) > 1) {
+                                            sentences!!.drop(1).joinToString(" ")
+                                        } else {
+                                            ""
                                         }
-                                        title?.let { description?.let { p2 -> onNavigateToNewTask(it, p2) } }
+                                        onNavigateToNewTask(title, description)
                                     }) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
@@ -179,43 +227,69 @@ fun IdeaInboxScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditIdeaDialog(
     idea: Idea,
     onDismiss: () -> Unit,
     onSave: (Idea) -> Unit
 ) {
-    var text by remember { mutableStateOf(idea.content) }
+    var text by remember { mutableStateOf(idea.content ?: "") }
+    val title = if (idea.isReference) "Edit Note" else "Edit Idea"
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Idea") },
-        text = {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text(title) },
+                    navigationIcon = {
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        }
+                    },
+                    actions = {
+                        TextButton(
+                            onClick = { onSave(idea.copy(content = text)) },
+                            enabled = text.isNotBlank()
+                        ) {
+                            Text(
+                                text = "Save",
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
             TextField(
-                value = text ?: "",
+                value = text,
                 onValueChange = { text = it },
-                label = { Text("Idea") },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                placeholder = { Text("Jot down your idea...") },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                ),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences
                 )
             )
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSave(idea.copy(content = text)) },
-                enabled = text?.isNotBlank() ?: false
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
         }
-    )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddIdeaDialog(
     initialText: String,
@@ -226,42 +300,63 @@ fun AddIdeaDialog(
     var text by remember { mutableStateOf(initialText) }
     val focusRequester = remember { FocusRequester() }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("New Idea") },
-        text = {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text("New Idea") },
+                    navigationIcon = {
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onVttClick) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Voice To Text"
+                            )
+                        }
+                        TextButton(
+                            onClick = { onAddIdea(text) },
+                            enabled = text.isNotBlank()
+                        ) {
+                            Text(
+                                text = "Save",
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Idea") },
-                modifier = Modifier.focusRequester(focusRequester),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .focusRequester(focusRequester),
+                placeholder = { Text("Jot down your idea...") },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                ),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     capitalization = KeyboardCapitalization.Sentences
-                ),
-                trailingIcon = {
-                    IconButton(onClick = onVttClick) {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = "Voice To Text"
-                        )
-                    }
-                }
+                )
             )
-        },
-        confirmButton = {
-            Button(
-                onClick = { onAddIdea(text) },
-                enabled = text.isNotBlank()
-            ) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
         }
-    )
+    }
 
     LaunchedEffect(Unit) {
         if (initialText.isEmpty()) {

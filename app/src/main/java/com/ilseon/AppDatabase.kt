@@ -22,7 +22,7 @@ import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoDao
 import java.util.UUID
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class], version = 20, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class], version = 21, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

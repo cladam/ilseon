@@ -13,5 +13,7 @@ data class Idea(
     @PrimaryKey val id: UUID = UUID.randomUUID(),
     val content: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val isConverted: Boolean = false
+    val isConverted: Boolean = false,
+    val isReference: Boolean = false,
+    val isPinned: Boolean = false
 )

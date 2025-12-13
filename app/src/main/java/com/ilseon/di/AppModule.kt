@@ -58,7 +58,7 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
                 .build()
         }
 
@@ -125,6 +125,13 @@ abstract class AppModule {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE tasks ADD COLUMN parentId TEXT")
                 db.execSQL("ALTER TABLE tasks ADD COLUMN orderIndex INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Idea ADD COLUMN isReference INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE Idea ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
             }
         }
 

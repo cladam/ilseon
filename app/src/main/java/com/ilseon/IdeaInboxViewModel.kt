@@ -31,7 +31,7 @@ class IdeaInboxViewModel @Inject constructor(
 
     fun updateIdea(idea: Idea) {
         viewModelScope.launch {
-            idea.content?.let { ideaRepository.updateIdea(idea.id, it) }
+            ideaRepository.updateIdea(idea)
         }
     }
 
@@ -44,6 +44,18 @@ class IdeaInboxViewModel @Inject constructor(
     fun convertToTask(idea: Idea) {
         viewModelScope.launch {
             ideaRepository.convertIdea(idea.id)
+        }
+    }
+
+    fun saveAsReference(idea: Idea) {
+        viewModelScope.launch {
+            ideaRepository.updateIdea(idea.copy(isReference = true))
+        }
+    }
+
+    fun togglePin(idea: Idea) {
+        viewModelScope.launch {
+            ideaRepository.updateIdea(idea.copy(isPinned = !idea.isPinned))
         }
     }
 }

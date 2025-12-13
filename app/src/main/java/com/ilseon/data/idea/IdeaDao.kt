@@ -3,6 +3,7 @@ package com.ilseon.data.idea
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -18,8 +19,8 @@ interface IdeaDao {
     @Query("DELETE FROM idea WHERE id = :id")
     suspend fun deleteIdea(id: UUID)
 
-    @Query("UPDATE idea SET content = :content WHERE id = :id")
-    suspend fun updateIdea(id: UUID, content: String)
+    @Update
+    suspend fun updateIdea(idea: Idea)
 
     @Insert
     suspend fun insertIdea(idea: Idea)

@@ -23,8 +23,8 @@ class IdeaRepository @Inject constructor(
         ideaDao.insertIdea(newIdea)
     }
 
-    suspend fun updateIdea(id: UUID, content: String) {
-        ideaDao.updateIdea(id, content)
+    suspend fun updateIdea(idea: Idea) {
+        ideaDao.updateIdea(idea)
     }
 
     suspend fun deleteIdea(id: UUID) {

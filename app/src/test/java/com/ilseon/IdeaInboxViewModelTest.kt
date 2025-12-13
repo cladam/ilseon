@@ -80,7 +80,7 @@ class IdeaInboxViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        coVerify { idea.content?.let { ideaRepository.updateIdea(idea.id, it) } }
+        coVerify { idea.content?.let { ideaRepository.updateIdea(idea.copy(content = it)) } }
     }
 
     @Test

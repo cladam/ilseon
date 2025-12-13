@@ -42,12 +42,12 @@ class TaskRepository @Inject constructor(
             val now = System.currentTimeMillis()
             val localNow = LocalTime.now()
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
+            val todayDayOfWeek = LocalDate.now().dayOfWeek
 
             val activeFocusBlock = allFocusBlocks.find {
                 val startTime = LocalTime.parse(it.startTime, formatter)
                 val endTime = LocalTime.parse(it.endTime, formatter)
-                val todayDayOfWeek = LocalDate.now().dayOfWeek.value
-                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(todayDayOfWeek)
+                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(todayDayOfWeek.value)
                 !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
             }
 
@@ -63,27 +63,17 @@ class TaskRepository @Inject constructor(
             val todayTasks = tasks.filter { task ->
                 if (task.startTime == null) {
                     true
+                } else if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
+                    // For recurring tasks, check if today is a recurrence day
+                    task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
                 } else {
-                    val isScheduledForToday = task.startTime in startOfToday..<startOfTomorrow
-                    if (!isScheduledForToday) {
-                        false
-                    } else {
-                        if (!task.isRecurring || task.recurrenceDays.isNullOrBlank()) {
-                            true
-                        } else {
-                            val taskDate = Instant.ofEpochMilli(task.startTime)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                            val taskDayOfWeek = taskDate.dayOfWeek
-                            task.recurrenceDays.contains(taskDayOfWeek.name, ignoreCase = true)
-                        }
-                    }
+                    // For non-recurring tasks, check if scheduled for today
+                    task.startTime in startOfToday..<startOfTomorrow
                 }
             }
 
-            // Eisenhower sorting: urgent first, then by priority (High > Medium > Low)
             val eisenhowerComparator = compareByDescending<Task> { it.isUrgent }
-                .thenBy { it.priority.ordinal }  // Changed from thenByDescending to thenBy
+                .thenBy { it.priority.ordinal }
                 .thenBy { it.startTime ?: Long.MAX_VALUE }
                 .thenBy { it.createdAt }
 

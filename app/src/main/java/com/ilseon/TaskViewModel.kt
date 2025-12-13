@@ -49,6 +49,8 @@ import kotlin.compareTo
 import kotlin.math.max
 import kotlin.text.set
 import kotlin.text.toInt
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flatMapLatest
 
 sealed class PostCompletionAction {
     object Idle : PostCompletionAction()
@@ -113,12 +115,17 @@ class TaskViewModel @Inject constructor(
     private val _activeFocusBlock = MutableStateFlow<FocusBlock?>(null)
     val activeFocusBlock: StateFlow<FocusBlock?> = _activeFocusBlock.asStateFlow()
 
-    val tasks: StateFlow<List<Task>> = taskRepository.getDashboardTasks()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val tickerFlow = flow {
+        while (true) {
+            emit(Unit)
+            delay(60_000L) // Check every minute
+        }
+    }
+
+    val tasks: StateFlow<List<Task>> = tickerFlow
+        .flatMapLatest { taskRepository.getDashboardTasks() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     val completionStreak: StateFlow<Int> = taskRepository.getCompletionStreak()
         .stateIn(

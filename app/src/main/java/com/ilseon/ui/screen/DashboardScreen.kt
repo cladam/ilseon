@@ -59,8 +59,9 @@ fun DashboardScreen(
 
         if (activeFocusBlock != null) {
             val inContext = tasks.filter { task ->
-                task.contextId == activeFocusBlock.contextId &&
-                        (task.startTime == null || task.startTime <= currentTime)
+                task.contextId == activeFocusBlock.contextId
+                // Removed the startTime check - if a task is in the active focus block's context,
+                // it should be shown regardless of its original startTime
             }
             val urgentOutOfContext = tasks.filter { task ->
                 task.contextId != activeFocusBlock.contextId &&

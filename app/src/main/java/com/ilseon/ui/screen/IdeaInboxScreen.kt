@@ -177,6 +177,23 @@ fun IdeaInboxScreen(
                                                 tint = MaterialTheme.colorScheme.secondary
                                             )
                                         }
+                                        IconButton(onClick = {
+                                            viewModel.convertToTask(idea)
+                                            val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
+                                            val title = sentences?.firstOrNull() ?: idea.content ?: ""
+                                            val description = if ((sentences?.size ?: 0) > 1) {
+                                                sentences!!.drop(1).joinToString(" ")
+                                            } else {
+                                                ""
+                                            }
+                                            onNavigateToNewTask(title, description)
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = "Convert to Task",
+                                                tint = MutedTeal
+                                            )
+                                        }
                                     } else {
                                         IconButton(onClick = { viewModel.togglePin(idea) }) {
                                             Icon(
@@ -185,23 +202,6 @@ fun IdeaInboxScreen(
                                                 tint = if (idea.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                    }
-                                    IconButton(onClick = {
-                                        viewModel.convertToTask(idea)
-                                        val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
-                                        val title = sentences?.firstOrNull() ?: idea.content ?: ""
-                                        val description = if ((sentences?.size ?: 0) > 1) {
-                                            sentences!!.drop(1).joinToString(" ")
-                                        } else {
-                                            ""
-                                        }
-                                        onNavigateToNewTask(title, description)
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Convert to Task",
-                                            tint = MutedTeal
-                                        )
                                     }
                                     IconButton(onClick = { editingIdea = idea }) {
                                         Icon(

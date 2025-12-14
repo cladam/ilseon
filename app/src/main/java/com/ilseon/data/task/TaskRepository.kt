@@ -2,6 +2,7 @@ package com.ilseon.data.task
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.ilseon.notifications.IReminderManager
 import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,6 +20,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.ranges.rangeUntil
+import kotlin.text.get
 import kotlin.text.set
 
 
@@ -60,17 +62,44 @@ class TaskRepository @Inject constructor(
             cal.add(Calendar.DAY_OF_YEAR, 1)
             val startOfTomorrow = cal.timeInMillis
 
-            val todayTasks = tasks.filter { task ->
+            // Map recurring tasks to their "effective" start time for today
+            val tasksWithEffectiveTime = tasks.map { task ->
+                if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
+                    val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+                    if (isTodayRecurrenceDay) {
+                        // Calculate today's occurrence time
+                        val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
+                        val todayCal = Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
+                            set(Calendar.MINUTE, originalCal.get(Calendar.MINUTE))
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        task.copy(startTime = todayCal.timeInMillis)
+                    } else {
+                        task
+                    }
+                } else {
+                    task
+                }
+            }
+
+            Log.d("RepoDebug", "=== Repository Debug ===")
+            tasksWithEffectiveTime.forEach { task ->
+                Log.d("RepoDebug", "Task: ${task.title}, startTime: ${task.startTime}, isRecurring: ${task.isRecurring}")
+            }
+
+            val todayTasks = tasksWithEffectiveTime.filter { task ->
                 if (task.startTime == null) {
                     true
                 } else if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
-                    // For recurring tasks, check if today is a recurrence day
                     task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
                 } else {
-                    // For non-recurring tasks, check if scheduled for today
                     task.startTime in startOfToday..<startOfTomorrow
                 }
             }
+
+            Log.d("RepoDebug", "Today tasks after filter: ${todayTasks.map { it.title }}")
 
             val eisenhowerComparator = compareByDescending<Task> { it.isUrgent }
                 .thenBy { it.priority.ordinal }
@@ -87,16 +116,24 @@ class TaskRepository @Inject constructor(
                 (focusContextTasks + urgentOutOfContext).sortedWith(eisenhowerComparator)
             } else {
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
+                Log.d("RepoDebug", "No active focus block. Focus block context IDs: $focusBlockContextIds")
 
                 todayTasks.filter { task ->
                     val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
+                    val inFocusBlockContext = task.contextId in focusBlockContextIds
+                    val taskStart = task.startTime
+
+                    Log.d("RepoDebug", "Filtering ${task.title}: urgentHigh=$isUrgentHigh, inFocusContext=$inFocusBlockContext, startTime=$taskStart")
+
                     if (isUrgentHigh) {
+                        Log.d("RepoDebug", "  -> INCLUDED (urgent high)")
                         true
-                    } else if (task.contextId !in focusBlockContextIds) {
+                    } else if (!inFocusBlockContext) {
+                        Log.d("RepoDebug", "  -> INCLUDED (no focus block for context)")
                         true
                     } else {
-                        val taskStart = task.startTime
                         if (taskStart == null) {
+                            Log.d("RepoDebug", "  -> EXCLUDED (in focus context, no start time)")
                             false
                         } else {
                             val taskDate = Instant.ofEpochMilli(taskStart)
@@ -109,6 +146,7 @@ class TaskRepository @Inject constructor(
                                         (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
                             }
 
+                            Log.d("RepoDebug", "  -> ${if (!hasBlockForTaskDay) "INCLUDED" else "EXCLUDED"} (hasBlockForTaskDay=$hasBlockForTaskDay)")
                             !hasBlockForTaskDay
                         }
                     }

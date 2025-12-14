@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,37 +50,75 @@ fun DashboardScreen(
     taskViewModel: TaskViewModel = hiltViewModel(),
     contextViewModel: TaskContextViewModel = hiltViewModel()
 ) {
+    Log.d("DashboardDebug", "=== Received Tasks ===")
+    tasks.forEach { task ->
+        Log.d("DashboardDebug", "Received: ${task.title}, startTime=${task.startTime}, isRecurring=${task.isRecurring}")
+    }
     val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
     val contextMap = remember(contextsWithFocusBlock) {
         contextsWithFocusBlock.associate { it.context.id to it.context }
     }
 
     val (focusTasks, urgentOutOfContextTasks) = remember(tasks, activeFocusBlock) {
-        val currentTime = System.currentTimeMillis()
-
         if (activeFocusBlock != null) {
             val inContext = tasks.filter { task ->
                 task.contextId == activeFocusBlock.contextId
-                // Removed the startTime check - if a task is in the active focus block's context,
-                // it should be shown regardless of its original startTime
             }
             val urgentOutOfContext = tasks.filter { task ->
                 task.contextId != activeFocusBlock.contextId &&
                         task.isUrgent &&
-                        (task.startTime == null || task.startTime <= currentTime)
+                        !task.isComplete
             }
             inContext to urgentOutOfContext
         } else {
-            val filtered = tasks.filter { task ->
-                task.startTime == null || task.startTime <= currentTime
-            }
-            filtered to emptyList()
+            // Don't filter by startTime here - let all today's tasks through
+            // The split into active/future happens in the next remember block
+            tasks to emptyList()
         }
     }
 
     val (priorityTask, nextUpTasks) = remember(focusTasks) {
-        val priorityTask = focusTasks.firstOrNull()
-        val nextUp = focusTasks.drop(1)
+        val currentTime = System.currentTimeMillis()
+
+        Log.d("DashboardDebug", "=== Sorting Debug ===")
+        Log.d("DashboardDebug", "Current time: $currentTime")
+
+        focusTasks.forEachIndexed { index, task ->
+            Log.d("DashboardDebug", "Task[$index]: ${task.title}")
+            Log.d("DashboardDebug", "  - isUrgent: ${task.isUrgent}")
+            Log.d("DashboardDebug", "  - priority: ${task.priority} (ordinal: ${task.priority.ordinal})")
+            Log.d("DashboardDebug", "  - startTime: ${task.startTime} (isFuture: ${task.startTime != null && task.startTime > currentTime})")
+            Log.d("DashboardDebug", "  - createdAt: ${task.createdAt}")
+            Log.d("DashboardDebug", "  - isRecurring: ${task.isRecurring}")
+            Log.d("DashboardDebug", "  - schedulingType: ${task.schedulingType}")
+        }
+
+        // Only tasks that have started (or have no start time) can be the priority task
+        val activeTasks = focusTasks.filter { task ->
+            task.startTime == null || task.startTime <= currentTime
+        }
+        // Tasks scheduled for later go to "next up"
+        val futureTasks = focusTasks.filter { task ->
+            task.startTime != null && task.startTime > currentTime
+        }
+
+        Log.d("DashboardDebug", "Active tasks count: ${activeTasks.size}")
+        Log.d("DashboardDebug", "Active tasks: ${activeTasks.map { "${it.title} (start=${it.startTime})" }}")
+        Log.d("DashboardDebug", "Future tasks count: ${futureTasks.size}")
+        Log.d("DashboardDebug", "Future tasks: ${futureTasks.map { "${it.title} (start=${it.startTime})" }}")
+        Log.d("DashboardDebug", "NextUp tasks: ${(activeTasks.drop(1) + futureTasks).map { it.title }}")
+
+        Log.d("DashboardDebug", "Current time: $currentTime")
+        Log.d("DashboardDebug", "Active: ${activeTasks.map { "${it.title}(${it.startTime})" }}")
+        Log.d("DashboardDebug", "Future: ${futureTasks.map { "${it.title}(${it.startTime})" }}")
+
+        val priorityTask = activeTasks.firstOrNull()
+        val nextUp = activeTasks.drop(1) + futureTasks
+
+        Log.d("DashboardDebug", "Priority: ${priorityTask?.title}")
+        Log.d("DashboardDebug", "NextUp: ${nextUp.map { it.title }}")
+
+
         priorityTask to nextUp
     }
 

@@ -25,7 +25,7 @@ so attention stays anchored on what matters _right now_.
 
 * **Context Filtering**: Choose one life context, and all unrelated tasks are hidden.
 * **Single Priority View**: The dashboard displays only your current or next task; the one thing that needs your attention.
-* **Sub-tasks (Clarity for Complexity)**: Break large goals into sequential sub-tasks. When a parent task is set as the focus, the UI hides the master task and shows only the next immediate step.
+* **Sub-tasks**: Break large goals into sequential sub-tasks. When a parent task is set as the focus, the UI hides the master task and shows only the next immediate step.
 * **Quick Capture**: A floating action button opens an instant input screen for adding tasks in seconds, helping to externalise thoughts before they become mental clutter.
 * **Idea Inbox**: Captures all non-actionable mental clutter. It operates with two views: a **Transient Inbox** for triage (convert to task or save) and a **Persistent Notes View** for long-term knowledge/notes.
 * **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later.

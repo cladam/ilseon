@@ -14,6 +14,7 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.text.compareTo
 
 @Singleton
 class ReminderManager @Inject constructor(
@@ -34,8 +35,15 @@ class ReminderManager @Inject constructor(
 
         // For recurring tasks, only schedule if the next occurrence is relevant
         if (task.isRecurring) {
-            val nextOccurrence =
-                calculateNextOccurrence(task) ?: return // No upcoming occurrence to schedule
+            val nextOccurrence = calculateNextOccurrence(task) ?: return
+            val nextStartTime = nextOccurrence.first
+            val now = System.currentTimeMillis()
+
+            // Don't schedule reminders for occurrences more than 30 minutes away
+            val schedulingWindow = TimeUnit.MINUTES.toMillis(30)
+            if (nextStartTime > now + schedulingWindow) {
+                return
+            }
         }
 
         when (task.schedulingType) {
@@ -44,6 +52,7 @@ class ReminderManager @Inject constructor(
             SchedulingType.None -> scheduleUnscheduledTaskReminders(task)
         }
     }
+
 
     private fun scheduleUnscheduledTaskReminders(task: Task) {
         val now = System.currentTimeMillis()

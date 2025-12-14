@@ -34,7 +34,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.theme.MutedRed
 import java.util.UUID
-import kotlin.compareTo
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun DashboardScreen(
@@ -79,6 +79,7 @@ fun DashboardScreen(
 
     val (priorityTask, nextUpTasks) = remember(focusTasks) {
         val currentTime = System.currentTimeMillis()
+        val twentyFourHoursFromNow = currentTime + TimeUnit.HOURS.toMillis(24)
 
         Log.d("DashboardDebug", "=== Sorting Debug ===")
         Log.d("DashboardDebug", "Current time: $currentTime")
@@ -99,7 +100,7 @@ fun DashboardScreen(
         }
         // Tasks scheduled for later go to "next up"
         val futureTasks = focusTasks.filter { task ->
-            task.startTime != null && task.startTime > currentTime
+            task.startTime != null && task.startTime > currentTime && task.startTime <= twentyFourHoursFromNow
         }
 
         Log.d("DashboardDebug", "Active tasks count: ${activeTasks.size}")

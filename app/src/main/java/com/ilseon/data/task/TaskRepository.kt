@@ -19,10 +19,13 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.collections.contains
 import kotlin.compareTo
 import kotlin.ranges.rangeUntil
+import kotlin.text.compareTo
 import kotlin.text.get
 import kotlin.text.set
+import kotlin.times
 
 
 @Singleton
@@ -68,7 +71,13 @@ class TaskRepository @Inject constructor(
             val tasksWithEffectiveTime = tasks.map { task ->
                 if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
                     val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
-                    if (isTodayRecurrenceDay) {
+                    // Only adjust if today is a recurrence day AND the task's startTime is actually today
+                    val taskStartDate = Instant.ofEpochMilli(task.startTime)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    val isTaskScheduledForToday = taskStartDate == LocalDate.now()
+
+                    if (isTodayRecurrenceDay && isTaskScheduledForToday) {
                         // Calculate today's occurrence time
                         val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
                         val todayCal = Calendar.getInstance().apply {
@@ -95,7 +104,10 @@ class TaskRepository @Inject constructor(
                 if (task.startTime == null) {
                     true
                 } else if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
-                    task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+                    // Only show if today is a recurrence day AND the start time is today (not a future occurrence)
+                    val isRecurrenceToday = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+                    val isStartTimeToday = task.startTime in startOfToday..<startOfTomorrow
+                    isRecurrenceToday && isStartTimeToday
                 } else {
                     task.startTime in startOfToday..<startOfTomorrow
                 }
@@ -324,26 +336,21 @@ class TaskRepository @Inject constructor(
 
         val originalStartCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
 
-        // The search for the next recurrence should start from either today or the task's original
-        // start date, whichever is later. This handles both overdue and pre-completed tasks.
-        val nextStartCal = Calendar.getInstance() // Start with now
-        // Preserve the original time of day
-        nextStartCal.set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
-        nextStartCal.set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
-        nextStartCal.set(Calendar.SECOND, originalStartCal.get(Calendar.SECOND))
-        nextStartCal.set(Calendar.MILLISECOND, originalStartCal.get(Calendar.MILLISECOND))
-
-        // If the task was completed in advance, start searching from its original start date.
-        if (originalStartCal.after(nextStartCal)) {
-            nextStartCal.timeInMillis = originalStartCal.timeInMillis
+        // Always start searching from TOMORROW to ensure the new instance is in the future
+        val nextStartCal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1) // Start from tomorrow
+            set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
+            set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
 
-        // Now, find the next valid day, starting from the day *after* our calculated start date.
-        for (i in 1..7) {
-            nextStartCal.add(Calendar.DAY_OF_YEAR, 1)
+        // Find the next valid recurrence day starting from tomorrow
+        for (i in 0..6) {
             if (recurrenceDays.contains(nextStartCal.get(Calendar.DAY_OF_WEEK))) {
-                break // Found the next day
+                break
             }
+            nextStartCal.add(Calendar.DAY_OF_YEAR, 1)
         }
 
         val duration = if (task.endTime != null && task.endTime > task.startTime) task.endTime - task.startTime else 0L
@@ -365,10 +372,11 @@ class TaskRepository @Inject constructor(
             startTime = nextStartCal.timeInMillis,
             endTime = nextEndTime,
             dueTime = nextDueTime,
-            seriesId = task.seriesId ?: task.id // Ensure seriesId is set for the new instance
+            seriesId = task.seriesId ?: task.id
         )
         insertTask(newTask)
     }
+
 
     suspend fun deleteTask(task: Task) {
         if (task.isRecurring) {

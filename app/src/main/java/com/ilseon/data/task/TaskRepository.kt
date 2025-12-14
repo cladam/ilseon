@@ -19,6 +19,7 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.compareTo
 import kotlin.ranges.rangeUntil
 import kotlin.text.get
 import kotlin.text.set
@@ -261,8 +262,13 @@ class TaskRepository @Inject constructor(
 
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
-    fun getCurrentPriorityTask(): Flow<Task?> = getDashboardTasks().map { it.firstOrNull() }
-
+    fun getCurrentPriorityTask(): Flow<Task?> = getDashboardTasks().map { tasks ->
+        val currentTime = System.currentTimeMillis()
+        // Only return tasks that have started (or have no start time)
+        tasks.firstOrNull { task ->
+            task.startTime == null || task.startTime <= currentTime
+        }
+    }
     suspend fun getAllFocusBlocks(): List<FocusBlock> {
         return focusBlockDao.getAllFocusBlocks()
     }

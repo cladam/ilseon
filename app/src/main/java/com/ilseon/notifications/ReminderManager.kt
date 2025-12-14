@@ -31,6 +31,13 @@ class ReminderManager @Inject constructor(
 
     override fun rescheduleReminders(task: Task) {
         cancelAllReminders(task)
+
+        // For recurring tasks, only schedule if the next occurrence is relevant
+        if (task.isRecurring) {
+            val nextOccurrence =
+                calculateNextOccurrence(task) ?: return // No upcoming occurrence to schedule
+        }
+
         when (task.schedulingType) {
             SchedulingType.TimeBlock -> scheduleTimedTaskReminders(task)
             SchedulingType.Duration -> scheduleDurationTaskReminders(task)
@@ -48,11 +55,17 @@ class ReminderManager @Inject constructor(
 
     override fun scheduleTimedTaskReminders(task: Task) {
         val now = System.currentTimeMillis()
+        val oneDayFromNow = now + TimeUnit.DAYS.toMillis(1)
 
         val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
             calculateNextOccurrence(task) ?: return
         } else {
             Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
+        }
+
+        // Only schedule notifications for the next 24 hours
+        if (startTime > oneDayFromNow) {
+            return
         }
 
         // Pre-start warning

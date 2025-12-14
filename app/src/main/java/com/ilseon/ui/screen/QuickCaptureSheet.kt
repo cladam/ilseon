@@ -140,7 +140,7 @@ fun QuickCaptureSheet(
             hasRequestedInitialFocus = true
             try {
                 // tiny delay for safety; you can tune/remove once stable
-                delay(200)
+                delay(300)
                 titleFocusRequester.requestFocus()
             } catch (e: Exception) {
                 Log.d("QuickCaptureSheet", "Error requesting focus: $e")

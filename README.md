@@ -25,9 +25,11 @@ so attention stays anchored on what matters _right now_.
 
 * **Context Filtering**: Choose one life context, and all unrelated tasks are hidden.
 * **Single Priority View**: The dashboard displays only your current or next task; the one thing that needs your attention.
+* **Sub-tasks (Clarity for Complexity)**: Break large goals into sequential sub-tasks. When a parent task is set as the focus, the UI hides the master task and shows only the next immediate step.
 * **Quick Capture**: A floating action button opens an instant input screen for adding tasks in seconds, helping to externalise thoughts before they become mental clutter.
-* **Idea Inbox**: Captures "non-task" mental clutter (fleeting ideas, random thoughts, or things to look up later). These entries can be converted to actionable tasks.
+* **Idea Inbox**: Captures all non-actionable mental clutter. It operates with two views: a **Transient Inbox** for triage (convert to task or save) and a **Persistent Notes View** for long-term knowledge/notes.
 * **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later.
+* **Momentum Analytics**: Track daily consistency and reward level achievements over a timeline, providing positive, structured feedback on progress.
 * **Gentle Reminders**: Time-based notifications use vibration and visual cues instead of noisy alerts to respect sensory sensitivity.
 
 ## Tech Stack
@@ -62,9 +64,9 @@ Ilseon is 100% **open source**, built for the community.
 
 ### Screenshots
 
-|                    Capture                     |                    Focus                     |                    Reflect                    |                     Review                      |                     Idea Inbox                      |                    Voice Inbox                     |
-|:----------------------------------------------:|:--------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:---------------------------------------------------:|:--------------------------------------------------:|
-| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS6.1.png) | ![Voice Inbox](./images/ilseon-screenshot-PS7.png) |
+|                    Capture                     |                     Focus                      |                    Reflect                    |                     Review                      |                     Idea Inbox                      |                    Voice Inbox                     |
+|:----------------------------------------------:|:----------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:---------------------------------------------------:|:--------------------------------------------------:|
+| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2-1.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS6.1.png) | ![Voice Inbox](./images/ilseon-screenshot-PS7.png) |
 
 ### Source Code
 

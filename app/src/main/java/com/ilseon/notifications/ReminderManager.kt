@@ -55,16 +55,15 @@ class ReminderManager @Inject constructor(
 
     override fun scheduleTimedTaskReminders(task: Task) {
         val now = System.currentTimeMillis()
-        val oneDayFromNow = now + TimeUnit.DAYS.toMillis(1)
-
         val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
             calculateNextOccurrence(task) ?: return
         } else {
             Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
         }
 
-        // Only schedule notifications for the next 24 hours
-        if (startTime > oneDayFromNow) {
+        // Only schedule if the task starts within the next 30 minutes (or is already active)
+        val schedulingWindow = TimeUnit.MINUTES.toMillis(30)
+        if (startTime > now + schedulingWindow) {
             return
         }
 
@@ -159,30 +158,29 @@ class ReminderManager @Inject constructor(
         val taskStartTimeCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
         val now = Calendar.getInstance()
 
-        // Determine the starting point for our search. If the task's start time is in the future,
-        // we should start searching from that day. Otherwise, we start from the current time.
-        val searchStartCal = Calendar.getInstance()
-        if (task.startTime > searchStartCal.timeInMillis) {
-            searchStartCal.timeInMillis = task.startTime
+        // Start checking from the current time.
+        val searchCal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, taskStartTimeCal.get(Calendar.HOUR_OF_DAY))
+            set(Calendar.MINUTE, taskStartTimeCal.get(Calendar.MINUTE))
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
 
-        for (i in 0..7) { // Check for the next 8 days from the search start date
-            val checkCal = (searchStartCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
-            val dayOfWeek = checkCal.get(Calendar.DAY_OF_WEEK)
+        // If the calculated time is in the past for today, start the search from tomorrow.
+        if (searchCal.before(now)) {
+            searchCal.add(Calendar.DAY_OF_YEAR, 1)
+        }
 
+        // Iterate for up to 7 days to find the next valid recurrence day.
+        for (i in 0..7) {
+            val dayOfWeek = searchCal.get(Calendar.DAY_OF_WEEK)
             if (dayOfWeek in recurrenceDays) {
-                val nextOccurrenceTry = (checkCal.clone() as Calendar).apply {
-                    set(Calendar.HOUR_OF_DAY, taskStartTimeCal.get(Calendar.HOUR_OF_DAY))
-                    set(Calendar.MINUTE, taskStartTimeCal.get(Calendar.MINUTE))
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                if (nextOccurrenceTry.after(now)) {
-                    val duration = task.dueTime - task.startTime
-                    val nextDueTime = nextOccurrenceTry.timeInMillis + duration
-                    return Pair(nextOccurrenceTry.timeInMillis, nextDueTime)
-                }
+                // Found the next occurrence.
+                val duration = task.dueTime - task.startTime
+                val nextDueTime = searchCal.timeInMillis + duration
+                return Pair(searchCal.timeInMillis, nextDueTime)
             }
+            searchCal.add(Calendar.DAY_OF_YEAR, 1)
         }
 
         return null // No upcoming occurrence found in the next week.

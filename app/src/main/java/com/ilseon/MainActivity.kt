@@ -403,7 +403,8 @@ class MainActivity : ComponentActivity() {
                         floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
                         floatingActionButton = {
                             val isVoiceInbox = currentRoute?.startsWith(Screen.VoiceInbox.route) == true
-                            if (currentRoute == Screen.DailyDashboard.route || currentRoute == Screen.IdeaInbox.route || isVoiceInbox) {
+                            val isIdeaInbox = currentRoute?.startsWith(Screen.IdeaInbox.route) == true
+                            if (currentRoute == Screen.DailyDashboard.route || isIdeaInbox || isVoiceInbox) {
                                 LargeFloatingActionButton(
                                     onClick = {
                                         val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
@@ -411,7 +412,7 @@ class MainActivity : ComponentActivity() {
                                             isVoiceInbox -> {
                                                 navController.navigate(Screen.Recorder.route)
                                             }
-                                            currentRoute == Screen.IdeaInbox.route -> {
+                                            isIdeaInbox -> {
                                                 vttTarget = "idea_content"
                                                 if (useVtt) {
                                                     startVtt()
@@ -425,7 +426,7 @@ class MainActivity : ComponentActivity() {
                                                 if (useVtt) {
                                                     startVtt()
                                                 } else {
-                                                    scope.launch { sheetState.show() }
+                                                    scope.launch { sheetState.expand() }
                                                 }
                                             }
                                         }

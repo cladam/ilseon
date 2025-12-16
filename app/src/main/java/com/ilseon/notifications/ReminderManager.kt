@@ -14,7 +14,9 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.compareTo
 import kotlin.text.compareTo
+import kotlin.toString
 
 @Singleton
 class ReminderManager @Inject constructor(
@@ -28,18 +30,37 @@ class ReminderManager @Inject constructor(
         val ANCHOR_INTERVAL_MINUTES = TimeUnit.MINUTES.toMillis(15)
         val NAGGING_DELAY_MINUTES = TimeUnit.MINUTES.toMillis(5)
         val UNSCHEDULED_NUDGE_HOURS = TimeUnit.HOURS.toMillis(1)
+
+        // Minimum gap between notifications to prevent stacking
+        val MIN_NOTIFICATION_GAP = TimeUnit.MINUTES.toMillis(2)
     }
 
-    override fun rescheduleReminders(task: Task) {
-        cancelAllReminders(task)
+    // Track scheduled alarms: key = "taskId_tier", value = scheduled time
+    private val scheduledAlarms = mutableMapOf<String, Long>()
 
-        // For recurring tasks, only schedule if the next occurrence is relevant
+    // Debounce tracking: key = taskId, value = last reschedule time
+    private val lastRescheduleTime = mutableMapOf<String, Long>()
+    private val DEBOUNCE_DELAY = 500L // 500ms debounce
+
+    override fun rescheduleReminders(task: Task) {
+        val taskId = task.id.toString()
+        val now = System.currentTimeMillis()
+
+        // Debounce: skip if called too recently for the same task
+        lastRescheduleTime[taskId]?.let { lastTime ->
+            if (now - lastTime < DEBOUNCE_DELAY) {
+                Log.d("ReminderManager", "Debouncing reschedule for task: $taskId")
+                return
+            }
+        }
+        lastRescheduleTime[taskId] = now
+
+        cancelAllReminders(task)
+        clearScheduledAlarmsForTask(taskId)
+
         if (task.isRecurring) {
             val nextOccurrence = calculateNextOccurrence(task) ?: return
             val nextStartTime = nextOccurrence.first
-            val now = System.currentTimeMillis()
-
-            // Don't schedule reminders for occurrences more than 30 minutes away
             val schedulingWindow = TimeUnit.MINUTES.toMillis(30)
             if (nextStartTime > now + schedulingWindow) {
                 return
@@ -53,6 +74,85 @@ class ReminderManager @Inject constructor(
         }
     }
 
+    private fun clearScheduledAlarmsForTask(taskId: String) {
+        scheduledAlarms.keys.filter { it.startsWith("${taskId}_") }
+            .forEach { scheduledAlarms.remove(it) }
+    }
+
+    private fun scheduleAlarmIfNotDuplicate(
+        task: Task,
+        triggerAtMillis: Long,
+        tier: NotificationTier
+    ): Boolean {
+        val key = "${task.id}_${tier.name}"
+        val now = System.currentTimeMillis()
+
+        // Skip if already scheduled at the same time
+        scheduledAlarms[key]?.let { existingTime ->
+            if (kotlin.math.abs(existingTime - triggerAtMillis) < MIN_NOTIFICATION_GAP) {
+                Log.d("ReminderManager", "Skipping duplicate alarm: $key at $triggerAtMillis")
+                return false
+            }
+        }
+
+        // Check if any alarm for this task is scheduled too close to this time
+        val taskAlarms = scheduledAlarms.filterKeys { it.startsWith("${task.id}_") }
+        val hasTooCloseAlarm = taskAlarms.values.any { scheduledTime ->
+            kotlin.math.abs(scheduledTime - triggerAtMillis) < MIN_NOTIFICATION_GAP
+        }
+
+        if (hasTooCloseAlarm) {
+            Log.d("ReminderManager", "Skipping alarm too close to existing: $key at $triggerAtMillis")
+            return false
+        }
+
+        // Track and schedule
+        scheduledAlarms[key] = triggerAtMillis
+        scheduleAlarm(task, triggerAtMillis, tier)
+        return true
+    }
+
+    override fun scheduleTimedTaskReminders(task: Task) {
+        val now = System.currentTimeMillis()
+        val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
+            calculateNextOccurrence(task) ?: return
+        } else {
+            Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
+        }
+
+        val schedulingWindow = TimeUnit.MINUTES.toMillis(30)
+        if (startTime > now + schedulingWindow) {
+            return
+        }
+
+        // Pre-start warning
+        val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
+        if (preStartTime > now + TimeUnit.MINUTES.toMillis(1)) {
+            scheduleAlarmIfNotDuplicate(task, preStartTime, NotificationTier.PreStartWarning)
+        }
+
+        // Start Time Alert
+        if (startTime > now) {
+            scheduleAlarmIfNotDuplicate(task, startTime, NotificationTier.CriticalDecision)
+        }
+
+        // Pre-Block Warning (only if due time is different enough from start)
+        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES
+        if (preBlockWarningTime > startTime + MIN_NOTIFICATION_GAP && preBlockWarningTime > now) {
+            scheduleAlarmIfNotDuplicate(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
+        }
+
+        // End Time Overdue
+        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES
+        if (overdueTime > now) {
+            scheduleAlarmIfNotDuplicate(task, overdueTime, NotificationTier.CriticalDecision)
+        }
+
+        // Nagging
+        if (overdueTime > now) {
+            scheduleNaggingReminder(task, overdueTime)
+        }
+    }
 
     private fun scheduleUnscheduledTaskReminders(task: Task) {
         val now = System.currentTimeMillis()
@@ -60,32 +160,6 @@ class ReminderManager @Inject constructor(
         if (nudgeTime > now) {
             scheduleAlarm(task, nudgeTime, NotificationTier.Nagging)
         }
-    }
-
-    override fun scheduleTimedTaskReminders(task: Task) {
-        val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
-            calculateNextOccurrence(task) ?: return
-        } else {
-            Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
-        }
-
-        // Pre-start warning
-        val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
-        scheduleAlarm(task, preStartTime, NotificationTier.PreStartWarning)
-
-        // Start Time Alert
-        scheduleAlarm(task, startTime, NotificationTier.CriticalDecision)
-
-        // Pre-Block Warning (5 minutes before due time)
-        val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES
-        scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
-
-        // End Time Overdue (1 minute after due time)
-        val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES
-        scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
-
-        // Schedule the nagging follow-up
-        scheduleNaggingReminder(task, overdueTime)
     }
 
     override fun scheduleDurationTaskReminders(task: Task) {

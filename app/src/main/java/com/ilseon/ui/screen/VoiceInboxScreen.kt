@@ -46,6 +46,7 @@ fun VoiceInboxScreen(
     var memoToEdit by remember { mutableStateOf<VoiceMemo?>(null) }
     val transcribingMemoId by viewModel.transcribingMemoId.collectAsState()
     val transcriptionResult by viewModel.transcriptionResult.collectAsState()
+    val isApiKeySet by viewModel.isApiKeySet.collectAsState()
 
     LaunchedEffect(initialMemoIdToPlay) {
         initialMemoIdToPlay?.let {
@@ -121,6 +122,7 @@ fun VoiceInboxScreen(
                     onDelete = { viewModel.deleteVoiceMemo(it) },
                     onEditTitle = { memoToEdit = it },
                     onTranscribe = { viewModel.transcribeMemo(it) },
+                    showTranscribeOption = isApiKeySet,
                     modifier = Modifier.animateItem()
                 )
             }

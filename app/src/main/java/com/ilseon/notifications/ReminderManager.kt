@@ -63,41 +63,26 @@ class ReminderManager @Inject constructor(
     }
 
     override fun scheduleTimedTaskReminders(task: Task) {
-        val now = System.currentTimeMillis()
         val (startTime: Long, dueTime: Long) = if (task.isRecurring) {
             calculateNextOccurrence(task) ?: return
         } else {
             Pair(task.startTime ?: return, task.dueTime ?: task.endTime ?: return)
         }
 
-        // Only schedule if the task starts within the next 30 minutes (or is already active)
-        val schedulingWindow = TimeUnit.MINUTES.toMillis(30)
-        if (startTime > now + schedulingWindow) {
-            return
-        }
-
         // Pre-start warning
         val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
-        if (preStartTime > now) {
-            scheduleAlarm(task, preStartTime, NotificationTier.PreStartWarning)
-        }
+        scheduleAlarm(task, preStartTime, NotificationTier.PreStartWarning)
 
         // Start Time Alert
-        if (startTime > now) {
-            scheduleAlarm(task, startTime, NotificationTier.CriticalDecision)
-        }
+        scheduleAlarm(task, startTime, NotificationTier.CriticalDecision)
 
         // Pre-Block Warning (5 minutes before due time)
         val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES
-        if (preBlockWarningTime > now) {
-            scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
-        }
+        scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
 
         // End Time Overdue (1 minute after due time)
         val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES
-        if (overdueTime > now) {
-            scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
-        }
+        scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
 
         // Schedule the nagging follow-up
         scheduleNaggingReminder(task, overdueTime)

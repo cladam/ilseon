@@ -12,6 +12,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.idea.IdeaRepository
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoRepository
 import com.ilseon.service.SpeechTranscriber
@@ -23,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,7 +38,8 @@ class VoiceMemoViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val voiceMemoRepository: VoiceMemoRepository,
     private val speechTranscriber: SpeechTranscriber,
-    private val ideaRepository: IdeaRepository
+    private val ideaRepository: IdeaRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private var mediaPlayer: MediaPlayer? = null
@@ -59,6 +62,14 @@ class VoiceMemoViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    val isApiKeySet = settingsRepository.apiKey
+        .map { it.isNotEmpty() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
         )
 
     fun transcribeMemo(memo: VoiceMemo) {

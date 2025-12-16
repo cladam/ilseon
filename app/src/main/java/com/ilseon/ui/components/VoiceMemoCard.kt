@@ -57,6 +57,7 @@ fun VoiceMemoCard(
     onDelete: (VoiceMemo) -> Unit,
     onEditTitle: (VoiceMemo) -> Unit,
     onTranscribe: (VoiceMemo) -> Unit,
+    showTranscribeOption: Boolean,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -123,14 +124,16 @@ fun VoiceMemoCard(
                     },
                     leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null) }
                 )
-                DropdownMenuItem(
-                    text = { Text("Transcribe with Gemini") },
-                    onClick = {
-                        onTranscribe(memo)
-                        showMenu = false
-                    },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Article, contentDescription = null) }
-                )
+                if (showTranscribeOption) {
+                    DropdownMenuItem(
+                        text = { Text("Transcribe with Gemini") },
+                        onClick = {
+                            onTranscribe(memo)
+                            showMenu = false
+                        },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Article, contentDescription = null) }
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text("Edit title") },
                     onClick = {

@@ -28,7 +28,7 @@ so attention stays anchored on what matters _right now_.
 * **Sub-tasks**: Break large goals into sequential sub-tasks. When a parent task is set as the focus, the UI hides the master task and shows only the next immediate step.
 * **Quick Capture**: A floating action button opens an instant input screen for adding tasks in seconds, helping to externalise thoughts before they become mental clutter.
 * **Idea Inbox**: Captures all non-actionable mental clutter. It operates with two views: a **Transient Inbox** for triage (convert to task or save) and a **Persistent Notes View** for long-term knowledge/notes.
-* **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later.
+* **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later. Voice Memo's can be transcribed and saved to Notes if using Gemini API.
 * **Momentum Analytics**: Track daily consistency and reward level achievements over a timeline, providing positive, structured feedback on progress.
 * **Gentle Reminders**: Time-based notifications use vibration and visual cues instead of noisy alerts to respect sensory sensitivity.
 
@@ -66,7 +66,7 @@ Ilseon is 100% **open source**, built for the community.
 
 |                    Capture                     |                     Focus                      |                    Reflect                    |                     Review                      |                     Idea Inbox                      |                    Voice Inbox                     |
 |:----------------------------------------------:|:----------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:---------------------------------------------------:|:--------------------------------------------------:|
-| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2-1.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS6.1.png) | ![Voice Inbox](./images/ilseon-screenshot-PS7.png) |
+| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2-1.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS6.1.png) | ![Voice Inbox](./images/ilseon-screenshot-PS9.png) |
 
 ### Source Code
 

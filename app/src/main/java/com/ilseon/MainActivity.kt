@@ -200,7 +200,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 var showExactAlarmPermissionDialog by remember { mutableStateOf(false) }
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                val alarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
                     LaunchedEffect(Unit) {
@@ -597,7 +597,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            composable(Screen.IdeaInbox.route) {
+                            composable(
+                                route = "${Screen.IdeaInbox.route}?ideaId={ideaId}",
+                                arguments = listOf(navArgument("ideaId") { nullable = true })
+                            ) { backStackEntry ->
                                 IdeaInboxScreen(
                                     onNavigateToNewTask = { title, description ->
                                         vttTitleResult = title
@@ -617,7 +620,8 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onSwipeUp = {
                                         showAddIdeaDialog = true
-                                    }
+                                    },
+                                    newIdeaId = backStackEntry.arguments?.getString("ideaId")?.let { UUID.fromString(it) }
                                 )
                             }
                             composable(
@@ -632,7 +636,10 @@ class MainActivity : ComponentActivity() {
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
                                     },
-                                    initialMemoIdToPlay = backStackEntry.arguments?.getString("memoId")
+                                    initialMemoIdToPlay = backStackEntry.arguments?.getString("memoId"),
+                                    onNavigateToIdea = { ideaId ->
+                                        navController.navigate("${Screen.IdeaInbox.route}?ideaId=$ideaId")
+                                    }
                                 )
                             }
                             composable(Screen.Recorder.route) {

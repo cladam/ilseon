@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,6 +48,12 @@ class VoiceMemoViewModel @Inject constructor(
     private val _playbackProgress = MutableStateFlow(0f)
     val playbackProgress = _playbackProgress.asStateFlow()
 
+    private val _transcribingMemoId = MutableStateFlow<String?>(null)
+    val transcribingMemoId = _transcribingMemoId.asStateFlow()
+
+    private val _transcriptionResult = MutableStateFlow<UUID?>(null)
+    val transcriptionResult = _transcriptionResult.asStateFlow()
+
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
         .stateIn(
             scope = viewModelScope,
@@ -55,23 +62,31 @@ class VoiceMemoViewModel @Inject constructor(
         )
 
     fun transcribeMemo(memo: VoiceMemo) {
+        if (_transcribingMemoId.value != null) return // Already transcribing
+
         Log.d("VoiceMemoVM", "transcribeMemo called for: ${memo.id}")
         viewModelScope.launch {
+            _transcribingMemoId.value = memo.id
             try {
                 Log.d("VoiceMemoVM", "Starting transcription for file: ${memo.filePath}")
                 val transcription = speechTranscriber.transcribe(memo.filePath)
                 Log.d("VoiceMemoVM", "Transcription result: $transcription")
                 if (!transcription.isNullOrBlank()) {
-                    ideaRepository.insertIdea(
-                        content = transcription,
+                    val deeplink = "[Play Recording](ilseon://play-voice-memo/${memo.id})"
+                    val fullContent = "$transcription\n\n$deeplink"
+                    val newIdeaId = ideaRepository.insertIdea(
+                        content = fullContent,
                         isReference = true
                     )
-                    Log.d("VoiceMemoVM", "Idea inserted successfully")
+                    _transcriptionResult.value = newIdeaId
+                    Log.d("VoiceMemoVM", "Idea inserted successfully with ID: $newIdeaId")
                 } else {
                     Log.w("VoiceMemoVM", "Transcription was null or blank")
                 }
             } catch (e: Exception) {
                 Log.e("VoiceMemoVM", "Transcription failed", e)
+            } finally {
+                _transcribingMemoId.value = null
             }
         }
     }
@@ -87,6 +102,10 @@ class VoiceMemoViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun resetTranscriptionResult() {
+        _transcriptionResult.value = null
     }
 
     fun onPlayPause(memo: VoiceMemo) {

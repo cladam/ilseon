@@ -13,4 +13,13 @@ sealed class Screen(val route: String) {
     object IdeaInbox : Screen("idea_inbox")
     object VoiceInbox : Screen("voice_inbox")
     object Recorder : Screen("recorder")
+
+    fun withArgs(vararg args: String): String {
+        return buildString {
+            append(route)
+            args.forEach { arg ->
+                append("/$arg")
+            }
+        }
+    }
 }

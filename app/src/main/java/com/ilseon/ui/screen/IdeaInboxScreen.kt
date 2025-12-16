@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -43,6 +44,7 @@ import com.ilseon.ui.theme.MutedTeal
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +56,39 @@ fun IdeaInboxScreen(
     vttIdeaContent: String,
     onVttClick: () -> Unit,
     onSwipeUp: () -> Unit,
+    newIdeaId: UUID? = null,
 ) {
     val ideas by viewModel.ideas.collectAsState()
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
     var currentView by remember { mutableStateOf("Inbox") }
-    val selectedTabIndex = if (currentView == "Inbox") 0 else 1
+    val lazyListState = rememberLazyListState()
+
+    val ideaToShow = remember(newIdeaId, ideas) {
+        newIdeaId?.let { id -> ideas.find { it.id == id } }
+    }
+
+    LaunchedEffect(ideaToShow) {
+        ideaToShow?.let {
+            if (it.isReference) {
+                currentView = "Notes"
+            }
+        }
+    }
+
+    val filteredIdeas = remember(currentView, ideas) {
+        ideas.filter {
+            if (currentView == "Inbox") !it.isReference else it.isReference
+        }.sortedByDescending { it.isPinned }
+    }
+
+    LaunchedEffect(filteredIdeas, newIdeaId) {
+        newIdeaId?.let { id ->
+            val index = filteredIdeas.indexOfFirst { it.id == id }
+            if (index != -1) {
+                lazyListState.animateScrollToItem(index)
+            }
+        }
+    }
 
     if (showAddIdeaDialog) {
         AddIdeaDialog(
@@ -102,6 +132,7 @@ fun IdeaInboxScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        val selectedTabIndex = if (currentView == "Inbox") 0 else 1
         PrimaryTabRow(
             selectedTabIndex = selectedTabIndex,
             indicator = {
@@ -127,11 +158,8 @@ fun IdeaInboxScreen(
             )
         }
 
-        val filteredIdeas = ideas.filter {
-            if (currentView == "Inbox") !it.isReference else it.isReference
-        }.sortedByDescending { it.isPinned }
-
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

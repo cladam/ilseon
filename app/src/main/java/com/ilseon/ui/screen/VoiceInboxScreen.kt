@@ -30,22 +30,33 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.VoiceMemoViewModel
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.ui.components.VoiceMemoCard
+import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VoiceInboxScreen(
     viewModel: VoiceMemoViewModel = hiltViewModel(),
     onNavigateToNewTask: (String, String) -> Unit,
+    onNavigateToIdea: (UUID) -> Unit,
     initialMemoIdToPlay: String? = null,
 ) {
     val voiceMemos by viewModel.voiceMemos.collectAsState()
     val currentlyPlayingId by viewModel.currentlyPlayingId.collectAsState()
     val progress by viewModel.playbackProgress.collectAsState()
     var memoToEdit by remember { mutableStateOf<VoiceMemo?>(null) }
+    val transcribingMemoId by viewModel.transcribingMemoId.collectAsState()
+    val transcriptionResult by viewModel.transcriptionResult.collectAsState()
 
     LaunchedEffect(initialMemoIdToPlay) {
         initialMemoIdToPlay?.let {
             viewModel.onPlayPause(it)
+        }
+    }
+
+    LaunchedEffect(transcriptionResult) {
+        transcriptionResult?.let {
+            onNavigateToIdea(it)
+            viewModel.resetTranscriptionResult() // Reset after navigation
         }
     }
 
@@ -95,9 +106,11 @@ fun VoiceInboxScreen(
         } else {
             items(voiceMemos, key = { it.id }) { memo ->
                 val isPlaying = memo.id == currentlyPlayingId
+                val isTranscribing = memo.id == transcribingMemoId
                 VoiceMemoCard(
                     memo = memo,
                     isPlaying = isPlaying,
+                    isTranscribing = isTranscribing,
                     progress = if (isPlaying) progress else 0f,
                     onPlayPause = { viewModel.onPlayPause(it) },
                     onSeek = { newProgress -> viewModel.seekTo(newProgress) },

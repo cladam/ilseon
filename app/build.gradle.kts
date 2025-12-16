@@ -47,8 +47,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 76
-        versionName = "0.25.1"
+        versionCode = 77
+        versionName = "0.25.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

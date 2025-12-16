@@ -67,18 +67,12 @@ class TaskRepository @Inject constructor(
             cal.add(Calendar.DAY_OF_YEAR, 1)
             val startOfTomorrow = cal.timeInMillis
 
-            // Map recurring tasks to their "effective" start time for today
             val tasksWithEffectiveTime = tasks.map { task ->
                 if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
                     val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
-                    // Only adjust if today is a recurrence day AND the task's startTime is actually today
-                    val taskStartDate = Instant.ofEpochMilli(task.startTime)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate()
-                    val isTaskScheduledForToday = taskStartDate == LocalDate.now()
 
-                    if (isTodayRecurrenceDay && isTaskScheduledForToday) {
-                        // Calculate today's occurrence time
+                    if (isTodayRecurrenceDay) {
+                        // Calculate today's occurrence time using the original time-of-day
                         val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
                         val todayCal = Calendar.getInstance().apply {
                             set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
@@ -86,13 +80,33 @@ class TaskRepository @Inject constructor(
                             set(Calendar.SECOND, 0)
                             set(Calendar.MILLISECOND, 0)
                         }
-                        task.copy(startTime = todayCal.timeInMillis)
+
+                        // Also adjust endTime if present
+                        val adjustedEndTime = task.endTime?.let { originalEnd ->
+                            val duration = originalEnd - task.startTime
+                            todayCal.timeInMillis + duration
+                        }
+
+                        task.copy(startTime = todayCal.timeInMillis, endTime = adjustedEndTime)
                     } else {
                         task
                     }
                 } else {
                     task
                 }
+            }
+
+            Log.d("RecurringDebug", "=== Recurring Task Check ===")
+            tasksWithEffectiveTime.filter { it.isRecurring }.forEach { task ->
+                val taskStartDate = task.startTime?.let {
+                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                }
+                Log.d("RecurringDebug", "Task: ${task.title}")
+                Log.d("RecurringDebug", "  startTime: ${task.startTime} -> date: $taskStartDate")
+                Log.d("RecurringDebug", "  recurrenceDays: ${task.recurrenceDays}")
+                Log.d("RecurringDebug", "  todayDayOfWeek: ${todayDayOfWeek.name}")
+                Log.d("RecurringDebug", "  isRecurrenceToday: ${task.recurrenceDays?.contains(todayDayOfWeek.name, true)}")
+                Log.d("RecurringDebug", "  isStartTimeToday: ${task.startTime?.let { it in startOfToday..<startOfTomorrow }}")
             }
 
             Log.d("RepoDebug", "=== Repository Debug ===")

@@ -22,6 +22,9 @@ interface SettingsRepository {
 
     val sstLanguage: Flow<String>
     suspend fun setSstLanguage(language: String)
+
+    val apiKey: Flow<String>
+    suspend fun setApiKey(apiKey: String)
 }
 
 @Singleton
@@ -37,6 +40,7 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_NAGGING_NOTIFICATIONS = "nagging_notifications_enabled"
         const val KEY_BLUETOOTH_SST_ENABLED = "bluetooth_sst_enabled"
         const val KEY_SST_LANGUAGE = "sst_language"
+        const val KEY_API_KEY = "gemini_api_key"
     }
 
     override val nudgeNotificationsEnabled: Flow<Boolean> = callbackFlow {
@@ -105,6 +109,24 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setSstLanguage(language: String) {
         prefs.edit {
             putString(KEY_SST_LANGUAGE, language)
+        }
+    }
+
+    override val apiKey: Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_API_KEY) {
+                trySend(prefs.getString(KEY_API_KEY, "") ?: "")
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        // Send initial value
+        trySend(prefs.getString(KEY_API_KEY, "") ?: "")
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setApiKey(apiKey: String) {
+        prefs.edit {
+            putString(KEY_API_KEY, apiKey)
         }
     }
 }

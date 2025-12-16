@@ -7,11 +7,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.idea.IdeaRepository
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoRepository
+import com.ilseon.service.SpeechTranscriber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +33,9 @@ import javax.inject.Inject
 @HiltViewModel
 class VoiceMemoViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val voiceMemoRepository: VoiceMemoRepository
+    private val voiceMemoRepository: VoiceMemoRepository,
+    private val speechTranscriber: SpeechTranscriber,
+    private val ideaRepository: IdeaRepository
 ) : ViewModel() {
 
     private var mediaPlayer: MediaPlayer? = null
@@ -48,6 +53,28 @@ class VoiceMemoViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    fun transcribeMemo(memo: VoiceMemo) {
+        Log.d("VoiceMemoVM", "transcribeMemo called for: ${memo.id}")
+        viewModelScope.launch {
+            try {
+                Log.d("VoiceMemoVM", "Starting transcription for file: ${memo.filePath}")
+                val transcription = speechTranscriber.transcribe(memo.filePath)
+                Log.d("VoiceMemoVM", "Transcription result: $transcription")
+                if (!transcription.isNullOrBlank()) {
+                    ideaRepository.insertIdea(
+                        content = transcription,
+                        isReference = true
+                    )
+                    Log.d("VoiceMemoVM", "Idea inserted successfully")
+                } else {
+                    Log.w("VoiceMemoVM", "Transcription was null or blank")
+                }
+            } catch (e: Exception) {
+                Log.e("VoiceMemoVM", "Transcription failed", e)
+            }
+        }
+    }
 
     fun onPlayPause(memoId: String) {
         viewModelScope.launch {

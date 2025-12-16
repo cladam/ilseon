@@ -18,14 +18,17 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,6 +63,7 @@ fun SettingsScreen(
     val naggingNotificationsEnabled by viewModel.naggingNotificationsEnabled.collectAsState()
     val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
+    val apiKey by viewModel.apiKey.collectAsState()
 
     SettingsScreenContent(
         onCompletedTasksClick = onCompletedTasksClick,
@@ -74,7 +78,9 @@ fun SettingsScreen(
         bluetoothSstEnabled = bluetoothSstEnabled,
         onBluetoothSstEnabledChange = viewModel::setBluetoothSstEnabled,
         sstLanguage = sstLanguage,
-        onSstLanguageChange = viewModel::setSstLanguage
+        onSstLanguageChange = viewModel::setSstLanguage,
+        apiKey = apiKey,
+        onApiKeyChange = viewModel::setApiKey
     )
 }
 
@@ -92,7 +98,9 @@ private fun SettingsScreenContent(
     bluetoothSstEnabled: Boolean,
     onBluetoothSstEnabledChange: (Boolean) -> Unit,
     sstLanguage: String,
-    onSstLanguageChange: (String) -> Unit
+    onSstLanguageChange: (String) -> Unit,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -137,6 +145,12 @@ private fun SettingsScreenContent(
                 onBluetoothSstEnabledChange = onBluetoothSstEnabledChange,
                 sstLanguage = sstLanguage,
                 onLanguageClick = { showLanguageDialog = true }
+            )
+        }
+        item {
+            AISettingsCard(
+                apiKey = apiKey,
+                onApiKeyChange = onApiKeyChange
             )
         }
         item {
@@ -407,3 +421,73 @@ private fun SettingsSwitchItem(
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
+
+@Composable
+private fun AISettingsCard(
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit
+) {
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+
+    if (showApiKeyDialog) {
+        ApiKeyDialog(
+            currentKey = apiKey,
+            onSave = {
+                onApiKeyChange(it)
+                showApiKeyDialog = false
+            },
+            onDismiss = { showApiKeyDialog = false }
+        )
+    }
+
+    AppCard {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "AI Settings",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsItem(
+                icon = Icons.Default.Key,
+                title = "Gemini API Key",
+                subtitle = if (apiKey.isNotEmpty()) "••••••••${apiKey.takeLast(4)}" else "Not configured",
+                onClick = { showApiKeyDialog = true }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ApiKeyDialog(
+    currentKey: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var key by remember { mutableStateOf(currentKey) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gemini API Key") },
+        text = {
+            OutlinedTextField(
+                value = key,
+                onValueChange = { key = it },
+                label = { Text("API Key") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(onClick = { onSave(key) }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+

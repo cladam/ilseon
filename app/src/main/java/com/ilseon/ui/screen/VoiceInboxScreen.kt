@@ -107,6 +107,7 @@ fun VoiceInboxScreen(
                     },
                     onDelete = { viewModel.deleteVoiceMemo(it) },
                     onEditTitle = { memoToEdit = it },
+                    onTranscribe = { viewModel.transcribeMemo(it) },
                     modifier = Modifier.animateItem()
                 )
             }

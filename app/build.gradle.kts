@@ -105,6 +105,7 @@ tasks.register("printVersionCodeAndName") {
 }
 
 dependencies {
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     androidTestImplementation(libs.androidx.rules)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)

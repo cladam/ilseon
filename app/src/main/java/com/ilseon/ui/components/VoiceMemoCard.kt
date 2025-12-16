@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -48,6 +49,7 @@ fun VoiceMemoCard(
     onConvertToTask: (VoiceMemo) -> Unit,
     onDelete: (VoiceMemo) -> Unit,
     onEditTitle: (VoiceMemo) -> Unit,
+    onTranscribe: (VoiceMemo) -> Unit, // Added this line
     modifier: Modifier = Modifier
 ) {
     AppCard(modifier = modifier) {
@@ -97,6 +99,12 @@ fun VoiceMemoCard(
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "Stop Playback" else "Play Voice Memo"
+                        )
+                    }
+                    IconButton(onClick = { onTranscribe(memo) }) { // Added this IconButton
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Article,
+                            contentDescription = "Transcribe Voice Memo"
                         )
                     }
                     IconButton(onClick = { onConvertToTask(memo) }) {

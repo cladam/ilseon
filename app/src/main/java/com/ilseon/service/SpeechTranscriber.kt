@@ -1,15 +1,24 @@
 package com.ilseon.service
 
 import android.content.Context
+import android.net.Uri
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Environment
+import android.util.Log
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import com.ilseon.data.task.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
 
 // Result object to hold the file, text, and duration
 data class RecordingResult(
@@ -23,6 +32,67 @@ interface AudioHandler {
     fun cancelRecording()
     fun pauseRecording()
     suspend fun resumeRecording()
+}
+
+interface SpeechTranscriber {
+    suspend fun transcribe(filePath: String): String?
+}
+
+@Singleton
+class GeminiSpeechTranscriber @Inject constructor(
+    private val settingsRepository: SettingsRepository,
+    @ApplicationContext private val context: Context
+) : SpeechTranscriber {
+
+    override suspend fun transcribe(filePath: String): String? {
+        val apiKey = settingsRepository.apiKey.first()
+        Log.d("SpeechTranscriber", "API key length: ${apiKey.length}")
+        if (apiKey.isEmpty()) {
+            Log.e("SpeechTranscriber", "API key is empty!")
+            return null
+        }
+
+        val generativeModel = GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = apiKey
+        )
+
+        val audioBytes = readFileToBytes(filePath) ?: return null
+
+        val inputContent = content {
+            text("Transcribe the following voice memo.")
+            blob(
+                mimeType = "audio/m4a",
+                blob = audioBytes
+            )
+        }
+
+        return try {
+            val response = generativeModel.generateContent(inputContent)
+            response.text?.let { Log.d("Transcription", it) }
+            response.text
+        } catch (e: Exception) {
+            // Handle API errors
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun readFileToBytes(filePath: String): ByteArray? = withContext(Dispatchers.IO) {
+        try {
+            if (filePath.startsWith("content://")) {
+                val uri = Uri.parse(filePath)
+                context.contentResolver.openInputStream(uri)?.use {
+                    it.readBytes()
+                }
+            } else {
+                File(filePath).readBytes()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
 
 @Singleton

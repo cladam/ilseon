@@ -93,4 +93,13 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
+
+    val apiKey = settingsRepository.apiKey
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setApiKey(key: String) {
+        viewModelScope.launch {
+            settingsRepository.setApiKey(key)
+        }
+    }
 }

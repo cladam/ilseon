@@ -19,8 +19,10 @@ import com.ilseon.notifications.IReminderManager
 import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.AudioHandler
 import com.ilseon.service.AudioHandlerImpl
+import com.ilseon.service.GeminiSpeechTranscriber
 import com.ilseon.service.HapticManager
 import com.ilseon.service.HapticManagerImpl
+import com.ilseon.service.SpeechTranscriber
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -44,6 +46,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindAudioHandler(impl: AudioHandlerImpl): AudioHandler
+
+    @Binds
+    @Singleton
+    abstract fun bindSpeechTranscriber(impl: GeminiSpeechTranscriber): SpeechTranscriber
 
     companion object {
         @Provides

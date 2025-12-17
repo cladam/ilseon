@@ -71,8 +71,10 @@ class TaskRepository @Inject constructor(
                 if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
                     val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
 
-                    if (isTodayRecurrenceDay) {
-                        // Calculate today's occurrence time using the original time-of-day
+                    // Only adjust if the stored startTime is in the past or today, NOT if it's a future occurrence
+                    val isStoredDateTodayOrEarlier = task.startTime <= startOfTomorrow
+
+                    if (isTodayRecurrenceDay && isStoredDateTodayOrEarlier) {
                         val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
                         val todayCal = Calendar.getInstance().apply {
                             set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
@@ -81,7 +83,6 @@ class TaskRepository @Inject constructor(
                             set(Calendar.MILLISECOND, 0)
                         }
 
-                        // Also adjust endTime if present
                         val adjustedEndTime = task.endTime?.let { originalEnd ->
                             val duration = originalEnd - task.startTime
                             todayCal.timeInMillis + duration
@@ -89,7 +90,7 @@ class TaskRepository @Inject constructor(
 
                         task.copy(startTime = todayCal.timeInMillis, endTime = adjustedEndTime)
                     } else {
-                        task
+                        task // Keep future occurrences as-is
                     }
                 } else {
                     task

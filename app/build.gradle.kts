@@ -47,8 +47,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 78
-        versionName = "0.25.3"
+        versionCode = 79
+        versionName = "0.25.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -106,6 +106,7 @@ tasks.register("printVersionCodeAndName") {
 
 dependencies {
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation(libs.androidx.material3)
     androidTestImplementation(libs.androidx.rules)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)

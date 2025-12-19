@@ -78,7 +78,7 @@
             android:name=".notifications.NotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />
-        
+
         <receiver
             android:name=".widget.PriorityWidgetReceiver"
             android:exported="true">

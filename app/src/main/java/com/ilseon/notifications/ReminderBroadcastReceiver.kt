@@ -44,14 +44,26 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
 
         val tier = tierName?.let { NotificationTier.valueOf(it) } ?: return
         val timerState = timerStateName?.let { TimerState.valueOf(it) } ?: TimerState.NotStarted
-        val schedulingType = schedulingTypeName?.let { SchedulingType.valueOf(it) } ?: SchedulingType.None
+        val schedulingType =
+            schedulingTypeName?.let { SchedulingType.valueOf(it) } ?: SchedulingType.None
 
         if (taskId != null && title != null) {
             // Coupled alerts will trigger haptics via the helper
-            if (tier == NotificationTier.CriticalDecision || tier == NotificationTier.PreBlockWarning || tier == NotificationTier.Nagging) {
+            if (tier == NotificationTier.CriticalDecision ||
+                tier == NotificationTier.PreStartWarning ||
+                tier == NotificationTier.PreBlockWarning ||
+                tier == NotificationTier.Nagging || tier == NotificationTier.Success
+            ) {
                 notificationHelper.showHapticFeedback(tier)
             }
-            notificationHelper.showReminderNotification(taskId, title, description, tier, timerState, schedulingType)
+            notificationHelper.showReminderNotification(
+                taskId,
+                title,
+                description,
+                tier,
+                timerState,
+                schedulingType
+            )
         }
     }
 

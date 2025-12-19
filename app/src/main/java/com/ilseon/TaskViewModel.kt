@@ -11,7 +11,6 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
-import com.ilseon.di.TestModule
 import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -282,23 +283,71 @@ fun CurrentPriorityTask(
             }
             if (subTasks.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    "Sub-Tasks Remaining (${subTasks.count { !it.isComplete }}/${subTasks.size})",
-                    style = MaterialTheme.typography.titleMedium
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 )
-                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                    items(subTasks) { subTask ->
+
+                val completedCount = subTasks.count { it.isComplete }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Sub-Tasks",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        "$completedCount/${subTasks.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (completedCount == subTasks.size)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Column(
+                    modifier = Modifier.heightIn(max = 200.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    subTasks.forEach { subTask ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (subTask.isComplete)
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                                .clickable {
+                                    viewModel.updateTask(subTask.copy(isComplete = !subTask.isComplete))
+                                }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 checked = subTask.isComplete,
                                 onCheckedChange = { isChecked ->
                                     viewModel.updateTask(subTask.copy(isComplete = isChecked))
-                                }
+                                },
+                                modifier = Modifier.size(20.dp)
                             )
-                            Text(subTask.title)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = subTask.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (subTask.isComplete)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.onSurface,
+                                textDecoration = if (subTask.isComplete)
+                                    androidx.compose.ui.text.style.TextDecoration.LineThrough
+                                else null
+                            )
                         }
                     }
                 }

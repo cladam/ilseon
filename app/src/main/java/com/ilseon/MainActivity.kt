@@ -496,9 +496,13 @@ class MainActivity : ComponentActivity() {
                                         taskTitle = data.task.title,
                                         phonePickups = data.phonePickups,
                                         onSave = { reflection ->
+                                            // Clear the animation state before completing
+                                            completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.completeTask(data.task, reflection)
                                         },
                                         onDismiss = {
+                                            // Also clear if dismissed without saving
+                                            completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.onReflectionDialogDismiss()
                                         }
                                     )
@@ -509,9 +513,11 @@ class MainActivity : ComponentActivity() {
                                     completedTaskIds = completedTaskIds,
                                     onAnimateComplete = { task ->
                                         completedTaskIds = completedTaskIds + task.id
+                                        // Show reflection dialog AFTER animation completes
+                                        viewModel.onShowReflectionDialog(task.id)
                                     },
                                     onTaskComplete = { task ->
-                                        viewModel.onShowReflectionDialog(task.id)
+                                        completedTaskIds = completedTaskIds + task.id
                                     },
                                     onTaskTimerFinished = { task ->
                                         viewModel.onTaskTimerFinished(task)

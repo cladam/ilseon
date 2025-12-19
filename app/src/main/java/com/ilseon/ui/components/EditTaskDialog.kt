@@ -59,6 +59,7 @@ fun EditTaskDialog(
     var description by remember { mutableStateOf(task.description ?: "") }
     var selectedPriority by remember { mutableStateOf(task.priority) }
     var selectedContextId by remember { mutableStateOf(task.contextId) }
+    var isUrgent by remember { mutableStateOf(task.isUrgent) }
     var priorityExpanded by remember { mutableStateOf(false) }
     var contextExpanded by remember { mutableStateOf(false) }
     var newSubTaskTitle by remember { mutableStateOf("") }
@@ -120,6 +121,21 @@ fun EditTaskDialog(
                     }
                 }
 
+                // Urgent Checkbox
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isUrgent,
+                        onCheckedChange = { isUrgent = it }
+                    )
+                    Text(
+                        text = "Mark as Urgent",
+                        modifier = Modifier.clickable { isUrgent = !isUrgent }
+                    )
+                }
+
                 // Context Dropdown
                 ExposedDropdownMenuBox(
                     expanded = contextExpanded,
@@ -149,7 +165,7 @@ fun EditTaskDialog(
                     }
                 }
 
-                // Sub-tasks
+                // Sub-tasks section remains unchanged...
                 Text("Sub-tasks", style = MaterialTheme.typography.titleMedium)
                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     itemsIndexed(subTasks) { index, subTask ->
@@ -171,7 +187,6 @@ fun EditTaskDialog(
                     }
                 }
 
-                // Add sub-task
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = newSubTaskTitle,
@@ -196,7 +211,8 @@ fun EditTaskDialog(
                     title = title,
                     description = description.ifBlank { null },
                     priority = selectedPriority,
-                    contextId = selectedContextId
+                    contextId = selectedContextId,
+                    isUrgent = isUrgent
                 ))
             }) {
                 Text("Save")

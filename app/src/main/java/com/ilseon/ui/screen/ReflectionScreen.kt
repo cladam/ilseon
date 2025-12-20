@@ -1,7 +1,10 @@
 package com.ilseon.ui.screen
 
 import android.R
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,7 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -34,30 +42,38 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.ReflectionsViewModel
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.toColor
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun ReflectionScreen(
     viewModel: ReflectionsViewModel = hiltViewModel()
 ) {
     val reflections by viewModel.reflections.collectAsState()
+    val contextMap by viewModel.contextMap.collectAsState()
     var editingTask by remember { mutableStateOf<Task?>(null) }
 
     ReflectionScreenContent(
         reflections = reflections,
+        contextMap = contextMap,
         onDeleteReflection = { viewModel.deleteReflection(it) },
         onEditReflection = { editingTask = it }
     )
@@ -114,6 +130,7 @@ private fun EditReflectionDialog(
 @Composable
 private fun ReflectionScreenContent(
     reflections: List<Task>,
+    contextMap: Map<UUID, TaskContext>,
     onDeleteReflection: (Task) -> Unit,
     onEditReflection: (Task) -> Unit
 ) {
@@ -149,6 +166,7 @@ private fun ReflectionScreenContent(
             items(reflections, key = { it.id }) { task ->
                 ReflectionItem(
                     task = task,
+                    contextName = contextMap[task.contextId]?.name ?: "General",
                     onDelete = { onDeleteReflection(task) },
                     onEdit = { onEditReflection(task) }
                 )
@@ -160,6 +178,7 @@ private fun ReflectionScreenContent(
 @Composable
 private fun ReflectionItem(
     task: Task,
+    contextName: String,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
@@ -167,14 +186,30 @@ private fun ReflectionItem(
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
     AppCard {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(task.priority.toColor(), CircleShape)
+                    )
+                    Text(
+                        text = contextName,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 12.sp
+                    )
                     if (task.isUrgent) {
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
@@ -182,8 +217,55 @@ private fun ReflectionItem(
                             tint = QuietAmber,
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(Modifier.width(8.dp))
                     }
+                }
+                task.actualEnergyLevel?.let { level ->
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                level
+                                    .toColor()
+                                    .copy(alpha = 0.1f), RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = level
+                                    .toColor()
+                                    .copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val icon = when (level) {
+                            EnergyLevel.High -> Icons.Default.BatteryFull
+                            EnergyLevel.Medium -> Icons.Default.Battery3Bar
+                            EnergyLevel.Low -> Icons.Default.Battery1Bar
+                        }
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = "Energy Level",
+                            tint = level.toColor(),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(90f)
+                        )
+                        Text(
+                            text = level.name,
+                            color = level.toColor(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     MarkdownText(
                         markdown = task.title,
                         style = TextStyle(
@@ -192,35 +274,35 @@ private fun ReflectionItem(
                             fontWeight = FontWeight.SemiBold
                         )
                     )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                task.completionReflection?.let {
-                    MarkdownText(
-                        markdown = it,
+                    Spacer(modifier = Modifier.height(4.dp))
+                    task.completionReflection?.let {
+                        MarkdownText(
+                            markdown = it,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Completed at $completedDate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Completed at $completedDate",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit reflection",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete reflection",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit reflection",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete reflection",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

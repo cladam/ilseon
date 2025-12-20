@@ -4,6 +4,7 @@ import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.SchedulingType
@@ -310,7 +311,7 @@ class TaskViewModelTest {
         )
         val reflection = "This was a test task."
 
-        viewModel.completeTask(originalTask, reflection)
+        viewModel.completeTask(originalTask, reflection, EnergyLevel.Medium)
         runCurrent()
 
         coVerify { taskRepository.updateTask(any()) }
@@ -318,5 +319,6 @@ class TaskViewModelTest {
         assert(capturedTask.isComplete)
         assert(capturedTask.completionReflection == reflection)
         assert(capturedTask.completedAt != null)
+        assertEquals(EnergyLevel.Medium, capturedTask.actualEnergyLevel)
     }
 }

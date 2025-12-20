@@ -3,6 +3,8 @@ package com.ilseon
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import app.cash.turbine.test
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import io.mockk.coEvery
@@ -10,6 +12,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -28,12 +31,14 @@ class ReflectionsViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var taskRepository: TaskRepository
+    private lateinit var contextRepository: TaskContextRepository
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         taskRepository = mockk()
+        contextRepository = mockk()
     }
 
     @After
@@ -56,8 +61,11 @@ class ReflectionsViewModelTest {
         val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
         coEvery { taskRepository.getTasksWithReflections() } returns tasksFlow
 
+        val contextFlow = flowOf<List<TaskContext>>(emptyList())
+        coEvery { contextRepository.getContexts() } returns contextFlow
+
         // 2. Act
-        val viewModel = ReflectionsViewModel(taskRepository)
+        val viewModel = ReflectionsViewModel(taskRepository, contextRepository)
 
         // 3. Assert
         viewModel.reflections.test {
@@ -71,7 +79,7 @@ class ReflectionsViewModelTest {
             val emittedList = awaitItem()
             assertEquals(1, emittedList.size)
             assertEquals("This is a test reflection.", emittedList[0].completionReflection)
-            
+
             cancelAndIgnoreRemainingEvents()
         }
     }

@@ -12,6 +12,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
+import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
@@ -68,6 +69,7 @@ class TaskViewModel @Inject constructor(
     private val notificationService: NotificationService,
     private val reminderManager: ReminderManager,
     private val settingsRepository: SettingsRepository,
+    private val userStatusRepository: UserStatusRepository,
     private val isTest: Boolean
 ) : ViewModel() {
 
@@ -563,6 +565,7 @@ class TaskViewModel @Inject constructor(
                 actualEnergyLevel = actualEnergyLevel
             )
             taskRepository.updateTask(updatedTask)
+            userStatusRepository.updateUserEnergyLevel(actualEnergyLevel)
             reminderManager.cancelAllReminders(updatedTask)
             taskRepository.updatePriorityAndWidget()
             prepareForNextTaskTransition(updatedTask)

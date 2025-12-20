@@ -2,10 +2,12 @@ package com.ilseon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.userstatus.UserStatusRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ReflectionsViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val contextRepository: TaskContextRepository
+    private val contextRepository: TaskContextRepository,
+    private val userStatusRepository: UserStatusRepository
 ) : ViewModel() {
 
     val reflections: StateFlow<List<Task>> = taskRepository.getTasksWithReflections()
@@ -36,9 +39,19 @@ class ReflectionsViewModel @Inject constructor(
             initialValue = emptyMap()
         )
 
-    fun updateReflection(task: Task) {
+    fun updateReflection(task: Task, energyLevel: EnergyLevel? = null) {
         viewModelScope.launch {
-            taskRepository.updateTask(task)
+            val updatedTask = if (energyLevel != null) {
+                task.copy(actualEnergyLevel = energyLevel)
+            } else {
+                task
+            }
+            taskRepository.updateTask(updatedTask)
+
+            // Also update user's current energy level
+            energyLevel?.let {
+                userStatusRepository.updateUserEnergyLevel(it)
+            }
         }
     }
 

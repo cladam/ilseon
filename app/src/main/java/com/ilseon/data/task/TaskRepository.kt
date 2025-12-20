@@ -3,6 +3,8 @@ package com.ilseon.data.task
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.ilseon.data.EnergyLevel
+import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.IReminderManager
 import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,7 +36,8 @@ class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
-    private val reminderManager: IReminderManager
+    private val reminderManager: IReminderManager,
+    private val userStatusRepository: UserStatusRepository
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> = taskDao.getIncompleteTasks()
 
@@ -44,8 +47,11 @@ class TaskRepository @Inject constructor(
     fun getDashboardTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
+        val userStatusFlow = userStatusRepository.getStatus("user")  // Add this
 
-        return combine(tasksFlow, allFocusBlocksFlow) { tasks, allFocusBlocks ->
+
+        return combine(tasksFlow, allFocusBlocksFlow, userStatusFlow) { tasks, allFocusBlocks, userStatus ->
+            Log.d("IlseonDebug", "UserStatus: $userStatus, currentEnergy: ${userStatus?.currentEnergy}")
             val now = System.currentTimeMillis()
             val localNow = LocalTime.now()
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -130,19 +136,23 @@ class TaskRepository @Inject constructor(
 
             Log.d("RepoDebug", "Today tasks after filter: ${todayTasks.map { it.title }}")
 
-            val eisenhowerComparator = compareByDescending<Task> { it.isUrgent }
-                .thenBy { it.priority.ordinal }
-                .thenBy { it.startTime ?: Long.MAX_VALUE }
-                .thenBy { it.createdAt }
+            val energyLevel = userStatus?.currentEnergy
+            val ilseonComparator = createIlseonComparator(energyLevel)
 
-            if (activeFocusBlock != null) {
+            Log.d("IlseonDebug", "=== Task Energy Levels ===")
+            todayTasks.forEach { task ->
+                Log.d("IlseonDebug", "Task: ${task.title}, energyLevel: ${task.energyLevel}, priority: ${task.priority}, isUrgent: ${task.isUrgent}")
+            }
+
+
+            val sortedTasks = if (activeFocusBlock != null) {
                 val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
                 val urgentOutOfContext = todayTasks.filter { task ->
                     task.contextId != activeFocusBlock.contextId &&
                             task.isUrgent &&
                             !task.isComplete
                 }
-                (focusContextTasks + urgentOutOfContext).sortedWith(eisenhowerComparator)
+                (focusContextTasks + urgentOutOfContext).sortedWith(ilseonComparator)
             } else {
                 val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
                 Log.d("RepoDebug", "No active focus block. Focus block context IDs: $focusBlockContextIds")
@@ -179,7 +189,74 @@ class TaskRepository @Inject constructor(
                             !hasBlockForTaskDay
                         }
                     }
-                }.sortedWith(eisenhowerComparator)
+                }.sortedWith(ilseonComparator)
+            }
+
+            Log.d("IlseonDebug", "=== Final Sorted Order ===")
+            sortedTasks.forEachIndexed { index, task ->
+                Log.d("IlseonDebug", "[$index] ${task.title} (priority=${task.priority}, energy=${task.energyLevel}, urgent=${task.isUrgent})")
+            }
+            sortedTasks
+        }
+    }
+
+    private fun createIlseonComparator(energyLevel: EnergyLevel?): Comparator<Task> {
+        Log.d("IlseonDebug", "Creating comparator for energy level: $energyLevel")
+
+        return when (energyLevel) {
+            EnergyLevel.Low -> {
+                Log.d("IlseonDebug", "Using LOW energy comparator")
+                Comparator { t1, t2 ->
+                    val result = compareByDescending<Task> { it.isUrgent }
+                        .thenBy { it.priority.ordinal }
+                        .thenBy {
+                            // For LOW user energy: prioritize Low energy tasks (smallest value first)
+                            when (it.energyLevel) {
+                                EnergyLevel.Low -> 0
+                                EnergyLevel.Medium -> 1
+                                EnergyLevel.High -> 2
+                                null -> 1
+                            }
+                        }
+                        .thenBy { it.startTime ?: Long.MAX_VALUE }
+                        .thenBy { it.createdAt }
+                        .compare(t1, t2)
+
+                    Log.d("IlseonDebug", "Compare: ${t1.title}(energy=${t1.energyLevel}) vs ${t2.title}(energy=${t2.energyLevel}) = $result")
+                    result
+                }
+            }
+            EnergyLevel.Medium -> {
+                Log.d("IlseonDebug", "Using MEDIUM energy comparator")
+                Comparator { t1, t2 ->
+                    val result = compareByDescending<Task> { it.isUrgent }
+                        .thenBy { it.priority.ordinal }
+                        .thenBy {
+                            when (it.energyLevel) {
+                                EnergyLevel.Medium -> 0
+                                EnergyLevel.Low -> 1
+                                EnergyLevel.High -> 2
+                                null -> 1
+                            }
+                        }
+                        .thenBy { it.startTime ?: Long.MAX_VALUE }
+                        .thenBy { it.createdAt }
+                        .compare(t1, t2)
+
+                    Log.d("IlseonDebug", "Compare: ${t1.title}(energy=${t1.energyLevel}) vs ${t2.title}(energy=${t2.energyLevel}) = $result")
+                    result
+                }
+            }
+            EnergyLevel.High, null -> {
+                Log.d("IlseonDebug", "Using HIGH energy comparator")
+                Comparator { t1, t2 ->
+                    compareByDescending<Task> { it.isUrgent }
+                        .thenBy { it.priority.ordinal }
+                        .thenBy { it.energyLevel?.ordinal ?: 1 }
+                        .thenBy { it.startTime ?: Long.MAX_VALUE }
+                        .thenBy { it.createdAt }
+                        .compare(t1, t2)
+                }
             }
         }
     }

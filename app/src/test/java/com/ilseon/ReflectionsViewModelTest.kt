@@ -7,6 +7,7 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.userstatus.UserStatusRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,8 @@ class ReflectionsViewModelTest {
 
     private lateinit var taskRepository: TaskRepository
     private lateinit var contextRepository: TaskContextRepository
+    private lateinit var userStatusRepository: UserStatusRepository
+
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -39,6 +42,7 @@ class ReflectionsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         taskRepository = mockk()
         contextRepository = mockk()
+        userStatusRepository = mockk()
     }
 
     @After
@@ -65,7 +69,7 @@ class ReflectionsViewModelTest {
         coEvery { contextRepository.getContexts() } returns contextFlow
 
         // 2. Act
-        val viewModel = ReflectionsViewModel(taskRepository, contextRepository)
+        val viewModel = ReflectionsViewModel(taskRepository, contextRepository, userStatusRepository)
 
         // 3. Assert
         viewModel.reflections.test {

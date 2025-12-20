@@ -12,6 +12,7 @@ import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.ReminderManager
 import com.ilseon.service.HapticManager
 import com.ilseon.service.NotificationService
@@ -56,6 +57,7 @@ class TaskViewModelTest {
     private lateinit var reminderManager: ReminderManager
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var usageStatsManager: UsageStatsManager
+    private lateinit var userStatusRepository: UserStatusRepository
     private lateinit var appOpsManager: AppOpsManager
 
     private val testDispatcher = StandardTestDispatcher()
@@ -72,6 +74,7 @@ class TaskViewModelTest {
         reminderManager = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
         usageStatsManager = mockk(relaxed = true)
+        userStatusRepository = mockk(relaxed = true)
         appOpsManager = mockk(relaxed = true)
 
         // Stub the getSystemService calls
@@ -93,7 +96,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with time block creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -120,7 +123,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with duration creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -146,7 +149,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with basic info creates and inserts a new task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -175,7 +178,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring time block task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -207,7 +210,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring duration task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -240,7 +243,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with recurring normal task creates correct task`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -273,7 +276,7 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask with urgent flag sets isUrgent to true`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
 
@@ -299,7 +302,7 @@ class TaskViewModelTest {
 
     @Test
     fun `completeTask updates task to complete and sets reflection`() = runTest(testDispatcher.scheduler) {
-        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, true)
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
         val taskSlot = slot<Task>()
         coEvery { taskRepository.updateTask(capture(taskSlot)) } just runs
 

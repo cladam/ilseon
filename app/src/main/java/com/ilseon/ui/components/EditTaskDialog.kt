@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ilseon.TaskViewModel
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskPriority
@@ -60,8 +61,10 @@ fun EditTaskDialog(
     var selectedPriority by remember { mutableStateOf(task.priority) }
     var selectedContextId by remember { mutableStateOf(task.contextId) }
     var isUrgent by remember { mutableStateOf(task.isUrgent) }
+    var selectedEnergyLevel by remember { mutableStateOf(task.energyLevel) }
     var priorityExpanded by remember { mutableStateOf(false) }
     var contextExpanded by remember { mutableStateOf(false) }
+    var energyLevelExpanded by remember { mutableStateOf(false) }
     var newSubTaskTitle by remember { mutableStateOf("") }
 
     val subTasks by viewModel.subTasks.collectAsState()
@@ -115,6 +118,42 @@ fun EditTaskDialog(
                                 onClick = {
                                     selectedPriority = priority
                                     priorityExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Energy Level Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = energyLevelExpanded,
+                    onExpandedChange = { energyLevelExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedEnergyLevel?.name ?: "None",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Energy Level") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = energyLevelExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = energyLevelExpanded,
+                        onDismissRequest = { energyLevelExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("None") },
+                            onClick = {
+                                selectedEnergyLevel = null
+                                energyLevelExpanded = false
+                            }
+                        )
+                        EnergyLevel.entries.forEach { level ->
+                            DropdownMenuItem(
+                                text = { Text(level.name) },
+                                onClick = {
+                                    selectedEnergyLevel = level
+                                    energyLevelExpanded = false
                                 }
                             )
                         }
@@ -212,7 +251,8 @@ fun EditTaskDialog(
                     description = description.ifBlank { null },
                     priority = selectedPriority,
                     contextId = selectedContextId,
-                    isUrgent = isUrgent
+                    isUrgent = isUrgent,
+                    energyLevel = selectedEnergyLevel
                 ))
             }) {
                 Text("Save")

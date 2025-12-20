@@ -7,20 +7,28 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.BatteryStd
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.toColor
@@ -74,6 +82,67 @@ fun NextTaskActivationScreen(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Priority & Context
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(nextTask.priority.toColor(), CircleShape)
+                            )
+                            Text(
+                                text = contextMap[nextTask.contextId]?.name ?: "General",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        // Energy Badge
+                        nextTask.energyLevel?.let { level ->
+                            Row(
+                                modifier = Modifier
+                                    .background(level.toColor().copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                    .border(
+                                        width = 1.dp,
+                                        color = level.toColor().copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                val icon = when (level) {
+                                    EnergyLevel.High -> Icons.Default.BatteryFull
+                                    EnergyLevel.Medium -> Icons.Default.Battery3Bar
+                                    EnergyLevel.Low -> Icons.Default.Battery1Bar
+                                }
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = "Energy Level",
+                                    tint = level.toColor(),
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .rotate(90f)
+                                )
+                                Text(
+                                    text = level.name,
+                                    color = level.toColor(),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -101,22 +170,6 @@ fun NextTaskActivationScreen(
                                     Spacer(Modifier.height(4.dp))
                                     MarkdownText(markdown = it)
                                 }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(nextTask.priority.toColor(), CircleShape)
-                                )
-                                Text(
-                                    text = contextMap[nextTask.contextId]?.name ?: "General",
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                    fontSize = 12.sp
-                                )
                             }
                         }
                     }

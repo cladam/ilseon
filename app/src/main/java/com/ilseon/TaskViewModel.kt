@@ -3,6 +3,7 @@ package com.ilseon
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.SchedulingType
@@ -402,7 +403,8 @@ class TaskViewModel @Inject constructor(
         durationInMinutes: Int?,
         isRecurring: Boolean,
         recurrenceDays: Set<DayOfWeek>,
-        isForTomorrow: Boolean = false
+        isForTomorrow: Boolean = false,
+        energyLevel: EnergyLevel? = null
     ) {
         viewModelScope.launch {
             if (title.isNotBlank() && contextId != null) {
@@ -469,7 +471,8 @@ class TaskViewModel @Inject constructor(
                     timerState = timerState,
                     isRecurring = isRecurring,
                     recurrenceDays = recurrenceDaysString,
-                    seriesId = if (isRecurring) newId else null
+                    seriesId = if (isRecurring) newId else null,
+                    energyLevel = energyLevel
                 )
                 taskRepository.insertTask(newTask)
                 reminderManager.rescheduleReminders(newTask)
@@ -542,7 +545,7 @@ class TaskViewModel @Inject constructor(
         return Triple(startTime, endTime, duration)
     }
 
-    fun completeTask(task: Task, completionReflection: String) {
+    fun completeTask(task: Task, completionReflection: String, actualEnergyLevel: EnergyLevel) {
         viewModelScope.launch {
             val subTasks = taskRepository.getSubTasks(task.id).first()
             if (subTasks.any { !it.isComplete }) {
@@ -556,7 +559,8 @@ class TaskViewModel @Inject constructor(
                 isComplete = true,
                 completedAt = System.currentTimeMillis(),
                 completionReflection = reflectionToSave,
-                timerState = TimerState.Finished
+                timerState = TimerState.Finished,
+                actualEnergyLevel = actualEnergyLevel
             )
             taskRepository.updateTask(updatedTask)
             reminderManager.cancelAllReminders(updatedTask)

@@ -26,6 +26,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.AlertDialog
@@ -39,11 +43,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -58,12 +65,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -71,8 +79,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.StreakIndicator
@@ -83,6 +93,7 @@ import com.ilseon.ui.screen.ArchiveScreen
 import com.ilseon.ui.screen.CompletedTasksScreen
 import com.ilseon.ui.screen.ContextManagementScreen
 import com.ilseon.ui.screen.DashboardScreen
+import com.ilseon.ui.screen.FuelCheckScreen
 import com.ilseon.ui.screen.IdeaInboxScreen
 import com.ilseon.ui.screen.NextTaskActivationScreen
 import com.ilseon.ui.screen.OngoingTasksScreen
@@ -142,6 +153,11 @@ class MainActivity : ComponentActivity() {
                 onDispose {}
             } */
             IlseonTheme {
+                val fuelCheckViewModel: FuelCheckViewModel = hiltViewModel()
+                val userStatus by fuelCheckViewModel.userStatus.collectAsState()
+                LaunchedEffect(userStatus) {
+                    android.util.Log.d("FuelCheck", "userStatus: $userStatus, energy: ${userStatus?.currentEnergy}")
+                }
                 val context = LocalContext.current
                 var hasNotificationPermission by remember {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -212,7 +228,7 @@ class MainActivity : ComponentActivity() {
                     AlertDialog(
                         onDismissRequest = { showExactAlarmPermissionDialog = false },
                         title = { Text("Permission Required") },
-                        text = { Text("To ensure alarms and reminders are sent on time, please grant the 'Alarms & reminders' permission.") },
+                        text = { Text("To ensure alarms and reminders are sent on time, please grant the \'Alarms & reminders\' permission.") },
                         confirmButton = {
                             Button(
                                 onClick = {
@@ -392,6 +408,22 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     actions = {
+                                        val energyLevel = userStatus?.currentEnergy
+                                        val icon = when (energyLevel) {
+                                            EnergyLevel.High -> Icons.Filled.BatteryFull
+                                            EnergyLevel.Medium -> Icons.Filled.Battery3Bar
+                                            EnergyLevel.Low -> Icons.Filled.Battery1Bar
+                                            else -> Icons.Filled.BatteryChargingFull
+                                        }
+                                        val tint = energyLevel?.toColor() ?: MaterialTheme.colorScheme.onSurfaceVariant
+
+                                        IconButton(onClick = { navController.navigate(Screen.FuelCheck.route) }) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = "Fuel Check",
+                                                tint = tint
+                                            )
+                                        }
                                         StreakIndicator(
                                             streak = completionStreak,
                                             modifier = Modifier.padding(end = 16.dp).size(24.dp)
@@ -495,10 +527,10 @@ class MainActivity : ComponentActivity() {
                                     ReflectionDialog(
                                         taskTitle = data.task.title,
                                         phonePickups = data.phonePickups,
-                                        onSave = { reflection ->
+                                        onSave = { reflection, energyLevel ->
                                             // Clear the animation state before completing
                                             completedTaskIds = completedTaskIds - data.task.id
-                                            viewModel.completeTask(data.task, reflection)
+                                            viewModel.completeTask(data.task, reflection, energyLevel)
                                         },
                                         onDismiss = {
                                             // Also clear if dismissed without saving
@@ -631,6 +663,9 @@ class MainActivity : ComponentActivity() {
                                     newIdeaId = backStackEntry.arguments?.getString("ideaId")?.let { UUID.fromString(it) }
                                 )
                             }
+                            composable(Screen.FuelCheck.route) {
+                                FuelCheckScreen(onNavigateBack = { navController.popBackStack() })
+                            }
                             composable(
                                 route = "${Screen.VoiceInbox.route}?memoId={memoId}",
                                 arguments = listOf(navArgument("memoId") { nullable = true }),
@@ -699,15 +734,21 @@ class MainActivity : ComponentActivity() {
                 if (sheetState.isVisible) {
                     ModalBottomSheet(
                         onDismissRequest = {
-                            vttTitleResult = ""
-                            vttDescriptionResult = ""
-                            scope.launch { sheetState.hide() }
+                            // Only dismiss if not currently expanded
+                            if (sheetState.currentValue != SheetValue.Expanded) {
+                                vttTitleResult = ""
+                                vttDescriptionResult = ""
+                                scope.launch { sheetState.hide() }
+                            }
                         },
-                        sheetState = sheetState
+                        sheetState = sheetState,
+                        properties = ModalBottomSheetProperties(
+                            shouldDismissOnBackPress = true
+                        )
                     ) {
                         QuickCaptureSheet(
                             sheetState = sheetState,
-                            onSave = { title, description, contextId, priority, isUrgent, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow ->
+                            onSave = { title, description, contextId, priority, isUrgent, startTime, endTime, duration, isRecurring, recurrenceDays, isForTomorrow, energyLevel ->
                                 viewModel.addTask(
                                     title,
                                     description,
@@ -719,7 +760,8 @@ class MainActivity : ComponentActivity() {
                                     duration,
                                     isRecurring,
                                     recurrenceDays,
-                                    isForTomorrow
+                                    isForTomorrow,
+                                    energyLevel
                                 )
                                 scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                     if (onTaskSavedFromIdea) {

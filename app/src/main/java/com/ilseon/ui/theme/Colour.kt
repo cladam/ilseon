@@ -34,3 +34,11 @@ fun TaskPriority.toColor(): Color {
         TaskPriority.Low -> PriorityLow
     }
 }
+
+// Energy-based Colors
+val MutedGreen = Color(0xFF5A9B6E)
+val MutedGold = QuietAmber
+
+val EnergyHigh = MutedGreen
+val EnergyMedium = MutedGold
+val EnergyLow = MutedRed

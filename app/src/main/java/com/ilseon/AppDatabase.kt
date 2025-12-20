@@ -4,8 +4,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import com.ilseon.data.EnergyLevel
+import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.idea.Idea
 import com.ilseon.data.idea.IdeaDao
 import com.ilseon.data.task.ReminderType
@@ -18,11 +18,12 @@ import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.data.userstatus.UserStatusDao
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoDao
 import java.util.UUID
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class], version = 21, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 24, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -31,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun focusBlockDao(): FocusBlockDao
     abstract fun ideaDao(): IdeaDao
     abstract fun voiceMemoDao(): VoiceMemoDao
+    abstract fun userStatusDao(): UserStatusDao
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.
@@ -63,6 +65,12 @@ abstract class AppDatabase : RoomDatabase() {
 
         @TypeConverter
         fun toTimerState(value: String): TimerState = TimerState.valueOf(value)
+
+        @TypeConverter
+        fun fromEnergyLevel(value: EnergyLevel?): String? = value?.name
+
+        @TypeConverter
+        fun toEnergyLevel(value: String?): EnergyLevel? = value?.let { EnergyLevel.valueOf(it) }
 
         @TypeConverter
         fun fromString(value: String?): List<Int> {

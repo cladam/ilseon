@@ -23,9 +23,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.BatteryStd
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,8 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.TaskViewModel
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.TaskDetailsDialog
@@ -97,7 +105,7 @@ fun NextUpTasks(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .background(colorScheme.surface)
                 .clickable { isExpanded = !isExpanded }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,14 +113,14 @@ fun NextUpTasks(
         ) {
             Text(
                 text = "$headerText (${tasks.size})",
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
             Icon(
                 Icons.Filled.ChevronRight,
                 contentDescription = "Expand or collapse",
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = colorScheme.onSurface,
                 modifier = Modifier.rotate(rotationAngle)
             )
         }
@@ -126,7 +134,7 @@ fun NextUpTasks(
             ) {
                 tasks.forEach { task ->
                     val isOverdue = viewModel.isTaskOverdue(task)
-                    val borderColor = if (isOverdue) Color.Red else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    val borderColor = if (isOverdue) Color.Red else colorScheme.onBackground.copy(alpha = 0.3f)
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
@@ -159,10 +167,27 @@ fun NextUpTasks(
                                     .clip(CircleShape)
                                     .background(it.priority.toColor())
                             ) {}
+                            Spacer(Modifier.width(8.dp))
+                            it.energyLevel?.let { level ->
+                                val icon = when (level) {
+                                    EnergyLevel.High -> Icons.Default.BatteryFull
+                                    EnergyLevel.Medium -> Icons.Default.Battery3Bar
+                                    EnergyLevel.Low -> Icons.Default.Battery1Bar
+                                }
+                                val rotation = if (level == EnergyLevel.Medium) 0f else 270f
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = "Energy Level: ${level.name}",
+                                    tint = level.toColor(),
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .rotate(90f)
+                                )
+                            }
                             Spacer(Modifier.width(16.dp))
                             Text(
                                 text = it.title,
-                                color = MaterialTheme.colorScheme.onBackground,
+                                color = colorScheme.onBackground,
                                 fontSize = 16.sp,
                                 modifier = Modifier.weight(1f)
                             )

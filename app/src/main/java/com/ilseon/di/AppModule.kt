@@ -13,6 +13,8 @@ import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.data.userstatus.UserStatusDao
+import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.data.voicememo.VoiceMemoDao
 import com.ilseon.data.voicememo.VoiceMemoRepository
 import com.ilseon.notifications.IReminderManager
@@ -64,7 +66,7 @@ abstract class AppModule {
                 "ilseon_database"
             )
                 .addCallback(callback)
-                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+                .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24)
                 .build()
         }
 
@@ -141,6 +143,24 @@ abstract class AppModule {
             }
         }
 
+        val MIGRATION_21_22: Migration = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN energyLevel TEXT DEFAULT NULL")
+            }
+        }
+
+        private val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN actualEnergyLevel TEXT")
+            }
+        }
+
+        private val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `UserStatus` (`userId` TEXT NOT NULL, `currentEnergy` TEXT NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
+            }
+        }
+
         @Provides
         @Singleton
         fun provideTaskDao(appDatabase: AppDatabase): TaskDao {
@@ -157,6 +177,12 @@ abstract class AppModule {
         @Singleton
         fun provideVoiceMemoDao(appDatabase: AppDatabase): VoiceMemoDao {
             return appDatabase.voiceMemoDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideUserStatusDao(appDatabase: AppDatabase): UserStatusDao {
+            return appDatabase.userStatusDao()
         }
 
         @Provides
@@ -181,6 +207,12 @@ abstract class AppModule {
         @Singleton
         fun provideVoiceMemoRepository(voiceMemoDao: VoiceMemoDao): VoiceMemoRepository {
             return VoiceMemoRepository(voiceMemoDao)
+        }
+
+        @Provides
+        @Singleton
+        fun provideUserStatusRepository(userStatusDao: UserStatusDao): UserStatusRepository {
+            return UserStatusRepository(userStatusDao)
         }
 
         @Provides

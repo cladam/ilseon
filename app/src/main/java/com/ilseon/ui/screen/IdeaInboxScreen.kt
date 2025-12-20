@@ -56,7 +56,7 @@ fun IdeaInboxScreen(
     vttIdeaContent: String,
     onVttClick: () -> Unit,
     onSwipeUp: () -> Unit,
-    newIdeaId: UUID? = null,
+    newIdeaId: UUID? = null
 ) {
     val ideas by viewModel.ideas.collectAsState()
     var editingIdea by remember { mutableStateOf<Idea?>(null) }

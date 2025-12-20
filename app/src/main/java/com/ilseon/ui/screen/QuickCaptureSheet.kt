@@ -60,9 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.TaskContextViewModel
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.TaskPriority
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.DayPicker
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.toColor
@@ -73,7 +75,7 @@ import java.util.UUID
 @Composable
 fun QuickCaptureSheet(
     sheetState: SheetState,
-    onSave: (String, String?, UUID?, TaskPriority, Boolean, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean) -> Unit,
+    onSave: (String, String?, UUID?, TaskPriority, Boolean, String, String, Int?, Boolean, Set<DayOfWeek>, Boolean, EnergyLevel?) -> Unit,
     viewModel: TaskContextViewModel = hiltViewModel(),
     initialTitle: String = "",
     initialDescription: String = "",
@@ -88,6 +90,7 @@ fun QuickCaptureSheet(
     var description by remember { mutableStateOf(initialDescription) }
     var selectedContextId by remember { mutableStateOf<UUID?>(null) }
     var priority by remember { mutableStateOf(TaskPriority.Medium) }
+    var energyLevel by remember { mutableStateOf<EnergyLevel?>(null) }
     var isUrgent by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
@@ -147,64 +150,6 @@ fun QuickCaptureSheet(
             }
         }
     }
-
-//    LaunchedEffect(isTitleFieldLaidOut, initialTitle, initialDescription) {
-//        if (!hasRequestedInitialFocus &&
-//            isTitleFieldLaidOut &&
-//            initialTitle.isEmpty() &&
-//            initialDescription.isEmpty()
-//        ) {
-//            hasRequestedInitialFocus = true
-//            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
-//                try {
-//                    delay(100) // Short delay for layout
-//                    titleFocusRequester.requestFocus()
-//                } catch (e: Exception) {
-//                    Log.d("QuickCaptureSheet", "Error requesting focus: $e")
-//                }
-//            }
-//        }
-//    }
-
-//    LaunchedEffect(titleFocusRequester, initialTitle) {
-//        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
-//            hasRequestedInitialFocus = true
-//            // Small delay to ensure the view is attached and focusable
-//            delay(200)
-//            try {
-//                titleFocusRequester.requestFocus()
-//            } catch (e: Exception) {
-//                Log.d("QuickCaptureSheet", "Error requesting focus: $e")
-//            }
-//        }
-//    }
-
-//    LaunchedEffect(isTitleFieldReady, initialTitle) {
-//        if (
-//            isTitleFieldReady &&
-//            initialTitle.isEmpty() &&
-//            !hasRequestedInitialFocus
-//        ) {
-//            hasRequestedInitialFocus = true
-//            // Wait one frame so layout is fully committed
-//            kotlinx.coroutines.android.awaitFrame()
-//            titleFocusRequester.requestFocus()
-//        }
-//    }
-//    LaunchedEffect(titleFocusRequester) {
-//        if (initialTitle.isEmpty() && !hasRequestedInitialFocus) {
-//            hasRequestedInitialFocus = true
-//            // Wait for multiple frames to ensure the view is fully composed and focusable
-//            delay(300)
-//            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-//                try {
-//                    titleFocusRequester.requestFocus()
-//                } catch (e: Exception) {
-//                    // Silently ignore - the view might not be ready
-//                }
-//            }
-//        }
-//    }
 
     LaunchedEffect(initialDescription) {
         if (initialDescription.isNotEmpty()) {
@@ -541,7 +486,36 @@ fun QuickCaptureSheet(
                 }
             }
         }
-        
+
+        Spacer(Modifier.height(24.dp))
+
+        // --- ENERGY LEVEL SECTION ---
+        Text(
+            "Energy Level (Optional)",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 14.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            EnergyLevel.entries.forEach { level ->
+                Button(
+                    onClick = { energyLevel = if (energyLevel == level) null else level },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (energyLevel == level) level.toColor() else MaterialTheme.colorScheme.surface,
+                        contentColor = if (energyLevel == level) Color.White else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text(level.name)
+                }
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
 
         Row(
@@ -586,7 +560,8 @@ fun QuickCaptureSheet(
                     durationInt,
                     isRecurring,
                     days,
-                    isForTomorrow
+                    isForTomorrow,
+                    energyLevel
                 )
             },
             modifier = Modifier
@@ -626,9 +601,7 @@ private fun TimePickerField(time: String, label: String, onClick: () -> Unit) {
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
                 disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = 0.7f
-                )
+                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             ),
         )
         Box(

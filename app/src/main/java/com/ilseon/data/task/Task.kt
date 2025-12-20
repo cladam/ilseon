@@ -2,6 +2,7 @@ package com.ilseon.data.task
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.ilseon.data.EnergyLevel
 import java.util.UUID
 
 enum class TaskPriority {
@@ -72,7 +73,9 @@ data class Task(
     val isArchived: Boolean = false,
     val seriesId: UUID? = null,
     val parentId: UUID? = null,
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    val energyLevel: EnergyLevel? = null,
+    val actualEnergyLevel: EnergyLevel? = null
 )
 
 @Entity(tableName = "task_contexts")

@@ -21,6 +21,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.BatteryStd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Pause
@@ -30,6 +35,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,15 +48,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.TaskViewModel
+import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TimerState
+import com.ilseon.data.toColor
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.VisualCountdownTimer
@@ -60,7 +70,6 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.inc
 import kotlin.math.max
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -135,7 +144,7 @@ fun CurrentPriorityTask(
         }
         Text(
             text = title,
-            color = MaterialTheme.colorScheme.secondary,
+            color = colorScheme.secondary,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
@@ -149,12 +158,12 @@ fun CurrentPriorityTask(
                     onClick = {},
                     onLongClick = { taskToEdit = task }
                 )
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .background(colorScheme.surface, RoundedCornerShape(16.dp))
                 .border(
                     width = 1.dp,
                     color = when {
                         isOverdue -> QuietAmber
-                        else -> MaterialTheme.colorScheme.secondary
+                        else -> colorScheme.secondary
                     },
                     shape = RoundedCornerShape(16.dp)
                 )
@@ -174,6 +183,71 @@ fun CurrentPriorityTask(
                     Spacer(Modifier.height(16.dp))
                 }
             }
+            
+            // Badges Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Priority & Context
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(task.priority.toColor(), CircleShape)
+                    )
+                    Text(
+                        text = contextName,
+                        color = colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 12.sp
+                    )
+                }
+
+                // Energy Badge
+                task.energyLevel?.let { level ->
+                    Row(
+                        modifier = Modifier
+                            .background(level.toColor().copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .border(
+                                width = 1.dp,
+                                color = level.toColor().copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val icon = when (level) {
+                            EnergyLevel.High -> Icons.Default.BatteryFull
+                            EnergyLevel.Medium -> Icons.Default.Battery3Bar
+                            EnergyLevel.Low -> Icons.Default.Battery1Bar
+                        }
+                        val rotation = if (level == EnergyLevel.Medium) 0f else 270f
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = "Energy Level",
+                            tint = level.toColor(),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(90f)
+                        )
+                        Text(
+                            text = level.name,
+                            color = level.toColor(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Main Content Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -192,7 +266,7 @@ fun CurrentPriorityTask(
                         MarkdownText(
                             markdown = task.title,
                             style = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = colorScheme.onSurface,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -204,22 +278,7 @@ fun CurrentPriorityTask(
                             MarkdownText(markdown = it)
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(task.priority.toColor(), CircleShape)
-                        )
-                        Text(
-                            text = contextName,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
-                    }
+
                     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
                     if (task.startTime != null && task.endTime != null && timerState != TimerState.Running) {
                         Spacer(Modifier.height(4.dp))
@@ -227,7 +286,7 @@ fun CurrentPriorityTask(
                         val endTimeStr = timeFormat.format(Date(task.endTime))
                         Text(
                             text = "Time Block: $startTimeStr - $endTimeStr",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            color = colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 14.sp
                         )
                     }
@@ -242,7 +301,7 @@ fun CurrentPriorityTask(
                         Icon(
                             Icons.Filled.PlayArrow,
                             contentDescription = "Start Task",
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = colorScheme.secondary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -253,7 +312,7 @@ fun CurrentPriorityTask(
                         Icon(
                             Icons.Filled.Pause,
                             contentDescription = "Pause Task",
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = colorScheme.secondary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -266,7 +325,7 @@ fun CurrentPriorityTask(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(
-                            if (allSubTasksComplete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(
+                            if (allSubTasksComplete) colorScheme.secondary else colorScheme.onSurface.copy(
                                 alpha = 0.5f
                             )
                         )
@@ -276,7 +335,7 @@ fun CurrentPriorityTask(
                     Icon(
                         Icons.Filled.Check,
                         contentDescription = "Complete Task",
-                        tint = MaterialTheme.colorScheme.surface,
+                        tint = colorScheme.surface,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -285,7 +344,7 @@ fun CurrentPriorityTask(
                 Spacer(Modifier.height(16.dp))
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    color = colorScheme.outline.copy(alpha = 0.3f)
                 )
 
                 val completedCount = subTasks.count { it.isComplete }
@@ -296,15 +355,15 @@ fun CurrentPriorityTask(
                 ) {
                     Text(
                         "Sub-Tasks",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        style = typography.labelMedium,
+                        color = colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Text(
                         "$completedCount/${subTasks.size}",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = typography.labelMedium,
                         color = if (completedCount == subTasks.size)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            colorScheme.primary
+                        else colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
 
@@ -312,7 +371,6 @@ fun CurrentPriorityTask(
 
                 Column(
                     modifier = Modifier.heightIn(max = 200.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     subTasks.forEach { subTask ->
                         Row(
@@ -321,8 +379,8 @@ fun CurrentPriorityTask(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
                                     if (subTask.isComplete)
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    else MaterialTheme.colorScheme.surfaceVariant
+                                        colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    else colorScheme.surfaceVariant
                                 )
                                 .clickable {
                                     viewModel.updateTask(subTask.copy(isComplete = !subTask.isComplete))
@@ -340,10 +398,10 @@ fun CurrentPriorityTask(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = subTask.title,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = typography.bodyMedium,
                                 color = if (subTask.isComplete)
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                else MaterialTheme.colorScheme.onSurface,
+                                    colorScheme.onSurface.copy(alpha = 0.5f)
+                                else colorScheme.onSurface,
                                 textDecoration = if (subTask.isComplete)
                                     androidx.compose.ui.text.style.TextDecoration.LineThrough
                                 else null

@@ -11,9 +11,17 @@ plugins {
     id("kotlin-kapt")
 }
 
-val revenueCatPropertiesFile = rootProject.file("revenuecat.properties")
-val revenueCatProperties = Properties()
-revenueCatProperties.load(FileInputStream(revenueCatPropertiesFile))
+val revenueCatApiKey = run {
+    val revenueCatPropertiesFile = rootProject.file("revenuecat.properties")
+    if (revenueCatPropertiesFile.exists()) {
+        val revenueCatProperties = Properties()
+        revenueCatProperties.load(FileInputStream(revenueCatPropertiesFile))
+        revenueCatProperties.getProperty("revenuecat.api.key")
+    } else {
+        System.getenv("REVENUECAT_API_KEY")
+    }
+} ?: ""
+
 
 android {
     namespace = "com.ilseon"
@@ -55,7 +63,7 @@ android {
         versionName = "0.26.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "REVENUECAT_API_KEY", "\"${revenueCatProperties["revenuecat.api.key"]}\"")
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"$revenueCatApiKey\"")
     }
 
     buildTypes {

@@ -11,6 +11,10 @@ plugins {
     id("kotlin-kapt")
 }
 
+val revenueCatPropertiesFile = rootProject.file("revenuecat.properties")
+val revenueCatProperties = Properties()
+revenueCatProperties.load(FileInputStream(revenueCatPropertiesFile))
+
 android {
     namespace = "com.ilseon"
     compileSdk = 36
@@ -47,10 +51,11 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 81
-        versionName = "0.26.1"
+        versionCode = 82
+        versionName = "0.26.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"${revenueCatProperties["revenuecat.api.key"]}\"")
     }
 
     buildTypes {
@@ -70,6 +75,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -105,6 +111,7 @@ tasks.register("printVersionCodeAndName") {
 }
 
 dependencies {
+    implementation("com.revenuecat.purchases:purchases:9.17.1")
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     implementation(libs.androidx.material3)
     androidTestImplementation(libs.androidx.rules)

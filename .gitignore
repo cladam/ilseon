@@ -40,3 +40,4 @@ google-services.json
 # For example:
 # /app/src/main/java/com/ilseon/billing/
 # /app/src/main/java/com/ilseon/secrets/Secrets.kt
+/revenuecat.properties

@@ -7,6 +7,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ilseon.notifications.NotificationHelper
 import com.ilseon.service.HapticWorker
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -22,6 +25,9 @@ class IlseonApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        Purchases.logLevel = LogLevel.DEBUG
+        Purchases.configure(PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY)
+            .build())
         notificationHelper.createNotificationChannels()
         setupHapticWorker()
     }

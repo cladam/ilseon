@@ -8,6 +8,7 @@ import android.os.Environment
 import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
+import com.google.ai.client.generativeai.type.generationConfig
 import com.ilseon.data.task.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 
 // Result object to hold the file, text, and duration
@@ -36,6 +38,7 @@ interface AudioHandler {
 
 interface SpeechTranscriber {
     suspend fun transcribe(filePath: String): String?
+    suspend fun extractTasksFromTranscript(transcript: String): String?
 }
 
 @Singleton
@@ -78,10 +81,37 @@ class GeminiSpeechTranscriber @Inject constructor(
         }
     }
 
+    override suspend fun extractTasksFromTranscript(transcript: String): String? {
+        val apiKey = settingsRepository.apiKey.first()
+        if (apiKey.isEmpty()) {
+            Log.e("SpeechTranscriber", "API key is empty!")
+            return null
+        }
+
+        val systemInstruction = """You are a task extraction engine. Analyze the user's transcript. Extract any mentioned tasks, ideas, or action items. For each item, provide a title and estimate the energy effort (Low, Medium, or High) based on the context of the words used. Deduct the context, otherwise add "imported to the response". Respond ONLY in structured JSON."""
+
+        val generativeModel = GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = apiKey,
+            generationConfig = generationConfig {
+                responseMimeType = "application/json"
+            },
+            systemInstruction = content { text(systemInstruction) }
+        )
+
+        return try {
+            val response = generativeModel.generateContent(content { text(transcript) })
+            response.text?.also { Log.d("TaskExtraction", it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private suspend fun readFileToBytes(filePath: String): ByteArray? = withContext(Dispatchers.IO) {
         try {
             if (filePath.startsWith("content://")) {
-                val uri = Uri.parse(filePath)
+                val uri = filePath.toUri()
                 context.contentResolver.openInputStream(uri)?.use {
                     it.readBytes()
                 }

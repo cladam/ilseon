@@ -12,10 +12,15 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.idea.IdeaRepository
+import com.ilseon.data.task.ExtractedTasks
 import com.ilseon.data.task.SettingsRepository
+import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskPriority
+import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoRepository
 import com.ilseon.service.SpeechTranscriber
+import com.ilseon.ui.mapEffortToEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 import java.util.UUID
@@ -39,6 +45,7 @@ class VoiceMemoViewModel @Inject constructor(
     private val voiceMemoRepository: VoiceMemoRepository,
     private val speechTranscriber: SpeechTranscriber,
     private val ideaRepository: IdeaRepository,
+    private val taskRepository: TaskRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -56,6 +63,9 @@ class VoiceMemoViewModel @Inject constructor(
 
     private val _transcriptionResult = MutableStateFlow<UUID?>(null)
     val transcriptionResult = _transcriptionResult.asStateFlow()
+
+    private val _extractedTasks = MutableStateFlow<ExtractedTasks?>(null)
+    val extractedTasks = _extractedTasks.asStateFlow()
 
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
         .stateIn(
@@ -78,28 +88,71 @@ class VoiceMemoViewModel @Inject constructor(
         Log.d("VoiceMemoVM", "transcribeMemo called for: ${memo.id}")
         viewModelScope.launch {
             _transcribingMemoId.value = memo.id
+            var newIdeaId: UUID? = null // Hold the idea ID
             try {
-                Log.d("VoiceMemoVM", "Starting transcription for file: ${memo.filePath}")
+                // 1. Transcribe
                 val transcription = speechTranscriber.transcribe(memo.filePath)
-                Log.d("VoiceMemoVM", "Transcription result: $transcription")
-                if (!transcription.isNullOrBlank()) {
-                    val deeplink = "[Play Recording](ilseon://play-voice-memo/${memo.id})"
-                    val fullContent = "$transcription\n\n$deeplink"
-                    val newIdeaId = ideaRepository.insertIdea(
-                        content = fullContent,
-                        isReference = true
-                    )
-                    _transcriptionResult.value = newIdeaId
-                    Log.d("VoiceMemoVM", "Idea inserted successfully with ID: $newIdeaId")
-                } else {
+                if (transcription.isNullOrBlank()) {
                     Log.w("VoiceMemoVM", "Transcription was null or blank")
+                    return@launch
                 }
+
+                // 2. Create the Idea/Note immediately
+                val deeplink = "[Play Recording](ilseon://play-voice-memo/${memo.id})"
+                val fullContent = "$transcription\n\n$deeplink"
+                newIdeaId = ideaRepository.insertIdea(
+                    content = fullContent,
+                    isReference = true
+                )
+                Log.d("VoiceMemoVM", "Idea inserted successfully with ID: $newIdeaId")
+
+                // 3. Attempt to extract tasks
+                val jsonResponse = try {
+                    speechTranscriber.extractTasksFromTranscript(transcription)
+                } catch (e: Exception) {
+                    Log.e("VoiceMemoVM", "Task extraction failed, proceeding without tasks", e)
+                    null // Ensure failure here doesn't crash the flow
+                }
+
+                if (!jsonResponse.isNullOrBlank()) {
+                    val format = Json { isLenient = true }
+                    val extractedTasks = format.decodeFromString<ExtractedTasks>(jsonResponse)
+                    _extractedTasks.value = extractedTasks
+                } else {
+                    // If no tasks, navigate directly to the created note
+                    _transcriptionResult.value = newIdeaId
+                }
+
             } catch (e: Exception) {
-                Log.e("VoiceMemoVM", "Transcription failed", e)
+                Log.e("VoiceMemoVM", "Transcription process failed", e)
+                // If transcription itself fails, we might not have an ideaId to navigate to.
+                // We could show a Snackbar or some other error feedback here.
             } finally {
                 _transcribingMemoId.value = null
             }
         }
+    }
+
+
+    fun saveExtractedTasks(tasks: ExtractedTasks) {
+        viewModelScope.launch {
+            val importedContext = taskRepository.getOrCreateImportedContext()
+            tasks.tasks.forEach { taskInfo ->
+                val newTask = Task(
+                    title = taskInfo.title,
+                    energyLevel = mapEffortToEnum(taskInfo.effort),
+                    contextId = importedContext.id,
+                    priority = TaskPriority.Medium, // Default priority
+                    createdAt = System.currentTimeMillis()
+                )
+                taskRepository.insertTask(newTask)
+            }
+            _extractedTasks.value = null // Reset after saving
+        }
+    }
+
+    fun dismissExtractedTasks() {
+        _extractedTasks.value = null
     }
 
     fun onPlayPause(memoId: String) {

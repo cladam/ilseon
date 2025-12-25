@@ -58,4 +58,19 @@ class IdeaInboxViewModel @Inject constructor(
             ideaRepository.updateIdea(idea.copy(isPinned = !idea.isPinned))
         }
     }
+
+    fun increaseWeight(idea: Idea) {
+        viewModelScope.launch {
+            val currentMax = ideas.value.maxOfOrNull { it.weight } ?: 0
+            ideaRepository.updateIdea(idea.copy(weight = currentMax + 1))
+        }
+    }
+
+    fun decreaseWeight(idea: Idea) {
+        viewModelScope.launch {
+            val currentMin = ideas.value.minOfOrNull { it.weight } ?: 0
+            ideaRepository.updateIdea(idea.copy(weight = currentMin - 1))
+        }
+    }
+
 }

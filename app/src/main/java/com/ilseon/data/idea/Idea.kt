@@ -15,5 +15,6 @@ data class Idea(
     val createdAt: Long = System.currentTimeMillis(),
     val isConverted: Boolean = false,
     val isReference: Boolean = false,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val weight: Int = 0
 )

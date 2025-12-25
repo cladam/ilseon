@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.data.idea.Idea
 import com.ilseon.ui.components.AppCard
+import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.MutedTeal
 import java.text.SimpleDateFormat
@@ -78,7 +79,10 @@ fun IdeaInboxScreen(
     val filteredIdeas = remember(currentView, ideas) {
         ideas.filter {
             if (currentView == "Inbox") !it.isReference else it.isReference
-        }.sortedByDescending { it.isPinned }
+        }.sortedWith(
+            compareByDescending<Idea> { it.isPinned }
+                .thenByDescending { it.weight }
+        )
     }
 
     LaunchedEffect(filteredIdeas, newIdeaId) {
@@ -175,75 +179,85 @@ fun IdeaInboxScreen(
                 }
             } else {
                 items(filteredIdeas, key = { it.id }) { idea ->
-                    AppCard(
-                        modifier = Modifier
-                            .animateItem(),
+                    GravitySwipeBox(
+                        onSwipeRight = { viewModel.increaseWeight(idea) },
+                        onSwipeLeft = { viewModel.decreaseWeight(idea) }
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            idea.content?.let {
-                                MarkdownText(
-                                    markdown = it,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(idea.createdAt)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Row {
-                                    if (currentView == "Inbox") {
-                                        IconButton(onClick = { viewModel.saveAsReference(idea) }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Save,
-                                                contentDescription = "Save as Note",
-                                                tint = MaterialTheme.colorScheme.secondary
-                                            )
-                                        }
-                                        IconButton(onClick = {
-                                            viewModel.convertToTask(idea)
-                                            val sentences = idea.content?.split(Regex("(?<=[.!?])\\s*"))
-                                            val title = sentences?.firstOrNull() ?: idea.content ?: ""
-                                            val description = if ((sentences?.size ?: 0) > 1) {
-                                                sentences!!.drop(1).joinToString(" ")
-                                            } else {
-                                                ""
+                        AppCard(
+                            modifier = Modifier
+                                .animateItem(),
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                idea.content?.let {
+                                    MarkdownText(
+                                        markdown = it,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = SimpleDateFormat(
+                                            "yyyy-MM-dd HH:mm",
+                                            Locale.getDefault()
+                                        ).format(Date(idea.createdAt)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Row {
+                                        if (currentView == "Inbox") {
+                                            IconButton(onClick = { viewModel.saveAsReference(idea) }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Save,
+                                                    contentDescription = "Save as Note",
+                                                    tint = MaterialTheme.colorScheme.secondary
+                                                )
                                             }
-                                            onNavigateToNewTask(title, description)
-                                        }) {
+                                            IconButton(onClick = {
+                                                viewModel.convertToTask(idea)
+                                                val sentences =
+                                                    idea.content?.split(Regex("(?<=[.!?])\\s*"))
+                                                val title =
+                                                    sentences?.firstOrNull() ?: idea.content ?: ""
+                                                val description = if ((sentences?.size ?: 0) > 1) {
+                                                    sentences!!.drop(1).joinToString(" ")
+                                                } else {
+                                                    ""
+                                                }
+                                                onNavigateToNewTask(title, description)
+                                            }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = "Convert to Task",
+                                                    tint = MutedTeal
+                                                )
+                                            }
+                                        } else {
+                                            IconButton(onClick = { viewModel.togglePin(idea) }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PushPin,
+                                                    contentDescription = "Pin Idea",
+                                                    tint = if (idea.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        IconButton(onClick = { editingIdea = idea }) {
                                             Icon(
-                                                imageVector = Icons.Default.CheckCircle,
-                                                contentDescription = "Convert to Task",
-                                                tint = MutedTeal
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit Idea",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                    } else {
-                                        IconButton(onClick = { viewModel.togglePin(idea) }) {
+                                        IconButton(onClick = { viewModel.deleteIdea(idea) }) {
                                             Icon(
-                                                imageVector = Icons.Default.PushPin,
-                                                contentDescription = "Pin Idea",
-                                                tint = if (idea.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Idea",
+                                                tint = MaterialTheme.colorScheme.error
                                             )
                                         }
-                                    }
-                                    IconButton(onClick = { editingIdea = idea }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit Idea",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    IconButton(onClick = { viewModel.deleteIdea(idea) }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Idea",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
                                     }
                                 }
                             }

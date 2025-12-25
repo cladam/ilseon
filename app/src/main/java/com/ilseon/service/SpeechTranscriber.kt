@@ -88,7 +88,12 @@ class GeminiSpeechTranscriber @Inject constructor(
             return null
         }
 
-        val systemInstruction = """You are a task extraction engine. Analyze the user's transcript. Extract any mentioned tasks, ideas, or action items. For each item, provide a title and estimate the energy effort (Low, Medium, or High) based on the context of the words used. Deduct the context, otherwise add "imported to the response". Respond ONLY in structured JSON."""
+        val systemInstruction = """
+            You are a task extraction engine. Analyze the user's transcript. 
+            Extract any mentioned tasks, ideas, or action items. For each item, provide a title and 
+            estimate the energy effort (Low, Medium, or High) based on the context of the words used. 
+            Deduct the context, otherwise add "imported to the response". Respond ONLY in structured JSON.
+            """.trimIndent()
 
         val generativeModel = GenerativeModel(
             modelName = "gemini-2.5-flash",
@@ -103,6 +108,7 @@ class GeminiSpeechTranscriber @Inject constructor(
             val response = generativeModel.generateContent(content { text(transcript) })
             response.text?.also { Log.d("TaskExtraction", it) }
         } catch (e: Exception) {
+            Log.e("TaskExtraction", "Error extracting tasks", e)
             e.printStackTrace()
             null
         }

@@ -115,9 +115,14 @@ class VoiceMemoViewModel @Inject constructor(
                 }
 
                 if (!jsonResponse.isNullOrBlank()) {
-                    val format = Json { isLenient = true }
-                    val extractedTasks = format.decodeFromString<ExtractedTasks>(jsonResponse)
-                    _extractedTasks.value = extractedTasks
+                    try {
+                        val format = Json { isLenient = true }
+                        val extractedTasks = format.decodeFromString<ExtractedTasks>(jsonResponse)
+                        _extractedTasks.value = extractedTasks
+                    } catch (e: Exception) {
+                        Log.e("VoiceMemoVM", "Failed to parse extracted tasks JSON, proceeding without tasks", e)
+                        _transcriptionResult.value = newIdeaId // Navigate directly to the note
+                    }
                 } else {
                     // If no tasks, navigate directly to the created note
                     _transcriptionResult.value = newIdeaId
@@ -132,7 +137,6 @@ class VoiceMemoViewModel @Inject constructor(
             }
         }
     }
-
 
     fun saveExtractedTasks(tasks: ExtractedTasks) {
         viewModelScope.launch {

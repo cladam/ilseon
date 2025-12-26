@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.VoiceMemoViewModel
 import com.ilseon.data.task.ExtractedTasks
 import com.ilseon.data.voicememo.VoiceMemo
+import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.VoiceMemoCard
 import java.util.UUID
 
@@ -98,6 +99,10 @@ fun VoiceInboxScreen(
         )
     }
 
+    val sortedMemos = remember(voiceMemos) {
+        voiceMemos.sortedWith(compareByDescending { it.weight })
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize(),
@@ -131,26 +136,31 @@ fun VoiceInboxScreen(
                 )
             }
         } else {
-            items(voiceMemos, key = { it.id }) { memo ->
-                val isPlaying = memo.id == currentlyPlayingId
-                val isTranscribing = memo.id == transcribingMemoId
-                VoiceMemoCard(
-                    memo = memo,
-                    isPlaying = isPlaying,
-                    isTranscribing = isTranscribing,
-                    progress = if (isPlaying) progress else 0f,
-                    onPlayPause = { viewModel.onPlayPause(it) },
-                    onSeek = { newProgress -> viewModel.seekTo(newProgress) },
-                    onConvertToTask = {
-                        val description = "[Play Recording](ilseon://play-voice-memo/${it.id})"
-                        onNavigateToNewTask(it.title, description)
-                    },
-                    onDelete = { viewModel.deleteVoiceMemo(it) },
-                    onEditTitle = { memoToEdit = it },
-                    onTranscribe = { viewModel.transcribeMemo(it) },
-                    showTranscribeOption = isApiKeySet,
-                    modifier = Modifier.animateItem()
-                )
+            items(sortedMemos, key = { it.id }) { memo ->
+                GravitySwipeBox(
+                    onSwipeRight = { viewModel.increaseWeight(memo) },
+                    onSwipeLeft = { viewModel.decreaseWeight(memo) }
+                ) {
+                    val isPlaying = memo.id == currentlyPlayingId
+                    val isTranscribing = memo.id == transcribingMemoId
+                    VoiceMemoCard(
+                        memo = memo,
+                        isPlaying = isPlaying,
+                        isTranscribing = isTranscribing,
+                        progress = if (isPlaying) progress else 0f,
+                        onPlayPause = { viewModel.onPlayPause(it) },
+                        onSeek = { newProgress -> viewModel.seekTo(newProgress) },
+                        onConvertToTask = {
+                            val description = "[Play Recording](ilseon://play-voice-memo/${it.id})"
+                            onNavigateToNewTask(it.title, description)
+                        },
+                        onDelete = { viewModel.deleteVoiceMemo(it) },
+                        onEditTitle = { memoToEdit = it },
+                        onTranscribe = { viewModel.transcribeMemo(it) },
+                        showTranscribeOption = isApiKeySet,
+                        modifier = Modifier.animateItem()
+                    )
+                }
             }
         }
     }

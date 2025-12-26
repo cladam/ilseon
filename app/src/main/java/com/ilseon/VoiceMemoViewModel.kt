@@ -323,6 +323,21 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
+    fun increaseWeight(memo: VoiceMemo) {
+        viewModelScope.launch {
+            val currentMax = voiceMemos.value.maxOfOrNull { it.weight } ?: 0
+            voiceMemoRepository.update(memo.copy(weight = currentMax + 1))
+        }
+    }
+
+    fun decreaseWeight(memo: VoiceMemo) {
+        viewModelScope.launch {
+            val currentMin = voiceMemos.value.minOfOrNull { it.weight } ?: 0
+            voiceMemoRepository.update(memo.copy(weight = currentMin - 1))
+        }
+    }
+
+
     private fun getDisplayName(uri: Uri): String? {
         if (uri.scheme == "content") {
             val cursor = context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)

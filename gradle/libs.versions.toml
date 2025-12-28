@@ -32,6 +32,7 @@ playReview = "2.0.2"
 material3 = "1.4.0"
 rules = "1.7.0"
 workRuntimeKtx = "2.11.0"
+ui = "1.10.0"
 
 
 [libraries]
@@ -78,6 +79,7 @@ play-review = { module = "com.google.android.play:review-ktx", version.ref = "pl
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-rules = { group = "androidx.test", name = "rules", version.ref = "rules" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

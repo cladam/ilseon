@@ -19,7 +19,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -27,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
@@ -55,7 +58,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -94,7 +97,7 @@ fun QuickCaptureSheet(
     var isUrgent by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
-    var duration by remember { mutableStateOf("") }
+    var duration by remember { mutableStateOf(25) }
     var schedulingType by remember { mutableStateOf(SchedulingType.None) }
     var isRecurring by remember { mutableStateOf(false) }
     var selectedDays by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -332,24 +335,46 @@ fun QuickCaptureSheet(
 
         // Duration specific fields
         AnimatedVisibility(visible = schedulingType == SchedulingType.Duration) {
-            OutlinedTextField(
-                value = duration,
-                onValueChange = { duration = it.filter { char -> char.isDigit() } },
-                label = { Text("Duration (minutes)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                ),
-                maxLines = 1
-            )
+            Column {
+                val durationPresets = listOf(5, 15, 25, 45, 60)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    durationPresets.forEach { preset ->
+                        Button(
+                            onClick = { duration = preset },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (duration == preset) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (duration == preset) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text(preset.toString())
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    OutlinedButton(onClick = { duration = (duration - 5).coerceAtLeast(0) }) {
+                        Icon(Icons.Default.Remove, contentDescription = "Decrease duration by 5 minutes")
+                    }
+                    Text(
+                        text = "$duration min",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    OutlinedButton(onClick = { duration += 5 }) {
+                        Icon(Icons.Default.Add, contentDescription = "Increase duration by 5 minutes")
+                    }
+                }
+            }
         }
 
         // --- TOMORROW CHECKBOX ---
@@ -540,7 +565,7 @@ fun QuickCaptureSheet(
 
         Button(
             onClick = {
-                val durationInt = duration.toIntOrNull()
+                val durationInt = if (schedulingType == SchedulingType.Duration) duration else null
                 val days = if (isRecurring) {
                     selectedDays.map {
                         DayOfWeek.valueOf(java.time.DayOfWeek.of(it).name)
@@ -583,7 +608,7 @@ private fun TimePickerField(time: String, label: String, onClick: () -> Unit) {
     Box {
         OutlinedTextField(
             value = time,
-            onValueChange = {},
+            onValueChange = { },
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth(),
             readOnly = true,

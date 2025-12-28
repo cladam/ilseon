@@ -524,6 +524,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 reflectionData?.let { data ->
+                                    val reduceMotion by settingsViewModel.reduceMotion.collectAsState()
                                     ReflectionDialog(
                                         taskTitle = data.task.title,
                                         phonePickups = data.phonePickups,
@@ -536,7 +537,8 @@ class MainActivity : ComponentActivity() {
                                             // Also clear if dismissed without saving
                                             completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.onReflectionDialogDismiss()
-                                        }
+                                        },
+                                        reduceMotion = reduceMotion
                                     )
                                 }
 

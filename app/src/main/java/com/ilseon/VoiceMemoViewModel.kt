@@ -39,6 +39,11 @@ import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
+sealed class NavigationEvent {
+    data class ToNote(val ideaId: UUID) : NavigationEvent()
+    object ToDashboard : NavigationEvent()
+}
+
 @HiltViewModel
 class VoiceMemoViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -61,11 +66,14 @@ class VoiceMemoViewModel @Inject constructor(
     private val _transcribingMemoId = MutableStateFlow<String?>(null)
     val transcribingMemoId = _transcribingMemoId.asStateFlow()
 
-    private val _transcriptionResult = MutableStateFlow<UUID?>(null)
-    val transcriptionResult = _transcriptionResult.asStateFlow()
+    private val _navigationEvent = MutableStateFlow<NavigationEvent?>(null)
+    val navigationEvent = _navigationEvent.asStateFlow()
 
     private val _extractedTasks = MutableStateFlow<ExtractedTasks?>(null)
     val extractedTasks = _extractedTasks.asStateFlow()
+
+    private val _lastCreatedIdeaId = MutableStateFlow<UUID?>(null)
+    val lastCreatedIdeaId = _lastCreatedIdeaId.asStateFlow()
 
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
         .stateIn(
@@ -104,6 +112,7 @@ class VoiceMemoViewModel @Inject constructor(
                     content = fullContent,
                     isReference = true
                 )
+                _lastCreatedIdeaId.value = newIdeaId
                 Log.d("VoiceMemoVM", "Idea inserted successfully with ID: $newIdeaId")
 
                 // 3. Attempt to extract tasks
@@ -116,16 +125,23 @@ class VoiceMemoViewModel @Inject constructor(
 
                 if (!jsonResponse.isNullOrBlank()) {
                     try {
-                        val format = Json { isLenient = true }
+                        val format = Json {
+                            isLenient = true
+                            ignoreUnknownKeys = true
+                        }
                         val extractedTasks = format.decodeFromString<ExtractedTasks>(jsonResponse)
-                        _extractedTasks.value = extractedTasks
+                        if (extractedTasks.tasks.isNotEmpty()) {
+                            _extractedTasks.value = extractedTasks
+                        } else {
+                            newIdeaId?.let { _navigationEvent.value = NavigationEvent.ToNote(it) }
+                        }
                     } catch (e: Exception) {
                         Log.e("VoiceMemoVM", "Failed to parse extracted tasks JSON, proceeding without tasks", e)
-                        _transcriptionResult.value = newIdeaId // Navigate directly to the note
+                        newIdeaId?.let { _navigationEvent.value = NavigationEvent.ToNote(it) } // Navigate directly to the note
                     }
                 } else {
                     // If no tasks, navigate directly to the created note
-                    _transcriptionResult.value = newIdeaId
+                    newIdeaId?.let { _navigationEvent.value = NavigationEvent.ToNote(it) }
                 }
 
             } catch (e: Exception) {
@@ -140,23 +156,27 @@ class VoiceMemoViewModel @Inject constructor(
 
     fun saveExtractedTasks(tasks: ExtractedTasks) {
         viewModelScope.launch {
-            val importedContext = taskRepository.getOrCreateImportedContext()
+            val extractedContext = taskRepository.getOrCreateExtractedContext()
             tasks.tasks.forEach { taskInfo ->
                 val newTask = Task(
                     title = taskInfo.title,
                     energyLevel = mapEffortToEnum(taskInfo.effort),
-                    contextId = importedContext.id,
+                    contextId = extractedContext.id,
                     priority = TaskPriority.Medium, // Default priority
                     createdAt = System.currentTimeMillis()
                 )
                 taskRepository.insertTask(newTask)
             }
             _extractedTasks.value = null // Reset after saving
+            _navigationEvent.value = NavigationEvent.ToDashboard
         }
     }
 
     fun dismissExtractedTasks() {
         _extractedTasks.value = null
+        _lastCreatedIdeaId.value?.let {
+            _navigationEvent.value = NavigationEvent.ToNote(it)
+        }
     }
 
     fun onPlayPause(memoId: String) {
@@ -173,7 +193,7 @@ class VoiceMemoViewModel @Inject constructor(
     }
 
     fun resetTranscriptionResult() {
-        _transcriptionResult.value = null
+        _navigationEvent.value = null
     }
 
     fun onPlayPause(memo: VoiceMemo) {

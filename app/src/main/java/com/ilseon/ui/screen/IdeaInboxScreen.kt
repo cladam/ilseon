@@ -37,6 +37,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.IdeaInboxViewModel
+import com.ilseon.NavigationEvent
+import com.ilseon.VoiceMemoViewModel
 import com.ilseon.data.idea.Idea
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.GravitySwipeBox
@@ -51,7 +53,9 @@ import java.util.UUID
 @Composable
 fun IdeaInboxScreen(
     viewModel: IdeaInboxViewModel = hiltViewModel(),
+    voiceMemoViewModel: VoiceMemoViewModel = hiltViewModel(),
     onNavigateToNewTask: (String, String) -> Unit,
+    onNavigateToDashboard: () -> Unit,
     showAddIdeaDialog: Boolean,
     onDismissAddIdeaDialog: () -> Unit,
     vttIdeaContent: String,
@@ -64,8 +68,28 @@ fun IdeaInboxScreen(
     var currentView by remember { mutableStateOf("Inbox") }
     val lazyListState = rememberLazyListState()
 
-    val ideaToShow = remember(newIdeaId, ideas) {
-        newIdeaId?.let { id -> ideas.find { it.id == id } }
+    val navigationEvent by voiceMemoViewModel.navigationEvent.collectAsState()
+    var ideaIdFromMemo by remember { mutableStateOf<UUID?>(null) }
+
+    LaunchedEffect(navigationEvent) {
+        when (val event = navigationEvent) {
+            is NavigationEvent.ToDashboard -> {
+                onNavigateToDashboard()
+                voiceMemoViewModel.resetTranscriptionResult()
+            }
+            is NavigationEvent.ToNote -> {
+                currentView = "Notes"
+                ideaIdFromMemo = event.ideaId
+                voiceMemoViewModel.resetTranscriptionResult()
+            }
+            null -> { /* Do nothing */ }
+        }
+    }
+
+    val finalNewIdeaId = newIdeaId ?: ideaIdFromMemo
+
+    val ideaToShow = remember(finalNewIdeaId, ideas) {
+        finalNewIdeaId?.let { id -> ideas.find { it.id == id } }
     }
 
     LaunchedEffect(ideaToShow) {
@@ -85,8 +109,8 @@ fun IdeaInboxScreen(
         )
     }
 
-    LaunchedEffect(filteredIdeas, newIdeaId) {
-        newIdeaId?.let { id ->
+    LaunchedEffect(filteredIdeas, finalNewIdeaId) {
+        finalNewIdeaId?.let { id ->
             val index = filteredIdeas.indexOfFirst { it.id == id }
             if (index != -1) {
                 lazyListState.animateScrollToItem(index)

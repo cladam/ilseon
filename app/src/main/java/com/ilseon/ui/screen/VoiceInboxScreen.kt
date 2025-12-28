@@ -1,6 +1,7 @@
 package com.ilseon.ui.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,7 +18,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ilseon.NavigationEvent
 import com.ilseon.VoiceMemoViewModel
 import com.ilseon.data.task.ExtractedTasks
 import com.ilseon.data.voicememo.VoiceMemo
@@ -46,6 +50,7 @@ fun VoiceInboxScreen(
     viewModel: VoiceMemoViewModel = hiltViewModel(),
     onNavigateToNewTask: (String, String) -> Unit,
     onNavigateToIdea: (UUID) -> Unit,
+    onNavigateToDashboard: () -> Unit,
     initialMemoIdToPlay: String? = null,
 ) {
     val voiceMemos by viewModel.voiceMemos.collectAsState()
@@ -53,7 +58,7 @@ fun VoiceInboxScreen(
     val progress by viewModel.playbackProgress.collectAsState()
     var memoToEdit by remember { mutableStateOf<VoiceMemo?>(null) }
     val transcribingMemoId by viewModel.transcribingMemoId.collectAsState()
-    val transcriptionResult by viewModel.transcriptionResult.collectAsState()
+    val navigationEvent by viewModel.navigationEvent.collectAsState()
     val isApiKeySet by viewModel.isApiKeySet.collectAsState()
     val extractedTasks by viewModel.extractedTasks.collectAsState()
 
@@ -63,12 +68,17 @@ fun VoiceInboxScreen(
         }
     }
 
-    LaunchedEffect(transcriptionResult) {
-        transcriptionResult?.let {
-            if (extractedTasks == null) { // Only navigate if the dialog isn't shown
-                onNavigateToIdea(it)
-                viewModel.resetTranscriptionResult() // Reset after navigation
+    LaunchedEffect(navigationEvent) {
+        when (val event = navigationEvent) {
+            is NavigationEvent.ToDashboard -> {
+                onNavigateToDashboard()
+                viewModel.resetTranscriptionResult()
             }
+            is NavigationEvent.ToNote -> {
+                onNavigateToIdea(event.ideaId)
+                viewModel.resetTranscriptionResult()
+            }
+            null -> { /* Do nothing */ }
         }
     }
 
@@ -86,16 +96,8 @@ fun VoiceInboxScreen(
     if (extractedTasks != null) {
         ExtractedTasksDialog(
             tasks = extractedTasks!!,
-            onDismiss = {
-                viewModel.dismissExtractedTasks()
-                transcriptionResult?.let { onNavigateToIdea(it) }
-                viewModel.resetTranscriptionResult()
-            },
-            onSave = {
-                viewModel.saveExtractedTasks(it)
-                transcriptionResult?.let { onNavigateToIdea(it) }
-                viewModel.resetTranscriptionResult()
-            }
+            onDismiss = { viewModel.dismissExtractedTasks() },
+            onSave = { viewModel.saveExtractedTasks(it) }
         )
     }
 
@@ -204,6 +206,9 @@ private fun ExtractedTasksDialog(
     onDismiss: () -> Unit,
     onSave: (ExtractedTasks) -> Unit
 ) {
+    var selectedTasks by remember { mutableStateOf(tasks.tasks.toSet()) }
+    val allSelected = selectedTasks.size == tasks.tasks.size
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -213,23 +218,87 @@ private fun ExtractedTasksDialog(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Suggested Tasks", style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(16.dp))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Suggested Tasks",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = {
+                        selectedTasks = if (allSelected) {
+                            emptySet()
+                        } else {
+                            tasks.tasks.toSet()
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(if (allSelected) "Deselect All" else "Select All")
+                }
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .weight(weight = 1f, fill = false)
+                        .padding(vertical = 8.dp)
+                ) {
                     items(tasks.tasks) { task ->
-                        Text("${task.title} (${task.effort}) - ${task.context ?: ""}")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedTasks = if (selectedTasks.contains(task)) {
+                                        selectedTasks - task
+                                    } else {
+                                        selectedTasks + task
+                                    }
+                                }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Checkbox(
+                                checked = selectedTasks.contains(task),
+                                onCheckedChange = { isChecked ->
+                                    selectedTasks = if (isChecked) {
+                                        selectedTasks + task
+                                    } else {
+                                        selectedTasks - task
+                                    }
+                                },
+                                colors = androidx.compose.material3.CheckboxDefaults.colors(
+                                    checkedColor = colorScheme.secondary,
+                                    uncheckedColor = colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "${task.title} (Priority: ${task.priority}, Effort: ${task.effort})",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                Row {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     TextButton(onClick = onDismiss) {
                         Text("Dismiss")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onSave(tasks) }) {
-                        Text("Save All")
+                    Button(
+                        onClick = {
+                            val tasksToSave = ExtractedTasks(tasks = selectedTasks.toList())
+                            onSave(tasksToSave)
+                        },
+                        enabled = selectedTasks.isNotEmpty()
+                    ) {
+                        Text("Save (${selectedTasks.size})")
                     }
                 }
             }

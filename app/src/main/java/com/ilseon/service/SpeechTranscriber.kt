@@ -89,11 +89,18 @@ class GeminiSpeechTranscriber @Inject constructor(
         }
 
         val systemInstruction = """
-            You are a task extraction engine. Analyze the user's transcript. 
-            Extract any mentioned tasks, ideas, or action items. For each item, provide a title and 
-            estimate the energy effort (Low, Medium, or High) based on the context of the words used. 
-            Deduct the context, otherwise add "imported to the response". Respond ONLY in structured JSON.
-            """.trimIndent()
+        You are a task extraction engine. Analyze the user's transcript.
+         Extract ALL mentioned tasks, ideas, action items, appointments, trips, events, and reminders.
+         IMPORTANT: Keep task titles in the SAME LANGUAGE as the original transcript. Do not translate.
+         For each item, provide:
+         1. A "title".
+         2. A "priority" (Low, Medium, or High).
+         3. An "effort" level (Low, Medium, or High).
+         Travel plans and scheduled activities should be extracted as separate tasks.
+         Respond ONLY in structured JSON with this format: {"tasks": [{"title": "...", "priority": "...", "effort": "..."}]}
+         If no tasks are found, return an empty list: {"tasks": []}
+         """.trimIndent()
+
 
         val generativeModel = GenerativeModel(
             modelName = "gemini-2.5-flash",

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -524,7 +525,13 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 reflectionData?.let { data ->
-                                    val reduceMotion by settingsViewModel.reduceMotion.collectAsState()
+                                    val context = LocalContext.current
+                                    val reduceMotion = remember {
+                                        val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+                                        accessibilityManager.isEnabled &&
+                                                Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+                                    }
+
                                     ReflectionDialog(
                                         taskTitle = data.task.title,
                                         phonePickups = data.phonePickups,
@@ -649,6 +656,9 @@ class MainActivity : ComponentActivity() {
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
                                     },
+                                    onNavigateToDashboard = {
+                                        navController.navigate(Screen.DailyDashboard.route)
+                                    },
                                     showAddIdeaDialog = showAddIdeaDialog,
                                     onDismissAddIdeaDialog = {
                                         showAddIdeaDialog = false
@@ -683,6 +693,11 @@ class MainActivity : ComponentActivity() {
                                     initialMemoIdToPlay = backStackEntry.arguments?.getString("memoId"),
                                     onNavigateToIdea = { ideaId ->
                                         navController.navigate("${Screen.IdeaInbox.route}?ideaId=$ideaId")
+                                    },
+                                    onNavigateToDashboard = {
+                                        navController.navigate(Screen.DailyDashboard.route) {
+                                            popUpTo(Screen.VoiceInbox.route) { inclusive = true }
+                                        }
                                     }
                                 )
                             }

@@ -364,6 +364,16 @@ class TaskRepository @Inject constructor(
         return newContext
     }
 
+    suspend fun getOrCreateExtractedContext(): TaskContext {
+        val existingContext = taskContextDao.getContextByName("Extracted")
+        if (existingContext != null) {
+            return existingContext
+        }
+        val newContext = TaskContext(name = "Extracted", description = "Extracted tasks from a Voice Memo transcript")
+        taskContextDao.insertContext(newContext)
+        return newContext
+    }
+
     fun getCompletedTasks(): Flow<List<Task>> {
         return taskDao.getCompletedTasks()
     }

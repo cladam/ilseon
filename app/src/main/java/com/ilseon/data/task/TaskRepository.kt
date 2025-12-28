@@ -207,6 +207,10 @@ class TaskRepository @Inject constructor(
             EnergyLevel.Low -> {
                 Log.d("IlseonDebug", "Using LOW energy comparator")
                 Comparator { t1, t2 ->
+                    // Manual priority always wins
+                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                    if (manualCompare != 0) return@Comparator manualCompare
+
                     val result = compareByDescending<Task> { it.isUrgent }
                         .thenBy { it.priority.ordinal }
                         .thenBy {
@@ -229,6 +233,10 @@ class TaskRepository @Inject constructor(
             EnergyLevel.Medium -> {
                 Log.d("IlseonDebug", "Using MEDIUM energy comparator")
                 Comparator { t1, t2 ->
+                    // Manual priority always wins
+                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                    if (manualCompare != 0) return@Comparator manualCompare
+
                     val result = compareByDescending<Task> { it.isUrgent }
                         .thenBy { it.priority.ordinal }
                         .thenBy {
@@ -250,6 +258,10 @@ class TaskRepository @Inject constructor(
             EnergyLevel.High, null -> {
                 Log.d("IlseonDebug", "Using HIGH energy comparator")
                 Comparator { t1, t2 ->
+                    // Manual priority always wins
+                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                    if (manualCompare != 0) return@Comparator manualCompare
+
                     compareByDescending<Task> { it.isUrgent }
                         .thenBy { it.priority.ordinal }
                         .thenBy { it.energyLevel?.ordinal ?: 1 }
@@ -397,6 +409,23 @@ class TaskRepository @Inject constructor(
             createNewRecurringInstance(task)
         }
     }
+
+    suspend fun clearManualPriority() {
+        taskDao.clearManualPriority()
+    }
+
+    suspend fun clearExpiredManualPriorities() {
+        val startOfToday = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        taskDao.clearExpiredManualPriority(startOfToday)
+    }
+
+
 
     private suspend fun createNewRecurringInstance(task: Task) {
         if (task.startTime == null || task.recurrenceDays.isNullOrBlank()) {

@@ -62,6 +62,8 @@ data class Task(
     var timerState: TimerState = TimerState.NotStarted,
     val timerStartTime: Long? = null, // Actual timestamp when the timer was started
     val isCurrentPriority: Boolean = false,
+    val isManualPriority: Boolean = false,
+    val manualPriorityTimestamp: Long? = null,
     val location: String? = null,
     val isComplete: Boolean = false,
     val completedAt: Long? = null,

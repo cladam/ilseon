@@ -97,6 +97,13 @@ interface TaskDao {
     @Update
     suspend fun updateTask(task: Task)
 
+    @Query("UPDATE tasks SET isManualPriority = 0, manualPriorityTimestamp = NULL WHERE isManualPriority = 1")
+    suspend fun clearManualPriority()
+
+    @Query("UPDATE tasks SET isManualPriority = 0, manualPriorityTimestamp = NULL WHERE manualPriorityTimestamp < :threshold")
+    suspend fun clearExpiredManualPriority(threshold: Long)
+
+
     /**
      * Deletes a task.
      */

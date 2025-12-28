@@ -53,8 +53,10 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.data.toColor
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.components.EditTaskDialog
+import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.TaskDetailsDialog
 import com.ilseon.ui.theme.MutedRed
+import com.ilseon.ui.theme.MutedTeal
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -68,7 +70,8 @@ fun NextUpTasks(
     contextMap: Map<UUID, TaskContext>,
     viewModel: TaskViewModel,
     header: String,
-    isUrgentList: Boolean = false
+    isUrgentList: Boolean = false,
+    onPromoteToCurrentPriority: (Task) -> Unit
 ) {
     var headerText = header
     if (headerText == "") headerText = "Next Up"
@@ -129,84 +132,104 @@ fun NextUpTasks(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-                    .heightIn(max = 200.dp)
-                    .verticalScroll(rememberScrollState())
+                    .heightIn(max = 320.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 tasks.forEach { task ->
                     val isOverdue = viewModel.isTaskOverdue(task)
-                    val borderColor = if (isOverdue) Color.Red else colorScheme.onBackground.copy(alpha = 0.3f)
+                    val borderColor = if (isOverdue) Color.Red else colorScheme.secondary.copy(alpha = 0.3f)
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
                         onComplete = onAnimationFinished
                     ) {
-                        val rowModifier = if (isUrgentList) {
-                            Modifier
-                                .fillMaxWidth()
-                                .border(1.dp, MutedRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                .clickable { taskToShowDetails = it }
-                                .padding(vertical = 8.dp, horizontal = 12.dp)
-                        } else {
-                            Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = {},
-                                    onLongClick = {
-                                        taskToShowDetails = it
-                                    }
-                                )
-                                .padding(vertical = 8.dp)
-                        }
-                        Row(
-                            modifier = rowModifier,
-                            verticalAlignment = Alignment.CenterVertically
+                        GravitySwipeBox(
+                            onSwipeRight = { onPromoteToCurrentPriority(task) },
+                            onSwipeLeft = { /* Optional: demote/defer */ }
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(it.priority.toColor())
-                            ) {}
-                            Spacer(Modifier.width(8.dp))
-                            it.energyLevel?.let { level ->
-                                val icon = when (level) {
-                                    EnergyLevel.High -> Icons.Default.BatteryFull
-                                    EnergyLevel.Medium -> Icons.Default.Battery3Bar
-                                    EnergyLevel.Low -> Icons.Default.Battery1Bar
-                                }
-                                val rotation = if (level == EnergyLevel.Medium) 0f else 270f
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = "Energy Level: ${level.name}",
-                                    tint = level.toColor(),
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .rotate(90f)
-                                )
+                            val rowModifier = if (isUrgentList) {
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(colorScheme.onSurface.copy(alpha = 0.1f))
+                                    .border(
+                                        1.dp,
+                                        MutedRed.copy(alpha = 0.5f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { taskToShowDetails = it }
+                                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                            } else {
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    //.background(colorScheme.onSurface.copy(alpha = 0.1f))
+                                    .border(
+                                        1.dp,
+                                        colorScheme.secondary.copy(alpha = 0.3f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .combinedClickable(
+                                        onClick = {},
+                                        onLongClick = {
+                                            taskToShowDetails = it
+                                        }
+                                    )
+                                    .padding(vertical = 8.dp, horizontal = 8.dp)
                             }
-                            Spacer(Modifier.width(16.dp))
-                            Text(
-                                text = it.title,
-                                color = colorScheme.onBackground,
-                                fontSize = 16.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (!isUrgentList) {
-                                Spacer(Modifier.width(16.dp))
+                            Row(
+                                modifier = rowModifier,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(24.dp)
+                                        .size(8.dp)
                                         .clip(CircleShape)
-                                        .border(1.dp, borderColor, CircleShape)
-                                        .clickable { onComplete(it) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    // Empty, for the checkmark to appear after click
+                                        .background(it.priority.toColor())
+                                ) {}
+                                Spacer(Modifier.width(8.dp))
+                                it.energyLevel?.let { level ->
+                                    val icon = when (level) {
+                                        EnergyLevel.High -> Icons.Default.BatteryFull
+                                        EnergyLevel.Medium -> Icons.Default.Battery3Bar
+                                        EnergyLevel.Low -> Icons.Default.Battery1Bar
+                                    }
+                                    val rotation = if (level == EnergyLevel.Medium) 0f else 270f
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = "Energy Level: ${level.name}",
+                                        tint = level.toColor(),
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .rotate(90f)
+                                    )
+                                }
+                                Spacer(Modifier.width(16.dp))
+                                Text(
+                                    text = it.title,
+                                    color = colorScheme.onBackground,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (!isUrgentList) {
+                                    Spacer(Modifier.width(16.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .border(1.dp, borderColor, CircleShape)
+                                            .clickable { onComplete(it) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        // Empty, for the checkmark to appear after click
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

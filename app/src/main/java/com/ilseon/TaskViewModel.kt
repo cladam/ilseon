@@ -1,6 +1,7 @@
 package com.ilseon
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.EnergyLevel
@@ -51,6 +52,7 @@ import kotlin.text.set
 import kotlin.text.toInt
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 
 sealed class PostCompletionAction {
     object Idle : PostCompletionAction()
@@ -147,6 +149,7 @@ class TaskViewModel @Inject constructor(
     init {
         if (!isTest) {
             viewModelScope.launch {
+                taskRepository.clearExpiredManualPriorities()
                 restoreRunningTasksState()
                 monitorFocusBlockChanges()
                 // This is the correct way to handle this.
@@ -584,6 +587,24 @@ class TaskViewModel @Inject constructor(
             }
         }
     }
+
+    val manualPriorityTaskId: StateFlow<UUID?> = taskRepository.getDashboardTasks()
+        .map { tasks -> tasks.find { it.isManualPriority }?.id }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun promoteToCurrentPriority(task: Task) {
+        viewModelScope.launch {
+            Log.d("ManualPriorityDebug", "Promoting task: ${task.title} (id: ${task.id})")
+            taskRepository.clearManualPriority()
+            val updatedTask = task.copy(
+                isManualPriority = true,
+                manualPriorityTimestamp = System.currentTimeMillis()
+            )
+            Log.d("ManualPriorityDebug", "Updated task: isManualPriority=${updatedTask.isManualPriority}")
+            taskRepository.updateTask(updatedTask)
+        }
+    }
+
     
     fun postCompletionActionHandled() {
         _postCompletionAction.value = PostCompletionAction.Idle

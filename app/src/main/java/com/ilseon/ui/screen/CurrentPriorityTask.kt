@@ -153,7 +153,7 @@ fun CurrentPriorityTask(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .combinedClickable(
                     onClick = {},
                     onLongClick = { taskToEdit = task }
@@ -165,7 +165,7 @@ fun CurrentPriorityTask(
                         isOverdue -> QuietAmber
                         else -> colorScheme.secondary
                     },
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(24.dp)
                 )
                 .padding(16.dp)
         ) {
@@ -362,7 +362,7 @@ fun CurrentPriorityTask(
                         "$completedCount/${subTasks.size}",
                         style = typography.labelMedium,
                         color = if (completedCount == subTasks.size)
-                            colorScheme.primary
+                            colorScheme.secondary
                         else colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }

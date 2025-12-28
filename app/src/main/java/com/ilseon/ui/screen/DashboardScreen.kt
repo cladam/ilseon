@@ -80,7 +80,9 @@ fun DashboardScreen(
         }
     }
 
-    val (priorityTask, nextUpTasks) = remember(focusTasks) {
+    val manualPriorityId by taskViewModel.manualPriorityTaskId.collectAsState()
+
+    val (priorityTask, nextUpTasks) = remember(focusTasks, manualPriorityId) {
         val currentTime = System.currentTimeMillis()
         val twentyFourHoursFromNow = currentTime + TimeUnit.HOURS.toMillis(24)
 
@@ -116,12 +118,19 @@ fun DashboardScreen(
         Log.d("DashboardDebug", "Active: ${activeTasks.map { "${it.title}(${it.startTime})" }}")
         Log.d("DashboardDebug", "Future: ${futureTasks.map { "${it.title}(${it.startTime})" }}")
 
-        val priorityTask = activeTasks.firstOrNull()
-        val nextUp = activeTasks.drop(1) + futureTasks
+        // Log manual priority status for all tasks
+        Log.d("ManualPriorityDebug", "=== Manual Priority Check ===")
+        activeTasks.forEach { task ->
+            Log.d("ManualPriorityDebug", "Task: ${task.title}, isManualPriority: ${task.isManualPriority}, timestamp: ${task.manualPriorityTimestamp}")
+        }
 
-        Log.d("DashboardDebug", "Priority: ${priorityTask?.title}")
-        Log.d("DashboardDebug", "NextUp: ${nextUp.map { it.title }}")
+        val manualPriorityTask = activeTasks.find { it.isManualPriority }
+        Log.d("ManualPriorityDebug", "Found manual priority task: ${manualPriorityTask?.title ?: "NONE"}")
 
+        val priorityTask = manualPriorityTask ?: activeTasks.firstOrNull()
+        Log.d("ManualPriorityDebug", "Selected priority task: ${priorityTask?.title}")
+
+        val nextUp = activeTasks.filter { it.id != priorityTask?.id } + futureTasks
 
         priorityTask to nextUp
     }
@@ -209,7 +218,10 @@ fun DashboardScreen(
                             contextMap = contextMap,
                             viewModel = taskViewModel,
                             header = "Urgent Tasks Awaiting",
-                            isUrgentList = true
+                            isUrgentList = true,
+                            onPromoteToCurrentPriority = { task ->
+                                taskViewModel.promoteToCurrentPriority(task)
+                            }
                         )
                     }
                 }
@@ -229,7 +241,10 @@ fun DashboardScreen(
                             onAnimationFinished = onAnimateComplete,
                             contextMap = contextMap,
                             viewModel = taskViewModel,
-                            header = ""
+                            header = "",
+                            onPromoteToCurrentPriority = { task ->
+                                taskViewModel.promoteToCurrentPriority(task)
+                            }
                         )
                     }
                 }

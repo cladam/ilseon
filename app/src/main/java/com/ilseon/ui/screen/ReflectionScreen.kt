@@ -3,6 +3,7 @@ package com.ilseon.ui.screen
 import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +64,26 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+
+
+private fun getWeekKey(timestamp: Long): Pair<Int, Int> {
+    val calendar = java.util.Calendar.getInstance()
+    calendar.timeInMillis = timestamp
+    return Pair(calendar.get(java.util.Calendar.YEAR), calendar.get(java.util.Calendar.WEEK_OF_YEAR))
+}
+
+private fun formatWeekLabel(year: Int, week: Int): String {
+    val calendar = java.util.Calendar.getInstance()
+    calendar.set(java.util.Calendar.YEAR, year)
+    calendar.set(java.util.Calendar.WEEK_OF_YEAR, week)
+    calendar.set(java.util.Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+    val startDate = SimpleDateFormat("MMM d", Locale.getDefault()).format(calendar.time)
+    calendar.add(java.util.Calendar.DAY_OF_WEEK, 6)
+    val endDate = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(calendar.time)
+    return "$startDate - $endDate"
+}
 
 @Composable
 fun ReflectionScreen(
@@ -134,10 +156,22 @@ private fun ReflectionScreenContent(
     onDeleteReflection: (Task) -> Unit,
     onEditReflection: (Task) -> Unit
 ) {
+    val groupedReflections = remember(reflections) {
+        reflections
+            .sortedByDescending { it.completedAt ?: 0L }
+            .groupBy { task ->
+                val timestamp = task.completedAt ?: task.createdAt
+                getWeekKey(timestamp)
+            }
+            .toSortedMap(compareByDescending<Pair<Int, Int>> { it.first }.thenByDescending { it.second })
+    }
+
+    var expandedWeeks by remember { mutableStateOf(setOf(groupedReflections.keys.firstOrNull())) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
@@ -147,12 +181,13 @@ private fun ReflectionScreenContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "You have ${reflections.size} reflections. Keep reflecting!",
+                    text = "${reflections.size} reflections across ${groupedReflections.size} weeks",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+
         if (reflections.isEmpty()) {
             item {
                 Text(
@@ -163,29 +198,54 @@ private fun ReflectionScreenContent(
                 )
             }
         } else {
-            items(reflections, key = { it.id }) { task ->
-                ReflectionItem(
-                    task = task,
-                    contextName = contextMap[task.contextId]?.name ?: "General",
-                    onDelete = { onDeleteReflection(task) },
-                    onEdit = { onEditReflection(task) }
-                )
+            groupedReflections.forEach { (weekKey, weekReflections) ->
+                val isExpanded = expandedWeeks.contains(weekKey)
+                val weekLabel = formatWeekLabel(weekKey.first, weekKey.second)
+
+                item(key = "header_${weekKey.first}_${weekKey.second}") {
+                    WeekHeader(
+                        weekLabel = weekLabel,
+                        count = weekReflections.size,
+                        isExpanded = isExpanded,
+                        onClick = {
+                            expandedWeeks = if (isExpanded) {
+                                expandedWeeks - weekKey
+                            } else {
+                                expandedWeeks + weekKey
+                            }
+                        }
+                    )
+                }
+
+                if (isExpanded) {
+                    items(weekReflections, key = { it.id }) { task ->
+                        ReflectionItem(
+                            task = task,
+                            contextName = contextMap[task.contextId]?.name ?: "General",
+                            onDelete = { onDeleteReflection(task) },
+                            onEdit = { onEditReflection(task) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
+                }
             }
         }
     }
 }
+
 
 @Composable
 private fun ReflectionItem(
     task: Task,
     contextName: String,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
     val completedDate = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "N/A"
 
-    AppCard {
+    AppCard(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -307,3 +367,52 @@ private fun ReflectionItem(
         }
     }
 }
+
+@Composable
+private fun WeekHeader(
+    weekLabel: String,
+    count: Int,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = weekLabel,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Box(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), CircleShape)
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = count.toString(),
+                color = MaterialTheme.colorScheme.onSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+

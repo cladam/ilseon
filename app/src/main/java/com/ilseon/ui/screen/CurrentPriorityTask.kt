@@ -371,6 +371,7 @@ fun CurrentPriorityTask(
 
                 Column(
                     modifier = Modifier.heightIn(max = 200.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     subTasks.forEach { subTask ->
                         Row(
@@ -393,7 +394,11 @@ fun CurrentPriorityTask(
                                 onCheckedChange = { isChecked ->
                                     viewModel.updateTask(subTask.copy(isComplete = isChecked))
                                 },
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
+                                colors = androidx.compose.material3.CheckboxDefaults.colors(
+                                    checkedColor = colorScheme.secondary,
+                                    uncheckedColor = colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(

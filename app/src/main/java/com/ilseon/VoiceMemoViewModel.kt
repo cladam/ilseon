@@ -38,6 +38,7 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.text.insert
 
 sealed class NavigationEvent {
     data class ToNote(val ideaId: UUID) : NavigationEvent()
@@ -179,29 +180,8 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
-    fun onPlayPause(memoId: String) {
-        viewModelScope.launch {
-            val memo = voiceMemoRepository.getVoiceMemo(memoId)
-            if (memo != null) {
-                if (_currentlyPlayingId.value == memo.id) {
-                    stopPlayback()
-                } else {
-                    startPlayback(memo)
-                }
-            }
-        }
-    }
-
     fun resetTranscriptionResult() {
         _navigationEvent.value = null
-    }
-
-    fun onPlayPause(memo: VoiceMemo) {
-        if (_currentlyPlayingId.value == memo.id) {
-            stopPlayback()
-        } else {
-            startPlayback(memo)
-        }
     }
 
     private fun startPlayback(memo: VoiceMemo) {
@@ -229,14 +209,37 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
+    private val _isPaused = MutableStateFlow(false)
+    val isPaused = _isPaused.asStateFlow()
+
+    fun onPlayPause(memo: VoiceMemo) {
+        when {
+            _currentlyPlayingId.value == memo.id && !_isPaused.value -> pausePlayback()
+            _currentlyPlayingId.value == memo.id && _isPaused.value -> resumePlayback()
+            else -> startPlayback(memo)
+        }
+    }
+
+    private fun pausePlayback() {
+        mediaPlayer?.pause()
+        _isPaused.value = true
+        progressTrackerJob?.cancel()
+    }
+
+    private fun resumePlayback() {
+        mediaPlayer?.start()
+        _isPaused.value = false
+        startProgressTracker()
+    }
+
     private fun stopPlayback() {
         progressTrackerJob?.cancel()
         mediaPlayer?.release()
         mediaPlayer = null
         _currentlyPlayingId.value = null
+        _isPaused.value = false
         _playbackProgress.value = 0f
     }
-
     fun seekTo(progress: Float) {
         mediaPlayer?.let {
             val newPosition = (it.duration * progress).toInt()
@@ -259,10 +262,10 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
-    fun saveVoiceMemo(filePath: String, durationSeconds: Int) {
+    fun saveVoiceMemo(filePath: String, durationSeconds: Int, onComplete: () -> Unit = {}) {
+        Log.d("VoiceMemoVM", "saveVoiceMemo called: filePath=$filePath, duration=$durationSeconds")
         viewModelScope.launch {
             val title = "Voice Memo"
-
             val finalUri = saveRecordingToMediaStore(filePath, title)
 
             if (finalUri != null) {
@@ -272,50 +275,67 @@ class VoiceMemoViewModel @Inject constructor(
                     durationSeconds = durationSeconds
                 )
                 voiceMemoRepository.insert(voiceMemo)
+                Log.d("VoiceMemoVM", "VoiceMemo inserted: ${voiceMemo.id}")
+            }
+            withContext(Dispatchers.Main) {
+                onComplete()
             }
         }
     }
 
     private suspend fun saveRecordingToMediaStore(tempFilePath: String, title: String): Uri? = withContext(Dispatchers.IO) {
-        val sanitizedTitle = title
+        Log.d("VoiceMemoVM", "saveRecordingToMediaStore started: tempFilePath=$tempFilePath")
+        try {
+            val tempFile = File(tempFilePath)
+            if (!tempFile.exists()) {
+                Log.e("VoiceMemoVM", "Temp file does not exist: $tempFilePath")
+                return@withContext null
+            }
+            Log.d("VoiceMemoVM", "Temp file exists, size=${tempFile.length()}")
+
+            val sanitizedTitle = title
             .replace(Regex("[^a-zA-Z0-9.-]+"), "_")
             .trim('_')
             .let { it.ifBlank { "voicememo" } }
             .take(100)
-        val displayName = "${sanitizedTitle}_${System.currentTimeMillis()}.m4a"
+            val displayName = "${sanitizedTitle}_${System.currentTimeMillis()}.m4a"
 
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val recordingsFolder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Environment.DIRECTORY_RECORDINGS
-                } else {
-                    "Recordings"
-                }
-                put(MediaStore.MediaColumns.RELATIVE_PATH, recordingsFolder + File.separator + "ilseon")
-            }
-        }
-
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-        uri?.let {
-            try {
-                val tempFile = File(tempFilePath)
-                resolver.openOutputStream(it).use { outputStream ->
-                    tempFile.inputStream().use { inputStream ->
-                        inputStream.copyTo(outputStream!!)
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val recordingsFolder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Environment.DIRECTORY_RECORDINGS
+                    } else {
+                        "Recordings"
                     }
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, recordingsFolder + File.separator + "ilseon")
                 }
-                tempFile.delete() // Clean up temp file
-                return@withContext it
-            } catch (e: IOException) {
-                resolver.delete(it, null, null)
-                e.printStackTrace()
             }
+
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+            uri?.let {
+                try {
+                    val tempFile = File(tempFilePath)
+                    resolver.openOutputStream(it).use { outputStream ->
+                        tempFile.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream!!)
+                        }
+                    }
+                    tempFile.delete() // Clean up temp file
+                    return@withContext it
+                } catch (e: IOException) {
+                    resolver.delete(it, null, null)
+                    e.printStackTrace()
+                }
+            }
+            return@withContext null
+        } catch (e: Exception) {
+            Log.e("VoiceMemoVM", "Exception in saveRecordingToMediaStore", e)
+            return@withContext null
         }
-        return@withContext null
     }
 
 
@@ -356,7 +376,6 @@ class VoiceMemoViewModel @Inject constructor(
             voiceMemoRepository.update(memo.copy(weight = currentMin - 1))
         }
     }
-
 
     private fun getDisplayName(uri: Uri): String? {
         if (uri.scheme == "content") {

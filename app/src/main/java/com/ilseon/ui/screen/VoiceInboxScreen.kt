@@ -61,10 +61,13 @@ fun VoiceInboxScreen(
     val navigationEvent by viewModel.navigationEvent.collectAsState()
     val isApiKeySet by viewModel.isApiKeySet.collectAsState()
     val extractedTasks by viewModel.extractedTasks.collectAsState()
+    val isPaused by viewModel.isPaused.collectAsState()
 
-    LaunchedEffect(initialMemoIdToPlay) {
-        initialMemoIdToPlay?.let {
-            viewModel.onPlayPause(it)
+    LaunchedEffect(initialMemoIdToPlay, voiceMemos) {
+        initialMemoIdToPlay?.let { memoId ->
+            voiceMemos.find { it.id == memoId }?.let { memo ->
+                viewModel.onPlayPause(memo)
+            }
         }
     }
 
@@ -147,7 +150,7 @@ fun VoiceInboxScreen(
                     val isTranscribing = memo.id == transcribingMemoId
                     VoiceMemoCard(
                         memo = memo,
-                        isPlaying = isPlaying,
+                        isPlaying = isPlaying && !isPaused,
                         isTranscribing = isTranscribing,
                         progress = if (isPlaying) progress else 0f,
                         onPlayPause = { viewModel.onPlayPause(it) },

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -166,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 val fuelCheckViewModel: FuelCheckViewModel = hiltViewModel()
                 val userStatus by fuelCheckViewModel.userStatus.collectAsState()
                 LaunchedEffect(userStatus) {
-                    android.util.Log.d("FuelCheck", "userStatus: $userStatus, energy: ${userStatus?.currentEnergy}")
+                    Log.d("FuelCheck", "userStatus: $userStatus, energy: ${userStatus?.currentEnergy}")
                 }
                 val context = LocalContext.current
                 var hasNotificationPermission by remember {
@@ -719,21 +720,31 @@ class MainActivity : ComponentActivity() {
                                     onStartRecording = { recorderViewModel.startRecording() },
                                     onPauseRecording = { recorderViewModel.pauseRecording() },
                                     onResumeRecording = { recorderViewModel.resumeRecording() },
-                                    onStopRecording = { recorderViewModel.stopRecording() },
+                                    onStopRecording = {
+                                        val result = recorderViewModel.getRecordingResult() ?: recorderViewModel.stopRecording()
+                                        result?.let {
+                                            voiceMemoViewModel.saveVoiceMemo(
+                                                filePath = it.filePath,
+                                                durationSeconds = it.durationSeconds,
+                                                onComplete = { navController.popBackStack() }
+                                            )
+                                        } ?: navController.popBackStack()
+                                    },
                                     onCancel = {
                                         recorderViewModel.discardRecording()
                                         navController.popBackStack()
                                     },
                                     onSave = {
-                                        val result = recorderViewModel.getRecordingResult()
-                                        if (result != null) {
+                                        Log.d("RecorderScreen", "onSave called")
+                                        val result = recorderViewModel.getRecordingResult() ?: recorderViewModel.stopRecording()
+                                        Log.d("RecorderScreen", "onSave result: $result")
+                                        result?.let {
                                             voiceMemoViewModel.saveVoiceMemo(
-                                                filePath = result.filePath,
-                                                durationSeconds = result.durationSeconds
+                                                filePath = it.filePath,
+                                                durationSeconds = it.durationSeconds,
+                                                onComplete = { navController.popBackStack() }
                                             )
-                                        }
-                                        recorderViewModel.resetState()
-                                        navController.popBackStack()
+                                        } ?: navController.popBackStack()
                                     }
                                 )
                             }

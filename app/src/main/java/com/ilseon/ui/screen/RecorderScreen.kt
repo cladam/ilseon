@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -56,6 +58,10 @@ fun RecorderScreen(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
+    if (recorderState == RecorderState.Saving) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        return
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -195,6 +201,30 @@ fun RecorderScreen(
                         }
                     }
                 }
+                RecorderState.Saving -> {
+                    // Show a loading indicator or "Saving..." text
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Saving...",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+//                RecorderState.Starting -> {
+//                    // Show a loading indicator
+//                    CircularProgressIndicator(
+//                        modifier = Modifier.size(48.dp),
+//                        color = MaterialTheme.colorScheme.primary
+//                    )
+//                    Text(
+//                        text = "Starting...",
+//                        style = MaterialTheme.typography.titleMedium,
+//                        modifier = Modifier.padding(top = 16.dp)
+//                    )
+//                }
             }
         }
     }

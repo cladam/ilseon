@@ -1,10 +1,12 @@
 package com.ilseon.service
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.net.Uri
-import android.media.MediaRecorder
 import android.os.Build
-import android.os.Environment
+import android.os.IBinder
 import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
@@ -15,11 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
+import kotlin.invoke
+import kotlin.text.compareTo
 
 
 // Result object to hold the file, text, and duration
@@ -29,11 +31,12 @@ data class RecordingResult(
 )
 
 interface AudioHandler {
-    suspend fun startRecording()
+    fun isRecording(): Boolean
+    fun startRecording(onStarted: () -> Unit = {})
     fun stopRecording(): RecordingResult?
     fun cancelRecording()
     fun pauseRecording()
-    suspend fun resumeRecording()
+    fun resumeRecording()
 }
 
 interface SpeechTranscriber {
@@ -143,106 +146,100 @@ class AudioHandlerImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : AudioHandler {
 
-    private var mediaRecorder: MediaRecorder? = null
-    private var activeOutputFile: File? = null
-    private var startTime: Long = 0
-    private var totalPausedMillis: Long = 0
-    private var pauseStartTime: Long = 0
+    private var recordingService: RecordingService? = null
+    private var isBound = false
+    private var pendingStartRecording = false
+    private var pendingOnStarted: (() -> Unit)? = null
+    private var isCurrentlyRecording = false
 
-    override suspend fun startRecording() {
-        if (mediaRecorder != null) return // Already recording
-
-        val outputDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)
-        } else {
-            val dir = File(context.getExternalFilesDir(null), "Recordings")
-            if (!dir.exists()) dir.mkdirs()
-            dir
-        }
-        if (outputDir == null) return
-
-        val outputFile = File(outputDir, "voice_memo_${UUID.randomUUID()}.m4a")
-        activeOutputFile = outputFile
-
-        mediaRecorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context)
-        else @Suppress("DEPRECATION") MediaRecorder()).apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)
-            setAudioEncodingBitRate(128_000)
-            setAudioSamplingRate(44_100)
-            setOutputFile(outputFile.absolutePath)
-            try {
-                prepare()
-            } catch (e: IOException) {
-                cancelRecording()
-                return
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            Log.d("AudioHandler", "Service connected")
+            val binder = service as RecordingService.LocalBinder
+            recordingService = binder.getService()
+            isBound = true
+            if (pendingStartRecording) {
+                recordingService?.startRecording()
+                pendingOnStarted?.invoke()
+                pendingOnStarted = null
+                pendingStartRecording = false
             }
         }
 
-        mediaRecorder?.start()
-        startTime = System.currentTimeMillis()
-        totalPausedMillis = 0
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            Log.d("AudioHandler", "Service disconnected")
+            isBound = false
+            recordingService = null
+        }
     }
 
-    override fun pauseRecording() {
-        mediaRecorder?.pause()
-        pauseStartTime = System.currentTimeMillis()
+    private fun bindToService() {
+        val intent = Intent(context, RecordingService::class.java)
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
-    override suspend fun resumeRecording() {
-        totalPausedMillis += (System.currentTimeMillis() - pauseStartTime)
-        mediaRecorder?.resume()
+    fun unbind() {
+        if (isBound) {
+            context.unbindService(connection)
+            isBound = false
+        }
+    }
+
+    override fun isRecording(): Boolean = isCurrentlyRecording
+
+    override fun startRecording(onStarted: () -> Unit) {
+        Log.d("AudioHandler", "startRecording called, isBound=$isBound")
+        if (isBound) {
+            recordingService?.startRecording()
+            isCurrentlyRecording = true
+            onStarted()
+        } else {
+            pendingStartRecording = true
+            pendingOnStarted = {
+                isCurrentlyRecording = true
+                onStarted()
+            }
+            //bindToService()
+            val intent = Intent(context, RecordingService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+            context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
     }
 
     override fun stopRecording(): RecordingResult? {
-        val duration = ((System.currentTimeMillis() - startTime - totalPausedMillis) / 1000).toInt()
-
-        // Gracefully stop and release the MediaRecorder
-        mediaRecorder?.apply {
-            try {
-                stop()
-            } catch (e: IllegalStateException) {
-                // This can happen if the recorder is already stopped.
-                e.printStackTrace()
-            }
-            try {
-                release()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        Log.d("AudioHandler", "stopRecording called, isBound=$isBound, service=$recordingService")
+        isCurrentlyRecording = false
+        return if (isBound) {
+            val result = recordingService?.stopRecording()
+            Log.d("AudioHandler", "stopRecording result: $result")
+            result
+        } else {
+            Log.w("AudioHandler", "stopRecording called but service not bound!")
+            null
         }
-        mediaRecorder = null
-
-        val resultFile = activeOutputFile ?: return null
-        return RecordingResult(
-            filePath = resultFile.absolutePath,
-            durationSeconds = duration
-        )
     }
 
     override fun cancelRecording() {
-        // Gracefully stop and release the MediaRecorder
-        mediaRecorder?.apply {
-            try {
-                stop()
-            } catch (e: IllegalStateException) {
-                e.printStackTrace()
-            }
-            try {
-                release()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        isCurrentlyRecording = false
+        if (isBound) {
+            recordingService?.cancelRecording()
         }
-        mediaRecorder = null
+    }
 
-        // Clean up the created file
-        activeOutputFile?.delete()
-        activeOutputFile = null
+    override fun pauseRecording() {
+        if (isBound) {
+            recordingService?.pauseRecording()
+        }
+    }
 
-        // Reset state
-        startTime = 0
-        totalPausedMillis = 0
+    override fun resumeRecording() {
+        if (isBound) {
+            recordingService?.resumeRecording()
+        }
     }
 }
+

@@ -11,12 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.collections.plusAssign
 
 enum class RecorderState {
-    Idle,      // Not recording
-    Recording, // Actively recording
-    Paused,    // Recording is paused
-    Stopped    // Recording has stopped, result is available for saving
+    Idle,
+    Recording,
+    Paused,
+    Stopped,
+    Saving
 }
 
 @HiltViewModel
@@ -30,80 +32,60 @@ class RecorderViewModel @Inject constructor(
     private val _durationSeconds = MutableStateFlow(0)
     val durationSeconds = _durationSeconds.asStateFlow()
 
-    private var timerJob: Job? = null
-    private var recordingResult: RecordingResult? = null
+    private var durationJob: Job? = null
+    private var _recordingResult: RecordingResult? = null
 
     fun startRecording() {
-        if (_uiState.value != RecorderState.Idle) return
-        viewModelScope.launch {
-            audioHandler.startRecording()
+        if (audioHandler.isRecording()) return
+
+        audioHandler.startRecording {
             _uiState.value = RecorderState.Recording
+            _durationSeconds.value = 0
             startTimer()
         }
     }
 
-    fun pauseRecording() {
-        if (_uiState.value != RecorderState.Recording) return
-        viewModelScope.launch {
-            audioHandler.pauseRecording()
-            _uiState.value = RecorderState.Paused
-            stopTimer() // Pauses the timer
-        }
-    }
-
-    fun resumeRecording() {
-        if (_uiState.value != RecorderState.Paused) return
-        viewModelScope.launch {
-            audioHandler.resumeRecording()
-            _uiState.value = RecorderState.Recording
-            startTimer() // Resumes the timer
-        }
-    }
-
-    fun stopRecording() {
-        if (_uiState.value != RecorderState.Recording && _uiState.value != RecorderState.Paused) return
-        recordingResult = audioHandler.stopRecording()
-        stopTimer()
-        _uiState.value = RecorderState.Stopped
-    }
-
-    fun discardRecording() {
-        audioHandler.cancelRecording()
-        resetState()
-    }
-
-    fun getRecordingResult(): RecordingResult? {
-        return if (_uiState.value == RecorderState.Stopped) {
-            recordingResult
-        } else {
-            null
-        }
-    }
-
-    fun resetState() {
-        recordingResult = null
-        _durationSeconds.value = 0
-        _uiState.value = RecorderState.Idle
-    }
-
     private fun startTimer() {
-        timerJob?.cancel()
-        timerJob = viewModelScope.launch {
+        durationJob?.cancel()
+        durationJob = viewModelScope.launch {
             while (_uiState.value == RecorderState.Recording) {
                 delay(1000)
-                _durationSeconds.value++
+                _durationSeconds.value += 1
             }
         }
     }
 
-    private fun stopTimer() {
-        timerJob?.cancel()
+    fun stopRecording(): RecordingResult? {
+        durationJob?.cancel()
+        val result = audioHandler.stopRecording()
+        _recordingResult = result
+        return result
     }
 
-    override fun onCleared() {
-        if (_uiState.value == RecorderState.Recording || _uiState.value == RecorderState.Paused) {
-            audioHandler.cancelRecording()
-        }
-        super.onCleared()
+    fun getRecordingResult(): RecordingResult? = _recordingResult
+
+    fun resetState() {
+        _uiState.value = RecorderState.Idle
+        _durationSeconds.value = 0
+        _recordingResult = null
+        durationJob?.cancel()
+    }
+
+    fun pauseRecording() {
+        audioHandler.pauseRecording()
+        _uiState.value = RecorderState.Paused
+        durationJob?.cancel()
+    }
+
+    fun resumeRecording() {
+        audioHandler.resumeRecording()
+        _uiState.value = RecorderState.Recording
+        startTimer()
+    }
+
+    fun discardRecording() {
+        durationJob?.cancel()
+        audioHandler.cancelRecording()
+        resetState()
     }
 }

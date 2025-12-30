@@ -3,6 +3,7 @@ package com.ilseon.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,11 +28,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.ilseon.data.voicememo.VoiceMemo
 import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoiceMemoCard(
     memo: VoiceMemo,
@@ -94,13 +99,35 @@ fun VoiceMemoCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Play/Pause and Progress Bar
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 PlayPauseButton(isPlaying = isPlaying, onClick = { onPlayPause(memo) })
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    LinearProgressBarWithThumb(
-                        progress = progress,
-                        onSeek = { onSeek(it) }
+                    Slider(
+                        value = progress,
+                        onValueChange = { onSeek(it) },
+                        modifier = Modifier
+                            .height(24.dp)
+                            .weight(1f),
+
+                        thumb = {
+                            SliderDefaults.Thumb(
+                                interactionSource = remember { MutableInteractionSource() },
+                                modifier = Modifier.size(12.dp), // Smaller thumb
+                                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.secondary)
+                            )
+                        },
+                        track = { sliderState ->
+                            SliderDefaults.Track(
+                                sliderState = sliderState,
+                                modifier = Modifier.height(4.dp), // Track height
+                                colors = SliderDefaults.colors(
+                                    activeTrackColor = MaterialTheme.colorScheme.secondary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                thumbTrackGapSize = 0.dp // Remove gap between thumb and track
+                            )
+                        }
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -110,6 +137,8 @@ fun VoiceMemoCard(
                     )
                 }
             }
+
+
 
             // Dropdown Menu
             DropdownMenu(

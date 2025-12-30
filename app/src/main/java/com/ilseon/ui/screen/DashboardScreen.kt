@@ -174,7 +174,8 @@ fun DashboardScreen(
                         AnimatedTaskItem(
                             task = priorityTask,
                             isVisible = !completedTaskIds.contains(priorityTask.id),
-                            onComplete = { onAnimateComplete(priorityTask) }
+                            onComplete = { onAnimateComplete(priorityTask) },
+                            onHaptic = { taskViewModel.performHapticNudge() }
                         ) { task ->
                             CurrentPriorityTask(
                                 task = task,

@@ -142,7 +142,8 @@ fun NextUpTasks(
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
-                        onComplete = onAnimationFinished
+                        onComplete = onAnimationFinished,
+                        onHaptic = { viewModel.performHapticNudge() }
                     ) {
                         GravitySwipeBox(
                             onSwipeRight = { onPromoteToCurrentPriority(task) },
@@ -219,7 +220,10 @@ fun NextUpTasks(
                                             .size(24.dp)
                                             .clip(CircleShape)
                                             .border(1.dp, borderColor, CircleShape)
-                                            .clickable { onComplete(it) },
+                                            .clickable {
+                                                viewModel.performHapticNudge()
+                                                onComplete(it)
+                                            },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         // Empty, for the checkmark to appear after click

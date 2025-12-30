@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,8 +67,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -103,7 +106,13 @@ import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.RecorderScreen
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.screen.VoiceInboxScreen
+import com.ilseon.ui.theme.BorderQuiet
+import com.ilseon.ui.theme.CustomTextPrimary
 import com.ilseon.ui.theme.IlseonTheme
+import com.ilseon.ui.theme.LightGrey
+import com.ilseon.ui.theme.MutedDetail
+import com.ilseon.ui.theme.MutedRed
+import com.ilseon.ui.theme.MutedTeal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -438,47 +447,38 @@ class MainActivity : ComponentActivity() {
                             val isVoiceInbox = currentRoute?.startsWith(Screen.VoiceInbox.route) == true
                             val isIdeaInbox = currentRoute?.startsWith(Screen.IdeaInbox.route) == true
                             if (currentRoute == Screen.DailyDashboard.route || isIdeaInbox || isVoiceInbox) {
-                                LargeFloatingActionButton(
-                                    onClick = {
-                                        val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
-                                        when {
-                                            isVoiceInbox -> {
-                                                navController.navigate(Screen.Recorder.route)
-                                            }
-                                            isIdeaInbox -> {
-                                                vttTarget = "idea_content"
-                                                if (useVtt) {
-                                                    startVtt()
-                                                } else {
-                                                    vttIdeaContentResult = ""
-                                                    showAddIdeaDialog = true
-                                                }
-                                            }
-                                            else -> { // Dashboard
-                                                vttTarget = "quick_capture_title"
-                                                if (useVtt) {
-                                                    startVtt()
-                                                } else {
-                                                    scope.launch { sheetState.expand() }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    shape = CircleShape,
-                                    containerColor = MaterialTheme.colorScheme.surface,
+                                Box(
                                     modifier = Modifier
-                                        .size(116.dp)
-                                        .border(
-                                            3.dp,
-                                            MaterialTheme.colorScheme.primary,
-                                            CircleShape
-                                        )
+                                        .size(118.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surface, CircleShape)
+                                        .border(1.dp, MutedDetail, CircleShape)
+                                        .clickable {
+                                            val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
+                                            when {
+                                                isVoiceInbox -> navController.navigate(Screen.Recorder.route)
+                                                isIdeaInbox -> {
+                                                    vttTarget = "idea_content"
+                                                    if (useVtt) startVtt() else {
+                                                        vttIdeaContentResult = ""
+                                                        showAddIdeaDialog = true
+                                                    }
+                                                }
+                                                else -> {
+                                                    vttTarget = "quick_capture_title"
+                                                    if (useVtt) startVtt() else scope.launch { sheetState.expand() }
+                                                }
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         if (isVoiceInbox) {
                                             Icon(
                                                 Icons.Filled.Mic,
-                                                contentDescription = "Record"
+                                                contentDescription = "Record",
+                                                //tint = MutedRed,
+                                                modifier = Modifier.size(36.dp)
                                             )
                                             Text(
                                                 text = "RECORD",
@@ -488,7 +488,9 @@ class MainActivity : ComponentActivity() {
                                         } else {
                                             Icon(
                                                 Icons.Filled.Add,
-                                                contentDescription = "Quick Capture"
+                                                contentDescription = "Quick Capture",
+                                                //tint = MutedRed,
+                                                modifier = Modifier.size(36.dp)
                                             )
                                             Text(
                                                 text = "QUICK CAPTURE",

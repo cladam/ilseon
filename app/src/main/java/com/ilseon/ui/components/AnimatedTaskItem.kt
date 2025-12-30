@@ -3,29 +3,20 @@ package com.ilseon.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import com.ilseon.data.task.Task
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,10 +26,10 @@ fun AnimatedTaskItem(
     task: Task,
     isVisible: Boolean,
     onComplete: (Task) -> Unit,
+    onHaptic: () -> Unit,
     reduceMotion: Boolean = false,
     content: @Composable (Task) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
     // Using Animatable for more control over velocity and "snapping"
@@ -48,7 +39,7 @@ fun AnimatedTaskItem(
     LaunchedEffect(isVisible) {
         if (!isVisible) {
             // 1. Trigger Haptic immediately on 'intent to complete'
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onHaptic()
 
             // 2. Parallel organic exit
             scope.launch {

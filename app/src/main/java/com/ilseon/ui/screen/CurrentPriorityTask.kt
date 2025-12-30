@@ -1,5 +1,6 @@
 package com.ilseon.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -329,7 +330,10 @@ fun CurrentPriorityTask(
                                 alpha = 0.5f
                             )
                         )
-                        .clickable(enabled = allSubTasksComplete) { onComplete(task) },
+                        .clickable(enabled = allSubTasksComplete) { 
+                            viewModel.performHapticNudge()
+                            onComplete(task) 
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -384,6 +388,10 @@ fun CurrentPriorityTask(
                                     else colorScheme.surfaceVariant
                                 )
                                 .clickable {
+                                    if (!subTask.isComplete) {
+                                        Log.d("CurrentPriorityTask", "Subtask clicked, triggering haptic")
+                                        viewModel.performHapticNudge()
+                                    }
                                     viewModel.updateTask(subTask.copy(isComplete = !subTask.isComplete))
                                 }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -391,9 +399,7 @@ fun CurrentPriorityTask(
                         ) {
                             Checkbox(
                                 checked = subTask.isComplete,
-                                onCheckedChange = { isChecked ->
-                                    viewModel.updateTask(subTask.copy(isComplete = isChecked))
-                                },
+                                onCheckedChange = null,
                                 modifier = Modifier.size(20.dp),
                                 colors = androidx.compose.material3.CheckboxDefaults.colors(
                                     checkedColor = colorScheme.secondary,

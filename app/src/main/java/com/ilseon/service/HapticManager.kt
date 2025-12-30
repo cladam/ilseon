@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.text.compareTo
 
 interface HapticManager {
     fun performNudge()
@@ -43,12 +44,14 @@ class HapticManagerImpl @Inject constructor(
 
     // A very light tap, good for subtle feedback.
     override fun performNudge() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        Log.d("HapticManager", "performNudge() called")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
             vibrate(nudgePattern)
         }
     }
+
 
     override fun performWarning() {
         vibrate(warningPattern)

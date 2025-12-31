@@ -215,12 +215,13 @@ abstract class AppModule {
         fun provideTaskRepository(
             @ApplicationContext context: Context,
             taskDao: TaskDao,
+            userStatusDao: UserStatusDao,
             focusBlockDao: FocusBlockDao,
             taskContextDao: TaskContextDao,
             reminderManager: IReminderManager,
             userStatusRepository: UserStatusRepository
         ): TaskRepository {
-            return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository)
+            return TaskRepository(context, taskDao, userStatusDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository)
         }
 
         @Provides

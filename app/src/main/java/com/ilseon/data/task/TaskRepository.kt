@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.ilseon.data.EnergyLevel
+import com.ilseon.data.userstatus.UserStatusDao
 import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.IReminderManager
 import com.ilseon.widget.PriorityWidgetReceiver
@@ -23,6 +24,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.contains
 import kotlin.compareTo
+import kotlin.ranges.rangeTo
 import kotlin.ranges.rangeUntil
 import kotlin.text.compareTo
 import kotlin.text.get
@@ -34,6 +36,7 @@ import kotlin.times
 class TaskRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
+    private val userStatusDao: UserStatusDao,
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
     private val reminderManager: IReminderManager,
@@ -273,39 +276,62 @@ class TaskRepository @Inject constructor(
         }
     }
 
+    suspend fun getCurrentPriorityTaskForWidget(): Task? {
+        val now = System.currentTimeMillis()
+        val today = LocalDate.now()
+        val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        val allTasks = taskDao.getIncompleteTasks().first()
+        val activeFocusBlock = getActiveFocusBlock().first()
+        val allFocusBlocks = getAllFocusBlocks()
+        val userStatus = userStatusDao.getUserStatus()
+        val energyLevel = userStatus?.currentEnergy
+
+        val todayTasks = allTasks.filter { task ->
+            !task.isComplete && !task.isArchived && task.parentId == null &&
+                    (task.startTime == null || task.startTime in startOfDay..endOfDay)
+        }
+
+        val ilseonComparator = createIlseonComparator(energyLevel)
+
+        val sortedTasks = if (activeFocusBlock != null) {
+            val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
+            val urgentOutOfContext = todayTasks.filter { task ->
+                task.contextId != activeFocusBlock.contextId && task.isUrgent && !task.isComplete
+            }
+            (focusContextTasks + urgentOutOfContext).sortedWith(ilseonComparator)
+        } else {
+            val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
+            todayTasks.filter { task ->
+                val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
+                val inFocusBlockContext = task.contextId in focusBlockContextIds
+                if (isUrgentHigh || !inFocusBlockContext) true
+                else task.startTime?.let { startTime ->
+                    val taskDayOfWeek = Instant.ofEpochMilli(startTime)
+                        .atZone(ZoneId.systemDefault()).toLocalDate().dayOfWeek.value
+                    !allFocusBlocks.any { fb ->
+                        fb.contextId == task.contextId &&
+                                (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+                    }
+                } ?: false
+            }.sortedWith(ilseonComparator)
+        }
+
+        // Only return tasks that have started
+        return sortedTasks.firstOrNull { task ->
+            task.startTime == null || task.startTime <= now
+        }
+    }
+
+
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {
         return taskDao.getIncompleteTasksByContext(contextId)
     }
 
     suspend fun updatePriorityAndWidget() {
-        val now = System.currentTimeMillis()
+        val newPriorityTask = getCurrentPriorityTaskForWidget()
         val allIncompleteTasks = taskDao.getIncompleteTasks().first()
-        val validTasks = allIncompleteTasks.filter { it.startTime == null || it.startTime <= now }
-
-        val sortedTasks = validTasks.sortedWith(
-            compareBy<Task> { !it.isUrgent }
-                .thenBy {
-                    when (it.priority) {
-                        TaskPriority.High -> 0
-                        TaskPriority.Medium -> 1
-                        TaskPriority.Low -> 2
-                    }
-                }
-                .thenBy {
-                    if (it.priority == TaskPriority.High) {
-                        when (it.schedulingType) {
-                            SchedulingType.TimeBlock -> 0
-                            SchedulingType.Duration -> 1
-                            SchedulingType.None -> 2
-                        }
-                    } else {
-                        0
-                    }
-                }
-                .thenBy { it.createdAt }
-        )
-
-        val newPriorityTask = sortedTasks.firstOrNull()
         val currentPriorityTask = allIncompleteTasks.find { it.isCurrentPriority }
 
         if (newPriorityTask?.id != currentPriorityTask?.id) {
@@ -316,6 +342,7 @@ class TaskRepository @Inject constructor(
         }
         updateWidget()
     }
+
 
     fun getUnarchivedRecurringTaskSeries(): Flow<List<Task>> {
         return taskDao.getUnarchivedRecurringTaskSeries()

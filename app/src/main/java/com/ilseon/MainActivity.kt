@@ -374,6 +374,9 @@ class MainActivity : ComponentActivity() {
                                     showAddIdeaDialog = true
                                 }
                             }
+                            when (currentIntent.getStringExtra("navigate_to")) {
+                                "voice_recorder" -> navController.navigate(Screen.Recorder.route)
+                            }
                             if (currentIntent.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
                                 val taskIdString = currentIntent.getStringExtra("EXTRA_TASK_ID")
                                 if (taskIdString != null) {
@@ -726,9 +729,15 @@ class MainActivity : ComponentActivity() {
                                             voiceMemoViewModel.saveVoiceMemo(
                                                 filePath = it.filePath,
                                                 durationSeconds = it.durationSeconds,
-                                                onComplete = { navController.popBackStack() }
+                                                onComplete = {
+                                                    navController.navigate(Screen.VoiceInbox.route) {
+                                                        popUpTo(Screen.Recorder.route) { inclusive = true }
+                                                    }
+                                                }
                                             )
-                                        } ?: navController.popBackStack()
+                                        } ?: navController.navigate(Screen.VoiceInbox.route) {
+                                            popUpTo(Screen.Recorder.route) { inclusive = true }
+                                        }
                                     },
                                     onCancel = {
                                         recorderViewModel.discardRecording()
@@ -742,9 +751,15 @@ class MainActivity : ComponentActivity() {
                                             voiceMemoViewModel.saveVoiceMemo(
                                                 filePath = it.filePath,
                                                 durationSeconds = it.durationSeconds,
-                                                onComplete = { navController.popBackStack() }
+                                                onComplete = {
+                                                    navController.navigate(Screen.VoiceInbox.route) {
+                                                        popUpTo(Screen.Recorder.route) { inclusive = true }
+                                                    }
+                                                }
                                             )
-                                        } ?: navController.popBackStack()
+                                        } ?: navController.navigate(Screen.VoiceInbox.route) {
+                                            popUpTo(Screen.Recorder.route) { inclusive = true }
+                                        }
                                     }
                                 )
                             }

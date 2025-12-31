@@ -24,6 +24,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.contains
 import kotlin.compareTo
+import kotlin.let
 import kotlin.ranges.rangeTo
 import kotlin.ranges.rangeUntil
 import kotlin.text.compareTo
@@ -288,6 +289,7 @@ class TaskRepository @Inject constructor(
         val userStatus = userStatusDao.getUserStatus()
         val energyLevel = userStatus?.currentEnergy
 
+        // Same filtering as getDashboardTasks - only show tasks for TODAY
         val todayTasks = allTasks.filter { task ->
             !task.isComplete && !task.isArchived && task.parentId == null &&
                     (task.startTime == null || task.startTime in startOfDay..endOfDay)
@@ -308,21 +310,26 @@ class TaskRepository @Inject constructor(
                 val inFocusBlockContext = task.contextId in focusBlockContextIds
                 if (isUrgentHigh || !inFocusBlockContext) true
                 else task.startTime?.let { startTime ->
-                    val taskDayOfWeek = Instant.ofEpochMilli(startTime)
-                        .atZone(ZoneId.systemDefault()).toLocalDate().dayOfWeek.value
-                    !allFocusBlocks.any { fb ->
-                        fb.contextId == task.contextId &&
-                                (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
-                    }
-                } ?: false
+                    val focusBlock = allFocusBlocks.find { it.contextId == task.contextId }
+                    focusBlock?.let { block ->
+                        val blockStartSeconds = LocalTime.parse(block.startTime).toSecondOfDay()
+                        val blockEndSeconds = LocalTime.parse(block.endTime).toSecondOfDay()
+                        val nowSeconds = LocalTime.now().toSecondOfDay()
+
+                        val blockStart = blockStartSeconds * 1000L + startOfDay
+                        val blockEnd = blockEndSeconds * 1000L + startOfDay
+                        now in blockStart..blockEnd
+                    } ?: true
+                } ?: true
             }.sortedWith(ilseonComparator)
         }
 
-        // Only return tasks that have started
+        // Only return tasks that have started (not future scheduled ones)
         return sortedTasks.firstOrNull { task ->
             task.startTime == null || task.startTime <= now
         }
     }
+
 
 
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {

@@ -496,7 +496,7 @@ class MainActivity : ComponentActivity() {
                                             Text(
                                                 text = "QUICK CAPTURE",
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                                fontSize = 12.sp
+                                                fontSize = 11.sp
                                             )
                                         }
                                     }

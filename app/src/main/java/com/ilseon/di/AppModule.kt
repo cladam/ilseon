@@ -221,7 +221,7 @@ abstract class AppModule {
             reminderManager: IReminderManager,
             userStatusRepository: UserStatusRepository
         ): TaskRepository {
-            return TaskRepository(context, taskDao, userStatusDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository)
+            return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository)
         }
 
         @Provides

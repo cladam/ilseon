@@ -3,7 +3,6 @@ package com.ilseon.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -40,20 +39,17 @@ import com.ilseon.MainActivity
 import com.ilseon.R
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskRepository
-import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.ui.theme.MutedDetail
 import com.ilseon.ui.theme.MutedTeal
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.flow.firstOrNull
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PriorityWidgetEntryPoint {
     fun taskRepository(): TaskRepository
-    fun userStatusRepository(): UserStatusRepository
 }
 
 class PriorityWidget : GlanceAppWidget() {
@@ -62,15 +58,8 @@ class PriorityWidget : GlanceAppWidget() {
         val entryPoint =
             EntryPointAccessors.fromApplication(context, PriorityWidgetEntryPoint::class.java)
         val taskRepository = entryPoint.taskRepository()
-        val userStatusRepository = entryPoint.userStatusRepository()
 
-        val activeFocusBlock = taskRepository.getActiveFocusBlock().firstOrNull()
-        val task = if (activeFocusBlock != null) {
-            taskRepository.getIncompleteTasksByContext(activeFocusBlock.contextId).firstOrNull()
-                ?.firstOrNull()
-        } else {
-            taskRepository.getCurrentPriorityTask().firstOrNull()
-        }
+        val task = taskRepository.getCurrentPriorityTaskForWidget()
 
         val isCurrentFocus = task?.isCurrentPriority ?: false
         val isOverdue = task?.dueTime?.let { it < System.currentTimeMillis() } ?: false

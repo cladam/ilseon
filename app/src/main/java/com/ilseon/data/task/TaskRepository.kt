@@ -2,9 +2,8 @@ package com.ilseon.data.task
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.ilseon.data.EnergyLevel
-import com.ilseon.data.userstatus.UserStatusDao
+import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.IReminderManager
 import com.ilseon.widget.PriorityWidgetReceiver
@@ -22,22 +21,11 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.collections.contains
-import kotlin.compareTo
-import kotlin.let
-import kotlin.ranges.rangeTo
-import kotlin.ranges.rangeUntil
-import kotlin.text.compareTo
-import kotlin.text.get
-import kotlin.text.set
-import kotlin.times
-
 
 @Singleton
 class TaskRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
-    private val userStatusDao: UserStatusDao,
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
     private val reminderManager: IReminderManager,
@@ -47,257 +35,83 @@ class TaskRepository @Inject constructor(
 
     fun getSubTasks(parentId: UUID): Flow<List<Task>> = taskDao.getSubTasks(parentId)
 
-    // Need to remove the debugging at some point
     fun getDashboardTasks(): Flow<List<Task>> {
         val tasksFlow = taskDao.getIncompleteTasks()
         val allFocusBlocksFlow = focusBlockDao.getFocusBlocks()
-        val userStatusFlow = userStatusRepository.getStatus("user")  // Add this
-
+        val userStatusFlow = userStatusRepository.getStatus("user")
 
         return combine(tasksFlow, allFocusBlocksFlow, userStatusFlow) { tasks, allFocusBlocks, userStatus ->
-            Log.d("IlseonDebug", "UserStatus: $userStatus, currentEnergy: ${userStatus?.currentEnergy}")
-            val now = System.currentTimeMillis()
-            val localNow = LocalTime.now()
-            val formatter = DateTimeFormatter.ofPattern("HH:mm")
-            val todayDayOfWeek = LocalDate.now().dayOfWeek
+            getDashboardTasks(tasks, allFocusBlocks, userStatus)
+        }
+    }
 
-            val activeFocusBlock = allFocusBlocks.find {
-                val startTime = LocalTime.parse(it.startTime, formatter)
-                val endTime = LocalTime.parse(it.endTime, formatter)
-                val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(todayDayOfWeek.value)
-                !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
-            }
+    private fun getDashboardTasks(
+        tasks: List<Task>,
+        allFocusBlocks: List<FocusBlock>,
+        userStatus: UserStatus?
+    ): List<Task> {
+        val localNow = LocalTime.now()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        val todayDayOfWeek = LocalDate.now().dayOfWeek
 
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            val startOfToday = cal.timeInMillis
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-            val startOfTomorrow = cal.timeInMillis
+        val activeFocusBlock = allFocusBlocks.find {
+            val startTime = LocalTime.parse(it.startTime, formatter)
+            val endTime = LocalTime.parse(it.endTime, formatter)
+            val isTodayInRepeatDays = it.repeatDays.isEmpty() || it.repeatDays.contains(todayDayOfWeek.value)
+            !localNow.isBefore(startTime) && localNow.isBefore(endTime) && isTodayInRepeatDays
+        }
 
-            val tasksWithEffectiveTime = tasks.map { task ->
-                if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
-                    val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val startOfToday = cal.timeInMillis
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        val startOfTomorrow = cal.timeInMillis
 
-                    // Only adjust if the stored startTime is in the past or today, NOT if it's a future occurrence
-                    val isStoredDateTodayOrEarlier = task.startTime <= startOfTomorrow
+        val tasksWithEffectiveTime = tasks.map { task ->
+            if (task.isRecurring && task.startTime != null && !task.recurrenceDays.isNullOrBlank()) {
+                val isTodayRecurrenceDay = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+                val isStoredDateTodayOrEarlier = task.startTime < startOfTomorrow
 
-                    if (isTodayRecurrenceDay && isStoredDateTodayOrEarlier) {
-                        val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
-                        val todayCal = Calendar.getInstance().apply {
-                            set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
-                            set(Calendar.MINUTE, originalCal.get(Calendar.MINUTE))
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-
-                        val adjustedEndTime = task.endTime?.let { originalEnd ->
-                            val duration = originalEnd - task.startTime
-                            todayCal.timeInMillis + duration
-                        }
-
-                        task.copy(startTime = todayCal.timeInMillis, endTime = adjustedEndTime)
-                    } else {
-                        task // Keep future occurrences as-is
+                if (isTodayRecurrenceDay && isStoredDateTodayOrEarlier) {
+                    val originalCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
+                    val todayCal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, originalCal.get(Calendar.HOUR_OF_DAY))
+                        set(Calendar.MINUTE, originalCal.get(Calendar.MINUTE))
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
                     }
+                    val adjustedEndTime = task.endTime?.let { originalEnd ->
+                        val duration = originalEnd - task.startTime
+                        todayCal.timeInMillis + duration
+                    }
+                    task.copy(startTime = todayCal.timeInMillis, endTime = adjustedEndTime)
                 } else {
                     task
                 }
-            }
-
-            Log.d("RecurringDebug", "=== Recurring Task Check ===")
-            tasksWithEffectiveTime.filter { it.isRecurring }.forEach { task ->
-                val taskStartDate = task.startTime?.let {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-                }
-                Log.d("RecurringDebug", "Task: ${task.title}")
-                Log.d("RecurringDebug", "  startTime: ${task.startTime} -> date: $taskStartDate")
-                Log.d("RecurringDebug", "  recurrenceDays: ${task.recurrenceDays}")
-                Log.d("RecurringDebug", "  todayDayOfWeek: ${todayDayOfWeek.name}")
-                Log.d("RecurringDebug", "  isRecurrenceToday: ${task.recurrenceDays?.contains(todayDayOfWeek.name, true)}")
-                Log.d("RecurringDebug", "  isStartTimeToday: ${task.startTime?.let { it in startOfToday..<startOfTomorrow }}")
-            }
-
-            Log.d("RepoDebug", "=== Repository Debug ===")
-            tasksWithEffectiveTime.forEach { task ->
-                Log.d("RepoDebug", "Task: ${task.title}, startTime: ${task.startTime}, isRecurring: ${task.isRecurring}")
-            }
-
-            val todayTasks = tasksWithEffectiveTime.filter { task ->
-                if (task.startTime == null) {
-                    true
-                } else if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
-                    // Only show if today is a recurrence day AND the start time is today (not a future occurrence)
-                    val isRecurrenceToday = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
-                    val isStartTimeToday = task.startTime in startOfToday..<startOfTomorrow
-                    isRecurrenceToday && isStartTimeToday
-                } else {
-                    task.startTime in startOfToday..<startOfTomorrow
-                }
-            }
-
-            Log.d("RepoDebug", "Today tasks after filter: ${todayTasks.map { it.title }}")
-
-            val energyLevel = userStatus?.currentEnergy
-            val ilseonComparator = createIlseonComparator(energyLevel)
-
-            Log.d("IlseonDebug", "=== Task Energy Levels ===")
-            todayTasks.forEach { task ->
-                Log.d("IlseonDebug", "Task: ${task.title}, energyLevel: ${task.energyLevel}, priority: ${task.priority}, isUrgent: ${task.isUrgent}")
-            }
-
-
-            val sortedTasks = if (activeFocusBlock != null) {
-                val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
-                val urgentOutOfContext = todayTasks.filter { task ->
-                    task.contextId != activeFocusBlock.contextId &&
-                            task.isUrgent &&
-                            !task.isComplete
-                }
-                (focusContextTasks + urgentOutOfContext).sortedWith(ilseonComparator)
             } else {
-                val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
-                Log.d("RepoDebug", "No active focus block. Focus block context IDs: $focusBlockContextIds")
-
-                todayTasks.filter { task ->
-                    val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
-                    val inFocusBlockContext = task.contextId in focusBlockContextIds
-                    val taskStart = task.startTime
-
-                    Log.d("RepoDebug", "Filtering ${task.title}: urgentHigh=$isUrgentHigh, inFocusContext=$inFocusBlockContext, startTime=$taskStart")
-
-                    if (isUrgentHigh) {
-                        Log.d("RepoDebug", "  -> INCLUDED (urgent high)")
-                        true
-                    } else if (!inFocusBlockContext) {
-                        Log.d("RepoDebug", "  -> INCLUDED (no focus block for context)")
-                        true
-                    } else {
-                        if (taskStart == null) {
-                            Log.d("RepoDebug", "  -> EXCLUDED (in focus context, no start time)")
-                            false
-                        } else {
-                            val taskDate = Instant.ofEpochMilli(taskStart)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                            val taskDayOfWeek = taskDate.dayOfWeek.value
-
-                            val hasBlockForTaskDay = allFocusBlocks.any { fb ->
-                                fb.contextId == task.contextId &&
-                                        (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
-                            }
-
-                            Log.d("RepoDebug", "  -> ${if (!hasBlockForTaskDay) "INCLUDED" else "EXCLUDED"} (hasBlockForTaskDay=$hasBlockForTaskDay)")
-                            !hasBlockForTaskDay
-                        }
-                    }
-                }.sortedWith(ilseonComparator)
-            }
-
-            Log.d("IlseonDebug", "=== Final Sorted Order ===")
-            sortedTasks.forEachIndexed { index, task ->
-                Log.d("IlseonDebug", "[$index] ${task.title} (priority=${task.priority}, energy=${task.energyLevel}, urgent=${task.isUrgent})")
-            }
-            sortedTasks
-        }
-    }
-
-    private fun createIlseonComparator(energyLevel: EnergyLevel?): Comparator<Task> {
-        Log.d("IlseonDebug", "Creating comparator for energy level: $energyLevel")
-
-        return when (energyLevel) {
-            EnergyLevel.Low -> {
-                Log.d("IlseonDebug", "Using LOW energy comparator")
-                Comparator { t1, t2 ->
-                    // Manual priority always wins
-                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
-                    if (manualCompare != 0) return@Comparator manualCompare
-
-                    val result = compareByDescending<Task> { it.isUrgent }
-                        .thenBy { it.priority.ordinal }
-                        .thenBy {
-                            // For LOW user energy: prioritize Low energy tasks (smallest value first)
-                            when (it.energyLevel) {
-                                EnergyLevel.Low -> 0
-                                EnergyLevel.Medium -> 1
-                                EnergyLevel.High -> 2
-                                null -> 1
-                            }
-                        }
-                        .thenBy { it.startTime ?: Long.MAX_VALUE }
-                        .thenBy { it.createdAt }
-                        .compare(t1, t2)
-
-                    Log.d("IlseonDebug", "Compare: ${t1.title}(energy=${t1.energyLevel}) vs ${t2.title}(energy=${t2.energyLevel}) = $result")
-                    result
-                }
-            }
-            EnergyLevel.Medium -> {
-                Log.d("IlseonDebug", "Using MEDIUM energy comparator")
-                Comparator { t1, t2 ->
-                    // Manual priority always wins
-                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
-                    if (manualCompare != 0) return@Comparator manualCompare
-
-                    val result = compareByDescending<Task> { it.isUrgent }
-                        .thenBy { it.priority.ordinal }
-                        .thenBy {
-                            when (it.energyLevel) {
-                                EnergyLevel.Medium -> 0
-                                EnergyLevel.Low -> 1
-                                EnergyLevel.High -> 2
-                                null -> 1
-                            }
-                        }
-                        .thenBy { it.startTime ?: Long.MAX_VALUE }
-                        .thenBy { it.createdAt }
-                        .compare(t1, t2)
-
-                    Log.d("IlseonDebug", "Compare: ${t1.title}(energy=${t1.energyLevel}) vs ${t2.title}(energy=${t2.energyLevel}) = $result")
-                    result
-                }
-            }
-            EnergyLevel.High, null -> {
-                Log.d("IlseonDebug", "Using HIGH energy comparator")
-                Comparator { t1, t2 ->
-                    // Manual priority always wins
-                    val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
-                    if (manualCompare != 0) return@Comparator manualCompare
-
-                    compareByDescending<Task> { it.isUrgent }
-                        .thenBy { it.priority.ordinal }
-                        .thenBy { it.energyLevel?.ordinal ?: 1 }
-                        .thenBy { it.startTime ?: Long.MAX_VALUE }
-                        .thenBy { it.createdAt }
-                        .compare(t1, t2)
-                }
+                task
             }
         }
-    }
 
-    suspend fun getCurrentPriorityTaskForWidget(): Task? {
-        val now = System.currentTimeMillis()
-        val today = LocalDate.now()
-        val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val endOfDay = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val todayTasks = tasksWithEffectiveTime.filter { task ->
+            if (task.startTime == null) {
+                true
+            } else if (task.isRecurring && !task.recurrenceDays.isNullOrBlank()) {
+                val isRecurrenceToday = task.recurrenceDays.contains(todayDayOfWeek.name, ignoreCase = true)
+                val isStartTimeToday = task.startTime in startOfToday until startOfTomorrow
+                isRecurrenceToday && isStartTimeToday
+            } else {
+                task.startTime in startOfToday until startOfTomorrow
+            }
+        }
 
-        val allTasks = taskDao.getIncompleteTasks().first()
-        val activeFocusBlock = getActiveFocusBlock().first()
-        val allFocusBlocks = getAllFocusBlocks()
-        val userStatus = userStatusDao.getUserStatus()
         val energyLevel = userStatus?.currentEnergy
-
-        // Same filtering as getDashboardTasks - only show tasks for TODAY
-        val todayTasks = allTasks.filter { task ->
-            !task.isComplete && !task.isArchived && task.parentId == null &&
-                    (task.startTime == null || task.startTime in startOfDay..endOfDay)
-        }
-
         val ilseonComparator = createIlseonComparator(energyLevel)
 
-        val sortedTasks = if (activeFocusBlock != null) {
+        return if (activeFocusBlock != null) {
             val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
             val urgentOutOfContext = todayTasks.filter { task ->
                 task.contextId != activeFocusBlock.contextId && task.isUrgent && !task.isComplete
@@ -308,29 +122,93 @@ class TaskRepository @Inject constructor(
             todayTasks.filter { task ->
                 val isUrgentHigh = task.isUrgent && task.priority == TaskPriority.High
                 val inFocusBlockContext = task.contextId in focusBlockContextIds
-                if (isUrgentHigh || !inFocusBlockContext) true
-                else task.startTime?.let { startTime ->
-                    val focusBlock = allFocusBlocks.find { it.contextId == task.contextId }
-                    focusBlock?.let { block ->
-                        val blockStartSeconds = LocalTime.parse(block.startTime).toSecondOfDay()
-                        val blockEndSeconds = LocalTime.parse(block.endTime).toSecondOfDay()
-                        val nowSeconds = LocalTime.now().toSecondOfDay()
+                val taskStart = task.startTime
 
-                        val blockStart = blockStartSeconds * 1000L + startOfDay
-                        val blockEnd = blockEndSeconds * 1000L + startOfDay
-                        now in blockStart..blockEnd
-                    } ?: true
-                } ?: true
+                if (isUrgentHigh) {
+                    true
+                } else if (!inFocusBlockContext) {
+                    true
+                } else {
+                    if (taskStart == null) {
+                        false
+                    } else {
+                        val taskDate = Instant.ofEpochMilli(taskStart)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        val taskDayOfWeek = taskDate.dayOfWeek.value
+
+                        val hasBlockForTaskDay = allFocusBlocks.any { fb ->
+                            fb.contextId == task.contextId && (fb.repeatDays.isEmpty() || fb.repeatDays.contains(taskDayOfWeek))
+                        }
+                        !hasBlockForTaskDay
+                    }
+                }
             }.sortedWith(ilseonComparator)
         }
+    }
 
-        // Only return tasks that have started (not future scheduled ones)
+    private fun createIlseonComparator(energyLevel: EnergyLevel?): Comparator<Task> {
+        return when (energyLevel) {
+            EnergyLevel.Low -> Comparator { t1, t2 ->
+                val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                if (manualCompare != 0) return@Comparator manualCompare
+
+                compareByDescending<Task> { it.isUrgent }
+                    .thenBy { it.priority.ordinal }
+                    .thenBy {
+                        when (it.energyLevel) {
+                            EnergyLevel.Low -> 0
+                            EnergyLevel.Medium -> 1
+                            EnergyLevel.High -> 2
+                            null -> 1
+                        }
+                    }
+                    .thenBy { it.startTime ?: Long.MAX_VALUE }
+                    .thenBy { it.createdAt }
+                    .compare(t1, t2)
+            }
+            EnergyLevel.Medium -> Comparator { t1, t2 ->
+                val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                if (manualCompare != 0) return@Comparator manualCompare
+
+                compareByDescending<Task> { it.isUrgent }
+                    .thenBy { it.priority.ordinal }
+                    .thenBy {
+                        when (it.energyLevel) {
+                            EnergyLevel.Medium -> 0
+                            EnergyLevel.Low -> 1
+                            EnergyLevel.High -> 2
+                            null -> 1
+                        }
+                    }
+                    .thenBy { it.startTime ?: Long.MAX_VALUE }
+                    .thenBy { it.createdAt }
+                    .compare(t1, t2)
+            }
+            EnergyLevel.High, null -> Comparator { t1, t2 ->
+                val manualCompare = compareByDescending<Task> { it.isManualPriority }.compare(t1, t2)
+                if (manualCompare != 0) return@Comparator manualCompare
+
+                compareByDescending<Task> { it.isUrgent }
+                    .thenBy { it.priority.ordinal }
+                    .thenBy { it.energyLevel?.ordinal ?: 1 }
+                    .thenBy { it.startTime ?: Long.MAX_VALUE }
+                    .thenBy { it.createdAt }
+                    .compare(t1, t2)
+            }
+        }
+    }
+
+    suspend fun getCurrentPriorityTaskForWidget(): Task? {
+        val tasks = taskDao.getIncompleteTasks().first()
+        val allFocusBlocks = focusBlockDao.getAllFocusBlocks()
+        val userStatus = userStatusRepository.getStatus("user").first()
+        val sortedTasks = getDashboardTasks(tasks, allFocusBlocks, userStatus)
+        val now = System.currentTimeMillis()
         return sortedTasks.firstOrNull { task ->
             task.startTime == null || task.startTime <= now
         }
     }
-
-
 
     fun getIncompleteTasksByContext(contextId: UUID): Flow<List<Task>> {
         return taskDao.getIncompleteTasksByContext(contextId)
@@ -416,19 +294,8 @@ class TaskRepository @Inject constructor(
         return taskDao.getTasksWithReflections()
     }
 
-    suspend fun getAllTasksForDebug(): List<Task> {
-        return taskDao.getAllTasksForDebug()
-    }
-
     fun getTasks(): Flow<List<Task>> = taskDao.getTasks()
 
-    fun getCurrentPriorityTask(): Flow<Task?> = getDashboardTasks().map { tasks ->
-        val currentTime = System.currentTimeMillis()
-        // Only return tasks that have started (or have no start time)
-        tasks.firstOrNull { task ->
-            task.startTime == null || task.startTime <= currentTime
-        }
-    }
     suspend fun getAllFocusBlocks(): List<FocusBlock> {
         return focusBlockDao.getAllFocusBlocks()
     }
@@ -477,7 +344,8 @@ class TaskRepository @Inject constructor(
         }
 
         val recurrenceDayStrings = task.recurrenceDays
-            .replace("[", "").replace("]", "")
+            .replace("[", "")
+            .replace("]", "")
             .split(',')
             .map { it.trim().uppercase() }
 
@@ -492,7 +360,7 @@ class TaskRepository @Inject constructor(
                     java.time.DayOfWeek.FRIDAY -> Calendar.FRIDAY
                     java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
                 }
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 null
             }
         }.toSet()
@@ -501,16 +369,14 @@ class TaskRepository @Inject constructor(
 
         val originalStartCal = Calendar.getInstance().apply { timeInMillis = task.startTime }
 
-        // Always start searching from TOMORROW to ensure the new instance is in the future
         val nextStartCal = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1) // Start from tomorrow
+            add(Calendar.DAY_OF_YEAR, 1) 
             set(Calendar.HOUR_OF_DAY, originalStartCal.get(Calendar.HOUR_OF_DAY))
             set(Calendar.MINUTE, originalStartCal.get(Calendar.MINUTE))
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
 
-        // Find the next valid recurrence day starting from tomorrow
         for (i in 0..6) {
             if (recurrenceDays.contains(nextStartCal.get(Calendar.DAY_OF_WEEK))) {
                 break
@@ -561,18 +427,6 @@ class TaskRepository @Inject constructor(
 
     suspend fun getRunningTasks(): List<Task> {
         return taskDao.getRunningTasks()
-    }
-
-    suspend fun startDurationTask(taskId: UUID) {
-        val task = taskDao.getTaskById(taskId)
-        if (task != null && task.totalTimeInMinutes != null && task.timerState == TimerState.NotStarted) {
-            val updatedTask = task.copy(
-                timerState = TimerState.Running,
-                timerStartTime = System.currentTimeMillis()
-            )
-            taskDao.update(updatedTask)
-            reminderManager.scheduleDurationTaskReminders(updatedTask)
-        }
     }
 
     suspend fun rescheduleAllReminders() {

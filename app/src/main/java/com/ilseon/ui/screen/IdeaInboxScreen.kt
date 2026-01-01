@@ -25,6 +25,10 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.FormatUnderlined
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,10 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -313,6 +318,47 @@ fun IdeaInboxScreen(
     }
 }
 
+@Composable
+fun FormattingBar(
+    onBoldClick: () -> Unit,
+    onItalicClick: () -> Unit,
+    onUnderscoreClick: () -> Unit,
+    onHeadingClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        IconButton(onClick = onBoldClick) {
+            Icon(
+                imageVector = Icons.Outlined.FormatBold,
+                contentDescription = "Bold"
+            )
+        }
+        IconButton(onClick = onItalicClick) {
+            Icon(
+                imageVector = Icons.Outlined.FormatItalic,
+                contentDescription = "Italic"
+            )
+        }
+        IconButton(onClick = onUnderscoreClick) {
+            Icon(
+                imageVector = Icons.Outlined.FormatUnderlined,
+                contentDescription = "Underscore"
+            )
+        }
+        IconButton(onClick = onHeadingClick) {
+            Icon(
+                imageVector = Icons.Outlined.Title,
+                contentDescription = "Heading"
+            )
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditIdeaDialog(
@@ -320,8 +366,45 @@ fun EditIdeaDialog(
     onDismiss: () -> Unit,
     onSave: (Idea) -> Unit
 ) {
-    var text by remember { mutableStateOf(idea.content ?: "") }
+    var textFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = idea.content ?: "",
+                selection = TextRange(idea.content?.length ?: 0)
+            )
+        )
+    }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
+
+    fun applyMarkdown(prefix: String, suffix: String = prefix) {
+        val selection = textFieldValue.selection
+        val newText = if (selection.collapsed) {
+            textFieldValue.text.substring(0, selection.start) +
+                    prefix + suffix +
+                    textFieldValue.text.substring(selection.end)
+        } else {
+            textFieldValue.text.substring(0, selection.min) +
+                    prefix +
+                    textFieldValue.text.substring(selection.min, selection.max) +
+                    suffix +
+                    textFieldValue.text.substring(selection.max)
+        }
+        val newSelection = if (selection.collapsed) {
+            TextRange(selection.start + prefix.length)
+        } else {
+            TextRange(selection.min + prefix.length, selection.max + prefix.length)
+        }
+        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
+    }
+
+    fun applyHeading() {
+        val selection = textFieldValue.selection
+        val text = textFieldValue.text
+        val currentLineStart = text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
+        val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
+        val newSelection = TextRange(selection.start + 3, selection.end + 3)
+        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
+    }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
@@ -339,8 +422,8 @@ fun EditIdeaDialog(
                     },
                     actions = {
                         TextButton(
-                            onClick = { onSave(idea.copy(content = text)) },
-                            enabled = text.isNotBlank()
+                            onClick = { onSave(idea.copy(content = textFieldValue.text)) },
+                            enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
                                 text = "Save",
@@ -349,11 +432,19 @@ fun EditIdeaDialog(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                FormattingBar(
+                    onBoldClick = { applyMarkdown("**") },
+                    onItalicClick = { applyMarkdown("*") },
+                    onUnderscoreClick = { applyMarkdown("<u>", "</u>") },
+                    onHeadingClick = { applyHeading() }
+                )
             }
         ) { paddingValues ->
             TextField(
-                value = text,
-                onValueChange = { text = it },
+                value = textFieldValue,
+                onValueChange = { textFieldValue = it },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -383,8 +474,45 @@ fun AddIdeaDialog(
     onAddIdea: (String) -> Unit,
     onVttClick: () -> Unit
 ) {
-    var text by remember { mutableStateOf(initialText) }
+    var textFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = initialText,
+                selection = TextRange(initialText.length)
+            )
+        )
+    }
     val focusRequester = remember { FocusRequester() }
+
+    fun applyMarkdown(prefix: String, suffix: String = prefix) {
+        val selection = textFieldValue.selection
+        val newText = if (selection.collapsed) {
+            textFieldValue.text.substring(0, selection.start) +
+                    prefix + suffix +
+                    textFieldValue.text.substring(selection.end)
+        } else {
+            textFieldValue.text.substring(0, selection.min) +
+                    prefix +
+                    textFieldValue.text.substring(selection.min, selection.max) +
+                    suffix +
+                    textFieldValue.text.substring(selection.max)
+        }
+        val newSelection = if (selection.collapsed) {
+            TextRange(selection.start + prefix.length)
+        } else {
+            TextRange(selection.min + prefix.length, selection.max + prefix.length)
+        }
+        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
+    }
+
+    fun applyHeading() {
+        val selection = textFieldValue.selection
+        val text = textFieldValue.text
+        val currentLineStart = text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
+        val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
+        val newSelection = TextRange(selection.start + 3, selection.end + 3)
+        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
+    }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
@@ -408,8 +536,8 @@ fun AddIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onAddIdea(text) },
-                            enabled = text.isNotBlank()
+                            onClick = { onAddIdea(textFieldValue.text) },
+                            enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
                                 text = "Save",
@@ -418,11 +546,19 @@ fun AddIdeaDialog(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                FormattingBar(
+                    onBoldClick = { applyMarkdown("**") },
+                    onItalicClick = { applyMarkdown("*") },
+                    onUnderscoreClick = { applyMarkdown("<u>", "</u>") },
+                    onHeadingClick = { applyHeading() }
+                )
             }
         ) { paddingValues ->
             TextField(
-                value = text,
-                onValueChange = { text = it },
+                value = textFieldValue,
+                onValueChange = { textFieldValue = it },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)

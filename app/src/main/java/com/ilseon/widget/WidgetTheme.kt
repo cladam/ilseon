@@ -10,7 +10,17 @@ import com.ilseon.ui.theme.TextPrimary
 import com.ilseon.ui.theme.TextSecondary
 
 object WidgetTheme {
-    // Create a copy of the background color with 80% opacity (20% transparency)
+    // 1. Define the "Ilseon Palette" locally for the widget
+    private val MutedAmber = Color(0xFFC08A3E)  // Idea
+    private val MutedTeal = Color(0xFF5A9B80)   // Voice
+    private val MutedRed = Color(0xFFB35F5F)    // Task
+
+    private val DarkGrey = Color(0xFF121212)
+    private val LightGrey = Color(0xFF1E1E1E)
+    private val TextPrimary = Color(0xFFE0E0E0)
+    private val TextSecondary = Color(0xFF9E9E9E)
+
+    // 2. The 80% opacity background you requested
     private val transparentBackground = DarkGrey.copy(alpha = 0.8f)
 
     private val widgetColorScheme = darkColorScheme(
@@ -22,14 +32,26 @@ object WidgetTheme {
         onPrimary = DarkGrey,
         secondary = TextSecondary,
         onSecondary = DarkGrey,
-        tertiary = TextSecondary,
-        onTertiary = DarkGrey,
-        error = QuietAmber,
-        onError = Color.Black,
+        // We can map our Semantic colors to unused slots or
+        // access them via a custom object (recommended below)
+        tertiary = MutedTeal,
+        error = MutedRed
     )
 
     val colors = ColorProviders(
         dark = widgetColorScheme,
-        light = widgetColorScheme // Using the same for light theme as it's dark-only
+        light = widgetColorScheme
     )
+
+    // 3. The "Semantic" access for your icons
+    // Use these instead of Color.Blue or Color.Yellow
+    object Semantic {
+        val Idea = MutedAmber
+        val Voice = MutedTeal
+        val Task = MutedRed
+
+        // This is the "secret sauce" for the integrated look:
+        // A very faint background plate for the icon
+        val IconContainerAlpha = 0.15f
+    }
 }

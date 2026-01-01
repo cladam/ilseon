@@ -3,6 +3,7 @@ package com.ilseon.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -29,6 +30,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
+import androidx.glance.layout.width
 import androidx.glance.layout.wrapContentWidth
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -46,6 +48,40 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 
+
+object WidgetActionColors {
+    val TaskPrimary = Color(0xFFB35F5F)
+    val TaskBackground = Color(0xFFB35F5F).copy(alpha = 0.12f)
+    val TaskBorder = Color(0xFFB35F5F).copy(alpha = 0.25f)
+
+    val IdeaPrimary = Color(0xFFC08A3E)
+    val IdeaBackground = Color(0xFFC08A3E).copy(alpha = 0.12f)
+    val IdeaBorder = Color(0xFFC08A3E).copy(alpha = 0.25f)
+
+    val VoicePrimary = Color(0xFF5A9B80)
+    val VoiceBackground = Color(0xFF5A9B80).copy(alpha = 0.12f)
+    val VoiceBorder = Color(0xFF5A9B80).copy(alpha = 0.25f)
+}
+
+/**
+ * Encapsulates the visual identity of widget actions.
+ * Simplifies UI code by providing a single source of truth for "Intent" colors.
+ */
+enum class WidgetAction(
+    val iconRes: Int,
+    val description: String,
+    val intentAction: String,
+    val baseColor: Color
+) {
+    Task(R.drawable.ic_outline_add_task_24, "New Task", "com.ilseon.action.NEW_TASK", Color(0xFFB35F5F)),
+    Idea(R.drawable.ic_outline_lightbulb_24, "New Idea", "com.ilseon.action.NEW_IDEA", Color(0xFFC08A3E)),
+    Voice(R.drawable.ic_outline_mic_24, "New Voice Memo", "com.ilseon.action.NEW_VOICE_MEMO", Color(0xFF5A9B80));
+
+    val primary get() = ColorProvider(baseColor)
+    val background get() = ColorProvider(baseColor.copy(alpha = 0.12f))
+    val border get() = ColorProvider(baseColor.copy(alpha = 0.25f))
+}
+
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PriorityWidgetEntryPoint {
@@ -55,24 +91,60 @@ interface PriorityWidgetEntryPoint {
 class PriorityWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val entryPoint =
-            EntryPointAccessors.fromApplication(context, PriorityWidgetEntryPoint::class.java)
+        val entryPoint = EntryPointAccessors.fromApplication(context, PriorityWidgetEntryPoint::class.java)
         val taskRepository = entryPoint.taskRepository()
-
         val task = taskRepository.getCurrentPriorityTaskForWidget()
 
-        val isCurrentFocus = task?.isCurrentPriority ?: false
-        val isOverdue = task?.dueTime?.let { it < System.currentTimeMillis() } ?: false
         provideContent {
             GlanceTheme(WidgetTheme.colors) {
-                PriorityWidgetContent(task, isCurrentFocus, isOverdue)
+                PriorityWidgetContent(task)
             }
         }
     }
+
     @Composable
-    private fun PriorityWidgetContent(task: Task?, isCurrentFocus: Boolean, isOverdue: Boolean) {
-        val dividerColor = if (isOverdue) GlanceTheme.colors.error.getColor(LocalContext.current) else MutedTeal
+    private fun ActionIconButton(
+        actionType: WidgetAction,
+        modifier: GlanceModifier = GlanceModifier
+    ) {
         val context = LocalContext.current
+        val intent = Intent(context, ActionTrampolineActivity::class.java).apply {
+            action = actionType.intentAction
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        // We use a Box with padding to simulate a border, which is more reliable in Glance
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .size(32.dp)
+                .cornerRadius(8.dp)
+                .background(actionType.border)
+                .clickable(actionStartActivity(intent))
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .padding(1.dp) // The "Border" thickness
+                    .cornerRadius(7.dp)
+                    .background(actionType.background)
+            ) {
+                Image(
+                    provider = ImageProvider(actionType.iconRes),
+                    contentDescription = actionType.description,
+                    colorFilter = ColorFilter.tint(actionType.primary),
+                    modifier = GlanceModifier.size(18.dp)
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun PriorityWidgetContent(task: Task?) {
+        val isOverdue = task?.dueTime?.let { it < System.currentTimeMillis() } ?: false
+        val dividerColor = if (isOverdue) GlanceTheme.colors.error else ColorProvider(WidgetAction.Voice.baseColor)
+
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -81,159 +153,60 @@ class PriorityWidget : GlanceAppWidget() {
                 .clickable(actionStartActivity<MainActivity>())
                 .padding(12.dp)
         ) {
-            if (task != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = GlanceModifier.fillMaxWidth()
-                ) {
-                    Image(
-                        provider = ImageProvider(R.drawable.img),
-                        contentDescription = "App Icon",
-                        modifier = GlanceModifier.size(32.dp).padding(end = 4.dp)
-                    )
-                    Spacer(modifier = GlanceModifier.defaultWeight())
-                    Row(modifier = GlanceModifier.wrapContentWidth()) {
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_outline_add_task_24),
-                            contentDescription = "New Task",
-                            colorFilter = ColorFilter.tint(ColorProvider(MutedDetail)),
-                            modifier = GlanceModifier.size(24.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java)
-                                        .setAction("com.ilseon.action.NEW_TASK")
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.size(6.dp))
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_outline_lightbulb_24),
-                            contentDescription = "New Idea",
-                            colorFilter = ColorFilter.tint(ColorProvider(MutedDetail)),
-                            modifier = GlanceModifier.size(24.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java)
-                                        .setAction("com.ilseon.action.NEW_IDEA")
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.size(6.dp))
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_outline_mic_24),
-                            contentDescription = "New Voice Memo",
-                            colorFilter = ColorFilter.tint(ColorProvider(MutedDetail)),
-                            modifier = GlanceModifier.size(24.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java)
-                                        .setAction("com.ilseon.action.NEW_VOICE_MEMO")
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            )
-                        )
-                    }
-                }
+            // Header Row (App Icon + Global Actions)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = GlanceModifier.fillMaxWidth()
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.img),
+                    contentDescription = "Ilseon",
+                    modifier = GlanceModifier.size(32.dp)
+                )
 
-                Spacer(modifier = GlanceModifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (task.isUrgent) {
-                        Image(
-                            provider = ImageProvider(android.R.drawable.btn_star_big_on),
-                            contentDescription = "Urgent",
-                            modifier = GlanceModifier.size(20.dp).padding(end = 8.dp)
-                        )
-                    }
-                    Text(
-                        text = task.title,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.primary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-
-                Spacer(modifier = GlanceModifier.height(8.dp))
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(dividerColor)
-                ) {}
-                Spacer(modifier = GlanceModifier.height(8.dp))
-
-                task.description?.let {
-                    Text(
-                        text = it,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.secondary,
-                            fontSize = 14.sp
-                        )
-                    )
-                }
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = GlanceModifier.fillMaxWidth()
-                ) {
-                    Image(
-                        provider = ImageProvider(R.drawable.img),
-                        contentDescription = "App Icon",
-                        modifier = GlanceModifier.size(36.dp).padding(end = 8.dp)
-                    )
+                if (task == null) {
                     Text(
                         text = "Ilseon",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.secondary,
-                            fontSize = 16.sp
-                        )
+                        modifier = GlanceModifier.padding(start = 8.dp),
+                        style = TextStyle(color = GlanceTheme.colors.secondary, fontSize = 14.sp)
                     )
-                    Spacer(modifier = GlanceModifier.defaultWeight())
-                    Row {
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_outline_add_task_24),
-                            contentDescription = "New Task",
-                            modifier = GlanceModifier.size(28.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java).apply {
-                                        action = "com.ilseon.action.NEW_TASK"
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                )
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.size(8.dp))
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_outline_lightbulb_24),
-                            contentDescription = "New Idea",
-                            modifier = GlanceModifier.size(28.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java).apply {
-                                        action = "com.ilseon.action.NEW_IDEA"
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                )
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.size(8.dp))
-                        Image(
-                            provider = ImageProvider(android.R.drawable.ic_btn_speak_now),
-                            contentDescription = "New Voice Memo",
-                            modifier = GlanceModifier.size(28.dp).clickable(
-                                actionStartActivity(
-                                    Intent(context, ActionTrampolineActivity::class.java).apply {
-                                        action = "com.ilseon.action.NEW_VOICE_MEMO"
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                )
-                            )
-                        )
-                    }
-
                 }
-                Spacer(modifier = GlanceModifier.height(4.dp))
+
+                Spacer(modifier = GlanceModifier.defaultWeight())
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ActionIconButton(WidgetAction.Task)
+                    Spacer(modifier = GlanceModifier.width(6.dp))
+                    ActionIconButton(WidgetAction.Idea)
+                    Spacer(modifier = GlanceModifier.width(6.dp))
+                    ActionIconButton(WidgetAction.Voice)
+                }
+            }
+
+            Spacer(modifier = GlanceModifier.height(8.dp))
+
+            if (task != null) {
+                TaskSection(task, dividerColor)
+            } else {
+                EmptySection()
+            }
+        }
+    }
+
+    @Composable
+    private fun TaskSection(task: Task, dividerColor: ColorProvider) {
+        Column(modifier = GlanceModifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (task.isUrgent) {
+                    Image(
+                        provider = ImageProvider(android.R.drawable.btn_star_big_on),
+                        contentDescription = "Urgent",
+                        modifier = GlanceModifier.size(18.dp).padding(end = 6.dp)
+                    )
+                }
                 Text(
-                    text = "No priority task set.",
+                    text = task.title,
+                    maxLines = 1,
                     style = TextStyle(
                         color = GlanceTheme.colors.primary,
                         fontSize = 16.sp,
@@ -241,7 +214,30 @@ class PriorityWidget : GlanceAppWidget() {
                     )
                 )
             }
+
+            Spacer(modifier = GlanceModifier.height(6.dp))
+            Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(dividerColor)) {}
+            Spacer(modifier = GlanceModifier.height(6.dp))
+
+            task.description?.let {
+                Text(
+                    text = it,
+                    maxLines = 2,
+                    style = TextStyle(color = GlanceTheme.colors.secondary, fontSize = 13.sp)
+                )
+            }
         }
     }
 
+    @Composable
+    private fun EmptySection() {
+        Text(
+            text = "No priority task set.",
+            style = TextStyle(
+                color = GlanceTheme.colors.primary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
+            )
+        )
+    }
 }

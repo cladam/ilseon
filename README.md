@@ -64,9 +64,9 @@ Ilseon is 100% **open source**, built for the community.
 
 ### Screenshots
 
-|                    Capture                     |                     Focus                      |                    Reflect                    |                     Review                      |                     Idea Inbox                      |                    Voice Inbox                     |
-|:----------------------------------------------:|:----------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:---------------------------------------------------:|:--------------------------------------------------:|
-| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2-1.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS6.1.png) | ![Voice Inbox](./images/ilseon-screenshot-PS9.png) |
+|                    Capture                     |                    Focus                     |                    Reflect                    |                     Review                      |                    Idea Inbox                     |                    Voice Inbox                     |
+|:----------------------------------------------:|:--------------------------------------------:|:---------------------------------------------:|:-----------------------------------------------:|:-------------------------------------------------:|:--------------------------------------------------:|
+| ![Capture](./images/ilseon-screenshot-PS1.png) | ![Focus](./images/ilseon-screenshot-PS2.png) | ![Review](./images/ilseon-screenshot-PS3.png) | ![Reflect](./images/ilseon-screenshot-PS4.png)  | ![Idea Inbox](./images/ilseon-screenshot-PS8.png) | ![Voice Inbox](./images/ilseon-screenshot-PS9.png) |
 
 ### Source Code
 

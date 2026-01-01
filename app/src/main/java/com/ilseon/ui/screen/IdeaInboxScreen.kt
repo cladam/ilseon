@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -57,6 +58,37 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+
+// Helper functions for markdown formatting
+private fun applyMarkdown(textFieldValue: TextFieldValue, prefix: String, suffix: String = prefix): TextFieldValue {
+    val selection = textFieldValue.selection
+    val newText = if (selection.collapsed) {
+        textFieldValue.text.substring(0, selection.start) +
+                prefix + suffix +
+                textFieldValue.text.substring(selection.end)
+    } else {
+        textFieldValue.text.substring(0, selection.min) +
+                prefix +
+                textFieldValue.text.substring(selection.min, selection.max) +
+                suffix +
+                textFieldValue.text.substring(selection.max)
+    }
+    val newSelection = if (selection.collapsed) {
+        TextRange(selection.start + prefix.length)
+    } else {
+        TextRange(selection.min + prefix.length, selection.max + prefix.length)
+    }
+    return textFieldValue.copy(text = newText, selection = newSelection)
+}
+
+private fun applyHeading(textFieldValue: TextFieldValue): TextFieldValue {
+    val selection = textFieldValue.selection
+    val text = textFieldValue.text
+    val currentLineStart = text.lastIndexOf('\n', selection.start - 1).let { if (it == -1) 0 else it + 1 }
+    val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
+    val newSelection = TextRange(selection.start + 3, selection.end + 3)
+    return textFieldValue.copy(text = newText, selection = newSelection)
+}
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -358,7 +390,6 @@ fun FormattingBar(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditIdeaDialog(
@@ -376,39 +407,11 @@ fun EditIdeaDialog(
     }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
 
-    fun applyMarkdown(prefix: String, suffix: String = prefix) {
-        val selection = textFieldValue.selection
-        val newText = if (selection.collapsed) {
-            textFieldValue.text.substring(0, selection.start) +
-                    prefix + suffix +
-                    textFieldValue.text.substring(selection.end)
-        } else {
-            textFieldValue.text.substring(0, selection.min) +
-                    prefix +
-                    textFieldValue.text.substring(selection.min, selection.max) +
-                    suffix +
-                    textFieldValue.text.substring(selection.max)
-        }
-        val newSelection = if (selection.collapsed) {
-            TextRange(selection.start + prefix.length)
-        } else {
-            TextRange(selection.min + prefix.length, selection.max + prefix.length)
-        }
-        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
-    }
-
-    fun applyHeading() {
-        val selection = textFieldValue.selection
-        val text = textFieldValue.text
-        val currentLineStart = text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
-        val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
-        val newSelection = TextRange(selection.start + 3, selection.end + 3)
-        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
-    }
-
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
             topBar = {
                 TopAppBar(
                     title = { Text(title) },
@@ -435,10 +438,10 @@ fun EditIdeaDialog(
             },
             bottomBar = {
                 FormattingBar(
-                    onBoldClick = { applyMarkdown("**") },
-                    onItalicClick = { applyMarkdown("*") },
-                    onUnderscoreClick = { applyMarkdown("<u>", "</u>") },
-                    onHeadingClick = { applyHeading() }
+                    onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
+                    onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
+                    onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
+                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
                 )
             }
         ) { paddingValues ->
@@ -484,39 +487,11 @@ fun AddIdeaDialog(
     }
     val focusRequester = remember { FocusRequester() }
 
-    fun applyMarkdown(prefix: String, suffix: String = prefix) {
-        val selection = textFieldValue.selection
-        val newText = if (selection.collapsed) {
-            textFieldValue.text.substring(0, selection.start) +
-                    prefix + suffix +
-                    textFieldValue.text.substring(selection.end)
-        } else {
-            textFieldValue.text.substring(0, selection.min) +
-                    prefix +
-                    textFieldValue.text.substring(selection.min, selection.max) +
-                    suffix +
-                    textFieldValue.text.substring(selection.max)
-        }
-        val newSelection = if (selection.collapsed) {
-            TextRange(selection.start + prefix.length)
-        } else {
-            TextRange(selection.min + prefix.length, selection.max + prefix.length)
-        }
-        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
-    }
-
-    fun applyHeading() {
-        val selection = textFieldValue.selection
-        val text = textFieldValue.text
-        val currentLineStart = text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
-        val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
-        val newSelection = TextRange(selection.start + 3, selection.end + 3)
-        textFieldValue = textFieldValue.copy(text = newText, selection = newSelection)
-    }
-
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
             topBar = {
                 TopAppBar(
                     title = { Text("New Idea") },
@@ -549,10 +524,10 @@ fun AddIdeaDialog(
             },
             bottomBar = {
                 FormattingBar(
-                    onBoldClick = { applyMarkdown("**") },
-                    onItalicClick = { applyMarkdown("*") },
-                    onUnderscoreClick = { applyMarkdown("<u>", "</u>") },
-                    onHeadingClick = { applyHeading() }
+                    onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
+                    onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
+                    onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
+                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
                 )
             }
         ) { paddingValues ->

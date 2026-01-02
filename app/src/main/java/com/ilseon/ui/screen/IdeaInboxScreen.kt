@@ -18,10 +18,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Save
@@ -87,6 +89,16 @@ private fun applyHeading(textFieldValue: TextFieldValue): TextFieldValue {
     val currentLineStart = text.lastIndexOf('\n', selection.start - 1).let { if (it == -1) 0 else it + 1 }
     val newText = text.take(currentLineStart) + "## " + text.substring(currentLineStart)
     val newSelection = TextRange(selection.start + 3, selection.end + 3)
+    return textFieldValue.copy(text = newText, selection = newSelection)
+}
+
+private fun applyList(textFieldValue: TextFieldValue): TextFieldValue {
+    val selection = textFieldValue.selection
+    val text = textFieldValue.text
+    val currentLineStart =
+        text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
+    val newText = text.take(currentLineStart) + "- " + text.substring(currentLineStart)
+    val newSelection = TextRange(selection.start + 2, selection.end + 2)
     return textFieldValue.copy(text = newText, selection = newSelection)
 }
 
@@ -355,6 +367,7 @@ fun FormattingBar(
     onBoldClick: () -> Unit,
     onItalicClick: () -> Unit,
     onUnderscoreClick: () -> Unit,
+    onListClick: () -> Unit,
     onHeadingClick: () -> Unit
 ) {
     Row(
@@ -379,6 +392,12 @@ fun FormattingBar(
             Icon(
                 imageVector = Icons.Outlined.FormatUnderlined,
                 contentDescription = "Underscore"
+            )
+        }
+        IconButton(onClick = onListClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = "List"
             )
         }
         IconButton(onClick = onHeadingClick) {
@@ -439,8 +458,9 @@ fun EditIdeaDialog(
             bottomBar = {
                 FormattingBar(
                     onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
-                    onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
+                    onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "_") },
                     onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
+                    onListClick = { textFieldValue = applyList(textFieldValue) },
                     onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
                 )
             }
@@ -527,6 +547,7 @@ fun AddIdeaDialog(
                     onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
                     onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
                     onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
+                    onListClick = { textFieldValue = applyList(textFieldValue) },
                     onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
                 )
             }

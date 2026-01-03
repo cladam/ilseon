@@ -558,7 +558,7 @@ class TaskViewModel @Inject constructor(
                 return@launch
             }
 
-            hapticManager.performSuccess()
+            performHapticSuccess()
             val reflectionToSave = if (completionReflection.isBlank()) null else completionReflection
             val updatedTask = task.copy(
                 isComplete = true,

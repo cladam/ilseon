@@ -67,7 +67,7 @@ class NotificationHelper @Inject constructor(
             ).apply {
                 description = CRITICAL_CHANNEL_DESCRIPTION
                 setSound(null, null)
-                enableVibration(false)
+                enableVibration(true)
             }
 
             val warningChannel = NotificationChannel(
@@ -77,7 +77,7 @@ class NotificationHelper @Inject constructor(
             ).apply {
                 description = WARNING_CHANNEL_DESCRIPTION
                 setSound(null, null)
-                enableVibration(false)
+                enableVibration(true)
             }
 
             val anchorChannel = NotificationChannel(
@@ -87,7 +87,7 @@ class NotificationHelper @Inject constructor(
             ).apply {
                 description = ANCHOR_CHANNEL_DESCRIPTION
                 setSound(null, null)
-                enableVibration(false)
+                enableVibration(true)
             }
 
             val naggingChannel = NotificationChannel(
@@ -97,7 +97,7 @@ class NotificationHelper @Inject constructor(
             ).apply {
                 description = NAGGING_CHANNEL_DESCRIPTION
                 setSound(null, null)
-                enableVibration(false)
+                enableVibration(true)
             }
             
             val successChannel = NotificationChannel(
@@ -107,7 +107,7 @@ class NotificationHelper @Inject constructor(
             ).apply {
                 description = SUCCESS_CHANNEL_DESCRIPTION
                 setSound(null, null)
-                enableVibration(false)
+                enableVibration(true)
             }
 
             val focusChannel = NotificationChannel(

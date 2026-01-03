@@ -158,7 +158,7 @@ class ReminderManager @Inject constructor(
         val now = System.currentTimeMillis()
         val nudgeTime = task.createdAt + UNSCHEDULED_NUDGE_HOURS
         if (nudgeTime > now) {
-            scheduleAlarm(task, nudgeTime, NotificationTier.Nagging)
+            scheduleAlarmIfNotDuplicate(task, nudgeTime, NotificationTier.Nagging)
         }
     }
 
@@ -174,14 +174,14 @@ class ReminderManager @Inject constructor(
         if (remainingMillis > PRE_BLOCK_WARNING_MINUTES) {
             val preBlockWarningTime = now + remainingMillis - PRE_BLOCK_WARNING_MINUTES
             if (preBlockWarningTime > now) {
-                scheduleAlarm(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
+                scheduleAlarmIfNotDuplicate(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
             }
         }
 
         // End Time Overdue (1 minute after duration expires)
         val overdueTime = now + remainingMillis + END_TIME_OVERDUE_MINUTES
         if (overdueTime > now) {
-            scheduleAlarm(task, overdueTime, NotificationTier.CriticalDecision)
+            scheduleAlarmIfNotDuplicate(task, overdueTime, NotificationTier.CriticalDecision)
         }
 
         // Rule 3: Schedule the nagging follow-up
@@ -201,7 +201,7 @@ class ReminderManager @Inject constructor(
     private fun scheduleNaggingReminder(task: Task, originalOverdueTime: Long) {
         val naggingTriggerTime = originalOverdueTime + NAGGING_DELAY_MINUTES
         if (naggingTriggerTime > System.currentTimeMillis()) {
-            scheduleAlarm(task, naggingTriggerTime, NotificationTier.Nagging)
+            scheduleAlarmIfNotDuplicate(task, naggingTriggerTime, NotificationTier.Nagging)
         }
     }
 

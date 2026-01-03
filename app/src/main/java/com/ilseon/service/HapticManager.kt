@@ -6,11 +6,9 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
-import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.text.compareTo
 
 interface HapticManager {
     fun performNudge()
@@ -42,51 +40,55 @@ class HapticManagerImpl @Inject constructor(
     private val warningPattern = longArrayOf(0, 80, 100, 80)
     private val alertPattern = longArrayOf(0, 50, 100, 50, 100, 50, 100, 50)
 
-    // A very light tap, good for subtle feedback.
-    override fun performNudge() {
-        Log.d("HapticManager", "performNudge() called")
+    private fun performVibration(effectProvider: () -> VibrationEffect, legacyPattern: LongArray) {
+        if (!vibrator.hasVibrator()) {
+            Log.d("HapticManager", "Device does not have a vibrator.")
+            return
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+            Log.d("HapticManager", "Device has vibrator, attempting to vibrate with effect.")
+            vibrator.vibrate(effectProvider())
         } else {
-            vibrate(nudgePattern)
+            Log.d("HapticManager", "Device has vibrator, attempting to vibrate with legacy pattern.")
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(legacyPattern, -1)
         }
     }
 
+    override fun performNudge() {
+        Log.d("HapticManager", "performNudge() called")
+        performVibration(
+            effectProvider = { VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE) },
+            legacyPattern = nudgePattern
+        )
+    }
 
     override fun performWarning() {
-        vibrate(warningPattern)
+        performVibration(
+            effectProvider = { VibrationEffect.createWaveform(warningPattern, -1) },
+            legacyPattern = warningPattern
+        )
     }
-    
+
     override fun performAlert() {
-        vibrate(alertPattern)
+        performVibration(
+            effectProvider = { VibrationEffect.createWaveform(alertPattern, -1) },
+            legacyPattern = alertPattern
+        )
     }
 
     override fun performSuccess() {
-        vibrate(successPattern)
+        performVibration(
+            effectProvider = { VibrationEffect.createWaveform(successPattern, -1) },
+            legacyPattern = successPattern
+        )
     }
 
     override fun performNagging() {
-        vibrate(naggingPattern)
-    }
-
-    private fun vibrate(pattern: LongArray) {
-        if (vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrate(VibrationEffect.createWaveform(pattern, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, -1)
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun vibrate(effect: VibrationEffect) {
-        if (vibrator.hasVibrator()) {
-            Log.d("HapticManager", "Device has vibrator, attempting to vibrate with effect.")
-            vibrator.vibrate(effect)
-        } else {
-            Log.d("HapticManager", "Device does not have a vibrator.")
-        }
+        performVibration(
+            effectProvider = { VibrationEffect.createWaveform(naggingPattern, -1) },
+            legacyPattern = naggingPattern
+        )
     }
 }

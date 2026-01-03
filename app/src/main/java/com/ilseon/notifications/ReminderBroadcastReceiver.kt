@@ -19,22 +19,21 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
     lateinit var notificationHelper: NotificationHelper
 
     override fun onReceive(context: Context, intent: Intent) {
-        when (intent.action) {
-            "com.ilseon.REMINDER_NOTIFICATION" -> handleNotification(context, intent)
-            "com.ilseon.REMINDER_HAPTIC" -> handleHaptic(intent)
+        if (intent.action == "com.ilseon.REMINDER_NOTIFICATION") {
+            handleNotification(context, intent)
         }
     }
 
     private fun handleNotification(context: Context, intent: Intent) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
         }
+
         val taskId = intent.getStringExtra("EXTRA_TASK_ID")
         val title = intent.getStringExtra("EXTRA_TASK_TITLE")
         val description = intent.getStringExtra("EXTRA_TASK_DESCRIPTION")
@@ -48,14 +47,8 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
             schedulingTypeName?.let { SchedulingType.valueOf(it) } ?: SchedulingType.None
 
         if (taskId != null && title != null) {
-            // Coupled alerts will trigger haptics via the helper
-            if (tier == NotificationTier.CriticalDecision ||
-                tier == NotificationTier.PreStartWarning ||
-                tier == NotificationTier.PreBlockWarning ||
-                tier == NotificationTier.Nagging || tier == NotificationTier.Success
-            ) {
-                notificationHelper.showHapticFeedback(tier)
-            }
+            // Always trigger haptic feedback along with the notification
+            notificationHelper.showHapticFeedback(tier)
             notificationHelper.showReminderNotification(
                 taskId,
                 title,
@@ -65,11 +58,5 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
                 schedulingType
             )
         }
-    }
-
-    private fun handleHaptic(intent: Intent) {
-        val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
-        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: return
-        notificationHelper.showHapticFeedback(tier)
     }
 }

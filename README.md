@@ -1,6 +1,6 @@
 <p align="center">
     <img src="images/ilseon-screenshot-PS5.png" alt="Ilseon App Icon" width="640" height="352">
-    <a href='https://play.google.com/store/apps/details?id=com.ilseon'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="60px"/></a><a href='https://cladam.github.io/projects/ilseon'><img alt='Read ore at Ilseon project page' src='images/webpage.png' height="60px"/></a>
+    <a href='https://play.google.com/store/apps/details?id=com.ilseon'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="70px"/></a><a href='https://cladam.github.io/projects/ilseon'><img alt='Read ore at Ilseon project page' src='images/webpage.png' height="60px"/></a>
 </p>
 
 <h1 align="center">ilseon</h1>

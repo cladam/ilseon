@@ -138,7 +138,7 @@ fun NextUpTasks(
             ) {
                 tasks.forEach { task ->
                     val isOverdue = viewModel.isTaskOverdue(task)
-                    val borderColor = if (isOverdue) Color.Red else colorScheme.secondary.copy(alpha = 0.3f)
+                    val borderColor = if (isOverdue) MutedRed else colorScheme.primary.copy(alpha = 0.3f)
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
@@ -168,7 +168,7 @@ fun NextUpTasks(
                                     //.background(colorScheme.onSurface.copy(alpha = 0.1f))
                                     .border(
                                         1.dp,
-                                        colorScheme.secondary.copy(alpha = 0.3f),
+                                        colorScheme.primary.copy(alpha = 0.3f),
                                         RoundedCornerShape(8.dp)
                                     )
                                     .combinedClickable(

@@ -87,7 +87,7 @@ fun VoiceMemoCard(
                 if (isTranscribing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.primary,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -114,7 +114,7 @@ fun VoiceMemoCard(
                             SliderDefaults.Thumb(
                                 interactionSource = remember { MutableInteractionSource() },
                                 modifier = Modifier.size(12.dp), // Smaller thumb
-                                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.secondary)
+                                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary)
                             )
                         },
                         track = { sliderState ->
@@ -122,7 +122,7 @@ fun VoiceMemoCard(
                                 sliderState = sliderState,
                                 modifier = Modifier.height(4.dp), // Track height
                                 colors = SliderDefaults.colors(
-                                    activeTrackColor = MaterialTheme.colorScheme.secondary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
                                     inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                                 ),
                                 thumbTrackGapSize = 0.dp // Remove gap between thumb and track
@@ -192,7 +192,7 @@ fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .size(36.dp)
             .clickable { onClick() },
-        tint = MaterialTheme.colorScheme.secondary
+        tint = MaterialTheme.colorScheme.primary
     )
 }
 
@@ -212,8 +212,8 @@ fun LinearProgressBarWithThumb(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp),
-            color = MaterialTheme.colorScheme.secondary,
-            trackColor = MaterialTheme.colorScheme.secondaryContainer
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.primaryContainer
         )
     }
 }

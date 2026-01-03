@@ -193,7 +193,7 @@ fun RecorderScreen(
                         Spacer(Modifier.width(24.dp))
                         Button(
                             onClick = onSave,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.CheckCircle, contentDescription = "Save")
                             Spacer(Modifier.width(8.dp))

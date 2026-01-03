@@ -160,7 +160,7 @@ fun DashboardScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (focusContextName != null) "No tasks for $focusContextName" else "All clear!",
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 20.sp
                 )
             }

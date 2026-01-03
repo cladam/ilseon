@@ -130,24 +130,3 @@ private fun VisualCountdownTimerPreview() {
         )
     }
 }
-
-@Preview(showBackground = true, backgroundColor = 0xFF121212)
-@Composable
-private fun VisualCountdownTimerLowTimePreview() {
-    var remainingTime by remember { mutableStateOf(4 * 60 * 1000L) }
-    val totalTime = 30 * 60 * 1000L
-
-    LaunchedEffect(Unit) {
-        while (remainingTime > 0) {
-            delay(1000)
-            remainingTime -= 1000
-        }
-    }
-
-    IlseonTheme {
-        VisualCountdownTimer(
-            totalTimeInMillis = totalTime,
-            remainingTimeInMillis = remainingTime
-        )
-    }
-}

@@ -191,10 +191,10 @@ fun ContextManagementScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
@@ -221,10 +221,10 @@ fun ContextManagementScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
@@ -281,12 +281,12 @@ fun ContextManagementScreen(
                                 readOnly = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    cursorColor = MaterialTheme.colorScheme.secondary,
-                                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                    cursorColor = MaterialTheme.colorScheme.primary,
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
                                         alpha = 0.3f
                                     ),
-                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
                                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
                                         alpha = 0.7f
                                     ),
@@ -313,12 +313,12 @@ fun ContextManagementScreen(
                                 readOnly = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    cursorColor = MaterialTheme.colorScheme.secondary,
-                                    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+                                    cursorColor = MaterialTheme.colorScheme.primary,
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
                                         alpha = 0.3f
                                     ),
-                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
                                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
                                         alpha = 0.7f
                                     ),
@@ -390,7 +390,7 @@ fun ContextManagementScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
                     enabled = newContextName.isNotBlank()
                 ) {
@@ -433,7 +433,7 @@ fun ContextManagementScreen(
             ) {
                 Text(
                     "No contexts yet. Add one above!",
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 16.sp
                 )
             }
@@ -463,7 +463,7 @@ fun DayPicker(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        val days = DayOfWeek.values()
+        val days = DayOfWeek.entries.toTypedArray()
         days.forEach { day ->
             val isSelected = selectedDays.contains(day.value)
             Box(
@@ -471,7 +471,7 @@ fun DayPicker(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(
-                        color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Gray.copy(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(
                             alpha = 0.2f
                         ),
                         shape = CircleShape
@@ -481,7 +481,7 @@ fun DayPicker(
             ) {
                 Text(
                     text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-                    color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -528,7 +528,7 @@ private fun ContextItem(
                     }
                     Text(
                         text = "Focus: ${it.startTime} - ${it.endTime} ($days)",
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -538,7 +538,7 @@ private fun ContextItem(
                 Icon(
                     imageVector = Icons.Default.Task,
                     contentDescription = "View ongoing tasks",
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }

@@ -1,6 +1,5 @@
 package com.ilseon.ui.screen
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -408,7 +407,7 @@ private fun WeekHeader(
         ) {
             Text(
                 text = count.toString(),
-                color = MaterialTheme.colorScheme.onSecondary,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )

@@ -145,7 +145,7 @@ fun CurrentPriorityTask(
         }
         Text(
             text = title,
-            color = colorScheme.secondary,
+            color = colorScheme.primary,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
@@ -164,7 +164,7 @@ fun CurrentPriorityTask(
                     width = 1.dp,
                     color = when {
                         isOverdue -> QuietAmber
-                        else -> colorScheme.secondary
+                        else -> colorScheme.primary
                     },
                     shape = RoundedCornerShape(24.dp)
                 )
@@ -302,7 +302,7 @@ fun CurrentPriorityTask(
                         Icon(
                             Icons.Filled.PlayArrow,
                             contentDescription = "Start Task",
-                            tint = colorScheme.secondary,
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -313,7 +313,7 @@ fun CurrentPriorityTask(
                         Icon(
                             Icons.Filled.Pause,
                             contentDescription = "Pause Task",
-                            tint = colorScheme.secondary,
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -326,7 +326,7 @@ fun CurrentPriorityTask(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(
-                            if (allSubTasksComplete) colorScheme.secondary else colorScheme.onSurface.copy(
+                            if (allSubTasksComplete) colorScheme.primary else colorScheme.onSurface.copy(
                                 alpha = 0.5f
                             )
                         )
@@ -366,7 +366,7 @@ fun CurrentPriorityTask(
                         "$completedCount/${subTasks.size}",
                         style = typography.labelMedium,
                         color = if (completedCount == subTasks.size)
-                            colorScheme.secondary
+                            colorScheme.primary
                         else colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
@@ -402,7 +402,7 @@ fun CurrentPriorityTask(
                                 onCheckedChange = null,
                                 modifier = Modifier.size(20.dp),
                                 colors = androidx.compose.material3.CheckboxDefaults.colors(
-                                    checkedColor = colorScheme.secondary,
+                                    checkedColor = colorScheme.primary,
                                     uncheckedColor = colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
                             )

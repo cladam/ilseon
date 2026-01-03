@@ -43,15 +43,4 @@ object WidgetTheme {
         light = widgetColorScheme
     )
 
-    // 3. The "Semantic" access for your icons
-    // Use these instead of Color.Blue or Color.Yellow
-    object Semantic {
-        val Idea = MutedAmber
-        val Voice = MutedTeal
-        val Task = MutedRed
-
-        // This is the "secret sauce" for the integrated look:
-        // A very faint background plate for the icon
-        val IconContainerAlpha = 0.15f
-    }
 }

@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
@@ -271,8 +272,8 @@ private fun ExtractedTasksDialog(
                                         selectedTasks - task
                                     }
                                 },
-                                colors = androidx.compose.material3.CheckboxDefaults.colors(
-                                    checkedColor = colorScheme.secondary,
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = colorScheme.primary,
                                     uncheckedColor = colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
                             )

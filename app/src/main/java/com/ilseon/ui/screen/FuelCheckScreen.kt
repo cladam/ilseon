@@ -128,11 +128,3 @@ fun EnergyLevel.toColor(): Color {
         EnergyLevel.Low -> EnergyLow
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun FuelCheckScreenPreview() {
-    IlseonTheme {
-        FuelCheckScreen(onNavigateBack = {})
-    }
-}

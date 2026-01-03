@@ -59,8 +59,8 @@ fun GravitySwipeBox(
             val direction = dismissState.dismissDirection
             val color by animateColorAsState(
                 when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
                     else -> Color.Transparent
                 },
                 label = "swipe_color"

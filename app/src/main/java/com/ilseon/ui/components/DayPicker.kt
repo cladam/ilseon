@@ -29,7 +29,7 @@ fun DayPicker(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        val days = DayOfWeek.values()
+        val days = DayOfWeek.entries.toTypedArray()
         days.forEach { day ->
             val isSelected = selectedDays.contains(day.value)
             Box(
@@ -37,7 +37,7 @@ fun DayPicker(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(
-                        color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Gray.copy(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(
                             alpha = 0.2f
                         ),
                         shape = CircleShape
@@ -47,7 +47,7 @@ fun DayPicker(
             ) {
                 Text(
                     text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
-                    color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             }
         }

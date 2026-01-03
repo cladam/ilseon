@@ -136,7 +136,7 @@ fun AnalyticsScreen(
                                 Text(
                                     text = "${data!!.averageTimeBlockMinutes} min",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -156,7 +156,7 @@ fun AnalyticsScreen(
                                 Text(
                                     text = "${data!!.averageDurationMinutes} min",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -178,7 +178,7 @@ fun AnalyticsScreen(
                             Text(
                                 text = "${data!!.overdueTasksCount}",
                                 style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -199,7 +199,7 @@ fun AnalyticsScreen(
                             Text(
                                 text = "${data!!.interruptedTasksCount}",
                                 style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -272,7 +272,7 @@ fun TimeIntervalDropdown(
         ) {
             Text(
                 text = "${selectedInterval.toDisplayString()} ⌄",
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -307,7 +307,7 @@ fun FocusDistributionChart(distribution: Map<String, Float>) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         distribution.entries.sortedByDescending { it.value }.forEach { (context, percentage) ->
-            val barColor = MaterialTheme.colorScheme.secondary
+            val barColor = MaterialTheme.colorScheme.primary
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -353,6 +353,6 @@ fun KeywordChip(keyword: String) {
             containerColor = Color.Transparent,
             labelColor = MaterialTheme.colorScheme.onSurface
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
     )
 }

@@ -219,7 +219,7 @@ fun IdeaInboxScreen(
             indicator = {
                 TabRowDefaults.PrimaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         ) {
@@ -227,14 +227,14 @@ fun IdeaInboxScreen(
                 text = { Text("Inbox") },
                 selected = currentView == "Inbox",
                 onClick = { currentView = "Inbox" },
-                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                selectedContentColor = MaterialTheme.colorScheme.primary,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Tab(
                 text = { Text("Notes") },
                 selected = currentView == "Notes",
                 onClick = { currentView = "Notes" },
-                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                selectedContentColor = MaterialTheme.colorScheme.primary,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -291,7 +291,7 @@ fun IdeaInboxScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.Save,
                                                     contentDescription = "Save as Note",
-                                                    tint = MaterialTheme.colorScheme.secondary
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
                                             }
                                             IconButton(onClick = {
@@ -318,7 +318,7 @@ fun IdeaInboxScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.PushPin,
                                                     contentDescription = "Pin Idea",
-                                                    tint = if (idea.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                    tint = if (idea.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                         }
@@ -449,7 +449,7 @@ fun EditIdeaDialog(
                         ) {
                             Text(
                                 text = "Save",
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -536,7 +536,7 @@ fun AddIdeaDialog(
                         ) {
                             Text(
                                 text = "Save",
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

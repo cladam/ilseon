@@ -26,8 +26,10 @@ object TaskColors {
 
 private val DarkColorScheme = darkColorScheme(
     // Accent Colors
-    primary = MutedRed,
-    secondary = MutedTeal,
+//    primary = MutedRed,
+//    secondary = MutedTeal,
+    primary = MutedTeal,
+    secondary = MutedRed,
 
     // Backgrounds
     background = DarkGrey,

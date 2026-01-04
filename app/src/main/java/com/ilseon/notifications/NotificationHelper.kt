@@ -31,25 +31,25 @@ class NotificationHelper @Inject constructor(
         // Haptic feedback is handled by HapticManager
 
         // Tier 3
-        private const val CRITICAL_CHANNEL_ID = "ilseon_critical_decision_v2"
+        private const val CRITICAL_CHANNEL_ID = "ilseon_critical_decision_v3"
         private const val CRITICAL_CHANNEL_NAME = "Critical Decision"
         private const val CRITICAL_CHANNEL_DESCRIPTION = "High-priority alerts for starting or overdue tasks."
 
         // Tier 2
-        private const val WARNING_CHANNEL_ID = "ilseon_pre_block_warning_v2"
+        private const val WARNING_CHANNEL_ID = "ilseon_pre_block_warning_v3"
         private const val WARNING_CHANNEL_NAME = "Pre-Block Warning"
         private const val WARNING_CHANNEL_DESCRIPTION = "Medium-priority warnings before a focus block ends."
 
         // Tier 1
-        private const val ANCHOR_CHANNEL_ID = "ilseon_subtle_anchor_v2"
+        private const val ANCHOR_CHANNEL_ID = "ilseon_subtle_anchor_v3"
         private const val ANCHOR_CHANNEL_NAME = "Subtle Anchor"
         private const val ANCHOR_CHANNEL_DESCRIPTION = "Low-priority, subtle cues during a focus block."
 
-        private const val NAGGING_CHANNEL_ID = "ilseon_nagging_v2"
+        private const val NAGGING_CHANNEL_ID = "ilseon_nagging_v3"
         private const val NAGGING_CHANNEL_NAME = "Nagging"
         private const val NAGGING_CHANNEL_DESCRIPTION = "For repeated reminders that need attention."
         
-        private const val SUCCESS_CHANNEL_ID = "ilseon_success_v2"
+        private const val SUCCESS_CHANNEL_ID = "ilseon_success_v3"
         private const val SUCCESS_CHANNEL_NAME = "Success"
         private const val SUCCESS_CHANNEL_DESCRIPTION = "For successful completion of tasks."
 
@@ -201,12 +201,11 @@ class NotificationHelper @Inject constructor(
                 builder.addAction(R.drawable.ic_launcher_foreground, "Start", startPendingIntent)
             } else {
                 // For all other critical notifications, show "Complete"
-                val completeIntent = Intent(context, MainActivity::class.java).apply {
-                    action = "com.ilseon.ACTION_SHOW_REFLECTION"
+                val completeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                    action = "com.ilseon.ACTION_COMPLETE_TASK"
                     putExtra("EXTRA_TASK_ID", taskId)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
-                val completePendingIntent = PendingIntent.getActivity(
+                val completePendingIntent = PendingIntent.getBroadcast(
                     context,
                     (taskId + "_complete").hashCode(),
                     completeIntent,

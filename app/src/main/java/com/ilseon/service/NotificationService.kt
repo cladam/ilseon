@@ -76,9 +76,9 @@ class NotificationServiceImpl @Inject constructor(
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             // Rule 2: Coupled Critical Alerts
-//            if (tier == NotificationTier.CriticalDecision || tier == NotificationTier.PreBlockWarning) {
-//                notificationHelper.showHapticFeedback(tier)
-//            }
+            if (tier == NotificationTier.CriticalDecision || tier == NotificationTier.PreBlockWarning) {
+                notificationHelper.showHapticFeedback(tier)
+            }
 
             notificationHelper.showReminderNotification(
                 taskId,
@@ -96,6 +96,8 @@ class NotificationServiceImpl @Inject constructor(
     }
 
     override fun sendTaskFinishedNotification(task: Task) {
+        // Haptic feedback for success
+        notificationHelper.showHapticFeedback(NotificationTier.Success)
         sendNotification(
             title = "Task Finished",
             content = "Your task '${task.title}' has completed.",

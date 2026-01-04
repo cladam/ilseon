@@ -8,13 +8,10 @@ import com.ilseon.data.task.TaskRepository
 import com.ilseon.di.WorkerEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
-import kotlin.collections.contains
-import kotlin.compareTo
-import kotlin.text.compareTo
-import kotlin.text.get
-import kotlin.text.set
 
 // TODO: Revert to @HiltWorker and @AssistedInject once androidx.hilt:hilt-compiler supports Kotlin 2.2+
 class HapticWorker(
@@ -43,7 +40,7 @@ class HapticWorker(
             set(Calendar.MILLISECOND, 0)
         }
         val startOfToday = cal.timeInMillis
-        val todayDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+        val todayDayOfWeek = LocalDate.now().dayOfWeek
 
         val incompleteTasks = taskRepository.getIncompleteTasks().first()
         val activeFocusBlock = taskRepository.getActiveFocusBlock().first()
@@ -69,15 +66,7 @@ class HapticWorker(
 
                 val recurrenceDays = recurrenceDayStrings.mapNotNull { dayString ->
                     try {
-                        when (java.time.DayOfWeek.valueOf(dayString)) {
-                            java.time.DayOfWeek.SUNDAY -> Calendar.SUNDAY
-                            java.time.DayOfWeek.MONDAY -> Calendar.MONDAY
-                            java.time.DayOfWeek.TUESDAY -> Calendar.TUESDAY
-                            java.time.DayOfWeek.WEDNESDAY -> Calendar.WEDNESDAY
-                            java.time.DayOfWeek.THURSDAY -> Calendar.THURSDAY
-                            java.time.DayOfWeek.FRIDAY -> Calendar.FRIDAY
-                            java.time.DayOfWeek.SATURDAY -> Calendar.SATURDAY
-                        }
+                        DayOfWeek.valueOf(dayString)
                     } catch (e: IllegalArgumentException) {
                         null
                     }

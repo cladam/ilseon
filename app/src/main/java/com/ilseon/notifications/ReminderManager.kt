@@ -125,31 +125,36 @@ class ReminderManager @Inject constructor(
             return
         }
 
-        // Pre-start warning
+        val taskDuration = dueTime - startTime
+        val minDurationForMultipleNotifications = TimeUnit.MINUTES.toMillis(15)
+
+        // Pre-start warning (only for tasks >= 15 minutes)
         val preStartTime = startTime - PRE_BLOCK_WARNING_MINUTES
-        if (preStartTime > now + TimeUnit.MINUTES.toMillis(1)) {
+        if (preStartTime > now && taskDuration >= minDurationForMultipleNotifications) {
             scheduleAlarmIfNotDuplicate(task, preStartTime, NotificationTier.PreStartWarning)
         }
 
-        // Start Time Alert
+        // Start Time Alert - always schedule
         if (startTime > now) {
             scheduleAlarmIfNotDuplicate(task, startTime, NotificationTier.CriticalDecision)
         }
 
-        // Pre-Block Warning (only if due time is different enough from start)
+        // Pre-Block Warning (only if enough gap from start and task is long enough)
         val preBlockWarningTime = dueTime - PRE_BLOCK_WARNING_MINUTES
-        if (preBlockWarningTime > startTime + MIN_NOTIFICATION_GAP && preBlockWarningTime > now) {
+        if (taskDuration >= minDurationForMultipleNotifications &&
+            preBlockWarningTime > startTime + PRE_BLOCK_WARNING_MINUTES &&
+            preBlockWarningTime > now) {
             scheduleAlarmIfNotDuplicate(task, preBlockWarningTime, NotificationTier.PreBlockWarning)
         }
 
-        // End Time Overdue
+        // End Time Overdue - only schedule if task duration > 10 minutes
         val overdueTime = dueTime + END_TIME_OVERDUE_MINUTES
-        if (overdueTime > now) {
+        if (taskDuration >= TimeUnit.MINUTES.toMillis(10) && overdueTime > now) {
             scheduleAlarmIfNotDuplicate(task, overdueTime, NotificationTier.CriticalDecision)
         }
 
-        // Nagging
-        if (overdueTime > now) {
+        // Nagging - only for longer tasks
+        if (taskDuration >= minDurationForMultipleNotifications && overdueTime > now) {
             scheduleNaggingReminder(task, overdueTime)
         }
     }

@@ -7,4 +7,5 @@ interface IReminderManager {
     fun scheduleTimedTaskReminders(task: Task)
     fun scheduleDurationTaskReminders(task: Task)
     fun cancelAllReminders(task: Task)
+    fun cancelNonNaggingReminders(task: Task)
 }

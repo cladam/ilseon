@@ -283,6 +283,18 @@ class ReminderManager @Inject constructor(
         }
     }
 
+    override fun cancelNonNaggingReminders(task: Task) {
+        NotificationTier.entries.forEach { tier ->
+            if (tier != NotificationTier.Nagging) {
+                val notificationIntent = createNotificationIntent(task, tier)
+                alarmManager.cancel(notificationIntent)
+
+                val hapticIntent = createHapticIntent(task, tier)
+                alarmManager.cancel(hapticIntent)
+            }
+        }
+    }
+
     private fun createNotificationIntent(task: Task, tier: NotificationTier): PendingIntent {
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             action = "com.ilseon.REMINDER_NOTIFICATION"

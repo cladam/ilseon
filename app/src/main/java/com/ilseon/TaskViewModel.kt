@@ -387,8 +387,13 @@ class TaskViewModel @Inject constructor(
 
     fun onTaskTimerFinished(task: Task) {
         hapticManager.performAlert()
-        notificationService.sendTaskFinishedNotification(task)
-        reminderManager.cancelAllReminders(task)
+        if (isTaskOverdue(task)) {
+            notificationService.sendNaggingNotification(task)
+        } else {
+            notificationService.sendTaskFinishedNotification(task)
+        }
+        //notificationService.sendTaskFinishedNotification(task)
+        //reminderManager.cancelNonNaggingReminders(task)
     }
 
     override fun onCleared() {
@@ -559,7 +564,7 @@ class TaskViewModel @Inject constructor(
             }
 
             performHapticSuccess()
-            val reflectionToSave = if (completionReflection.isBlank()) null else completionReflection
+            val reflectionToSave = completionReflection.ifBlank { null }
             val updatedTask = task.copy(
                 isComplete = true,
                 completedAt = System.currentTimeMillis(),

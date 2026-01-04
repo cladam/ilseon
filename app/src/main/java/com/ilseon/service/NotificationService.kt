@@ -41,7 +41,7 @@ class NotificationServiceImpl @Inject constructor(
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val lastNaggedTimes = mutableMapOf<String, Long>()
-    private val NAG_COOLDOWN_MS = TimeUnit.HOURS.toMillis(1)
+    private val NAG_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(1)
 
 
     private val nudgeEnabledState: StateFlow<Boolean> =

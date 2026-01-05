@@ -2,11 +2,15 @@ package com.ilseon.ui.screen
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +20,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -111,6 +117,30 @@ private fun applyList(textFieldValue: TextFieldValue): TextFieldValue {
     return textFieldValue.copy(text = newText, selection = newSelection)
 }
 
+@Composable
+private fun FullScreenImageDialog(imageUri: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.8f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = Uri.parse(imageUri),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Fit,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun IdeaInboxScreen(
@@ -129,6 +159,11 @@ fun IdeaInboxScreen(
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
     var currentView by remember { mutableStateOf("Inbox") }
     val lazyListState = rememberLazyListState()
+    var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
+
+    fullScreenImageUri?.let { uri ->
+        FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
+    }
 
     val navigationEvent by voiceMemoViewModel.navigationEvent.collectAsState()
     var ideaIdFromMemo by remember { mutableStateOf<UUID?>(null) }
@@ -281,7 +316,8 @@ fun IdeaInboxScreen(
                                         contentDescription = null,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(200.dp),
+                                            .height(200.dp)
+                                            .clickable { fullScreenImageUri = idea.imageUri },
                                         contentScale = ContentScale.Crop
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -446,10 +482,26 @@ fun EditIdeaDialog(
     }
     var imageUri by remember { mutableStateOf(idea.imageUri) }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
+    var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
 
+    fullScreenImageUri?.let { uri ->
+        FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
+    }
+
+    val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let { imageUri = it.toString() } }
+        onResult = { uri ->
+            uri?.let {
+                try {
+                    val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    context.contentResolver.takePersistableUriPermission(uri, flag)
+                    imageUri = it.toString()
+                } catch (e: SecurityException) {
+                    Log.e("EditIdeaDialog", "Failed to take persistable URI permission", e)
+                }
+            }
+        }
     )
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -506,16 +558,29 @@ fun EditIdeaDialog(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 if (imageUri != null) {
-                    AsyncImage(
-                        model = Uri.parse(imageUri),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        AsyncImage(
+                            model = Uri.parse(imageUri),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp)
+                                .clickable { fullScreenImageUri = imageUri },
+                            contentScale = ContentScale.Fit
+                        )
+                        IconButton(
+                            onClick = { imageUri = null },
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove Image"
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 TextField(
@@ -558,10 +623,26 @@ fun AddIdeaDialog(
     }
     var imageUri by remember { mutableStateOf<String?>(null) }
     val focusRequester = remember { FocusRequester() }
+    var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
 
+    fullScreenImageUri?.let { uri ->
+        FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
+    }
+
+    val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let { imageUri = it.toString() } }
+        onResult = { uri ->
+            uri?.let {
+                try {
+                    val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    context.contentResolver.takePersistableUriPermission(uri, flag)
+                    imageUri = it.toString()
+                } catch (e: SecurityException) {
+                    Log.e("AddIdeaDialog", "Failed to take persistable URI permission", e)
+                }
+            }
+        }
     )
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -624,16 +705,29 @@ fun AddIdeaDialog(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 if (imageUri != null) {
-                    AsyncImage(
-                        model = Uri.parse(imageUri),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        AsyncImage(
+                            model = Uri.parse(imageUri),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp)
+                                .clickable { fullScreenImageUri = imageUri },
+                            contentScale = ContentScale.Fit
+                        )
+                        IconButton(
+                            onClick = { imageUri = null },
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove Image"
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 TextField(

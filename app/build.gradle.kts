@@ -106,6 +106,7 @@ tasks.register("printVersionCodeAndName") {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)

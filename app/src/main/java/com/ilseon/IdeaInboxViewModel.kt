@@ -23,9 +23,9 @@ class IdeaInboxViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    fun addIdea(content: String) {
+    fun addIdea(content: String, imageUri: String? = null) {
         viewModelScope.launch {
-            ideaRepository.insertIdea(content)
+            ideaRepository.insertIdea(content, imageUri)
         }
     }
 

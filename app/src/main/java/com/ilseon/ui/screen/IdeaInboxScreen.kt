@@ -1,9 +1,14 @@
 package com.ilseon.ui.screen
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,12 +18,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -40,6 +47,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -48,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.ilseon.IdeaInboxViewModel
 import com.ilseon.NavigationEvent
 import com.ilseon.VoiceMemoViewModel
@@ -175,8 +184,8 @@ fun IdeaInboxScreen(
         AddIdeaDialog(
             initialText = vttIdeaContent,
             onDismiss = onDismissAddIdeaDialog,
-            onAddIdea = { content ->
-                viewModel.addIdea(content)
+            onAddIdea = { content, imageUri ->
+                viewModel.addIdea(content, imageUri)
                 onDismissAddIdeaDialog()
             },
             onVttClick = onVttClick
@@ -266,6 +275,17 @@ fun IdeaInboxScreen(
                                 .animateItem(),
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
+                                if (idea.imageUri != null) {
+                                    AsyncImage(
+                                        model = Uri.parse(idea.imageUri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
                                 idea.content?.let {
                                     MarkdownText(
                                         markdown = it,
@@ -424,7 +444,13 @@ fun EditIdeaDialog(
             )
         )
     }
+    var imageUri by remember { mutableStateOf(idea.imageUri) }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let { imageUri = it.toString() } }
+    )
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
@@ -443,8 +469,18 @@ fun EditIdeaDialog(
                         }
                     },
                     actions = {
+                        IconButton(onClick = {
+                            imagePicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = "Add Image"
+                            )
+                        }
                         TextButton(
-                            onClick = { onSave(idea.copy(content = textFieldValue.text)) },
+                            onClick = { onSave(idea.copy(content = textFieldValue.text, imageUri = imageUri)) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
@@ -465,26 +501,41 @@ fun EditIdeaDialog(
                 )
             }
         ) { paddingValues ->
-            TextField(
-                value = textFieldValue,
-                onValueChange = { textFieldValue = it },
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
-                placeholder = { Text("Jot down your idea...") },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                ),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    capitalization = KeyboardCapitalization.Sentences
+                    .padding(16.dp)
+            ) {
+                if (imageUri != null) {
+                    AsyncImage(
+                        model = Uri.parse(imageUri),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                TextField(
+                    value = textFieldValue,
+                    onValueChange = { textFieldValue = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Jot down your idea...") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                    ),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
                 )
-            )
+            }
         }
     }
 }
@@ -494,7 +545,7 @@ fun EditIdeaDialog(
 fun AddIdeaDialog(
     initialText: String,
     onDismiss: () -> Unit,
-    onAddIdea: (String) -> Unit,
+    onAddIdea: (String, String?) -> Unit,
     onVttClick: () -> Unit
 ) {
     var textFieldValue by remember {
@@ -505,7 +556,13 @@ fun AddIdeaDialog(
             )
         )
     }
+    var imageUri by remember { mutableStateOf<String?>(null) }
     val focusRequester = remember { FocusRequester() }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let { imageUri = it.toString() } }
+    )
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(
@@ -524,6 +581,16 @@ fun AddIdeaDialog(
                         }
                     },
                     actions = {
+                        IconButton(onClick = {
+                            imagePicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = "Add Image"
+                            )
+                        }
                         IconButton(onClick = onVttClick) {
                             Icon(
                                 imageVector = Icons.Default.Mic,
@@ -531,7 +598,7 @@ fun AddIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onAddIdea(textFieldValue.text) },
+                            onClick = { onAddIdea(textFieldValue.text, imageUri) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
@@ -552,27 +619,43 @@ fun AddIdeaDialog(
                 )
             }
         ) { paddingValues ->
-            TextField(
-                value = textFieldValue,
-                onValueChange = { textFieldValue = it },
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp)
-                    .focusRequester(focusRequester),
-                placeholder = { Text("Jot down your idea...") },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                ),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    capitalization = KeyboardCapitalization.Sentences
+            ) {
+                if (imageUri != null) {
+                    AsyncImage(
+                        model = Uri.parse(imageUri),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                TextField(
+                    value = textFieldValue,
+                    onValueChange = { textFieldValue = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    placeholder = { Text("Jot down your idea...") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                    ),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
                 )
-            )
+            }
         }
     }
 

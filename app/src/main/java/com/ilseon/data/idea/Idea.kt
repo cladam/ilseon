@@ -12,6 +12,7 @@ import java.util.UUID
 data class Idea(
     @PrimaryKey val id: UUID = UUID.randomUUID(),
     val content: String? = null,
+    val imageUri: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val isConverted: Boolean = false,
     val isReference: Boolean = false,

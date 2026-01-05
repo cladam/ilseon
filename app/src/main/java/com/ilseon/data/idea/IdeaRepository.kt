@@ -18,9 +18,10 @@ class IdeaRepository @Inject constructor(
         ideaDao.convertIdea(id)
     }
 
-    suspend fun insertIdea(content: String, isReference: Boolean = false): UUID {
+    suspend fun insertIdea(content: String, imageUri: String? = null, isReference: Boolean = false): UUID {
         val newIdea = Idea(
             content = content,
+            imageUri = imageUri,
             isReference = isReference
         )
         ideaDao.insertIdea(newIdea)

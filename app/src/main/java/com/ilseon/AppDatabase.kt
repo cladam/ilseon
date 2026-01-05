@@ -5,25 +5,26 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.ilseon.data.EnergyLevel
-import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.idea.Idea
 import com.ilseon.data.idea.IdeaDao
+import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.FocusBlockDao
 import com.ilseon.data.task.ReminderType
-import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TimerState
-import com.ilseon.data.task.FocusBlock
-import com.ilseon.data.task.FocusBlockDao
+import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.userstatus.UserStatusDao
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoDao
 import java.util.UUID
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 28, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 29, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -73,13 +74,31 @@ abstract class AppDatabase : RoomDatabase() {
         fun toEnergyLevel(value: String?): EnergyLevel? = value?.let { EnergyLevel.valueOf(it) }
 
         @TypeConverter
-        fun fromString(value: String?): List<Int> {
+        fun fromStringToIntList(value: String?): List<Int> {
             return value?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
         }
 
         @TypeConverter
-        fun fromList(list: List<Int>?): String {
+        fun fromIntListToString(list: List<Int>?): String {
             return list?.joinToString(",") ?: ""
+        }
+
+        @TypeConverter
+        fun fromStringToStringList(value: String?): List<String> {
+            return if (value.isNullOrEmpty() || value == "[]") {
+                emptyList()
+            } else {
+                Json.decodeFromString<List<String>>(value)
+            }
+        }
+
+        @TypeConverter
+        fun fromStringListToString(list: List<String>?): String {
+            return if (list.isNullOrEmpty()) {
+                "[]"
+            } else {
+                Json.encodeToString(list)
+            }
         }
     }
 }

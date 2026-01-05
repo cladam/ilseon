@@ -17,13 +17,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -219,8 +222,8 @@ fun IdeaInboxScreen(
         AddIdeaDialog(
             initialText = vttIdeaContent,
             onDismiss = onDismissAddIdeaDialog,
-            onAddIdea = { content, imageUri ->
-                viewModel.addIdea(content, imageUri)
+            onAddIdea = { content, imageUris ->
+                viewModel.addIdea(content, imageUris)
                 onDismissAddIdeaDialog()
             },
             onVttClick = onVttClick
@@ -310,16 +313,38 @@ fun IdeaInboxScreen(
                                 .animateItem(),
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                if (idea.imageUri != null) {
-                                    AsyncImage(
-                                        model = Uri.parse(idea.imageUri),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp)
-                                            .clickable { fullScreenImageUri = idea.imageUri },
-                                        contentScale = ContentScale.Crop
-                                    )
+                                if (idea.imageUris.isNotEmpty()) {
+                                    if (idea.imageUris.size == 1) {
+                                        AsyncImage(
+                                            model = Uri.parse(idea.imageUris.first()),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(200.dp)
+                                                .clickable { fullScreenImageUri = idea.imageUris.first() },
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        LazyVerticalGrid(
+                                            columns = GridCells.Fixed(3),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(120.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            items(idea.imageUris) { uri ->
+                                                AsyncImage(
+                                                    model = Uri.parse(uri),
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .aspectRatio(1f)
+                                                        .clickable { fullScreenImageUri = uri },
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
                                 idea.content?.let {
@@ -480,7 +505,7 @@ fun EditIdeaDialog(
             )
         )
     }
-    var imageUri by remember { mutableStateOf(idea.imageUri) }
+    var imageUris by remember { mutableStateOf(idea.imageUris) }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
 
@@ -490,13 +515,13 @@ fun EditIdeaDialog(
 
     val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            uri?.let {
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            uris.forEach { uri ->
                 try {
                     val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
                     context.contentResolver.takePersistableUriPermission(uri, flag)
-                    imageUri = it.toString()
+                    imageUris = imageUris + uri.toString()
                 } catch (e: SecurityException) {
                     Log.e("EditIdeaDialog", "Failed to take persistable URI permission", e)
                 }
@@ -532,7 +557,7 @@ fun EditIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onSave(idea.copy(content = textFieldValue.text, imageUri = imageUri)) },
+                            onClick = { onSave(idea.copy(content = textFieldValue.text, imageUris = imageUris)) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
@@ -560,25 +585,57 @@ fun EditIdeaDialog(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                if (imageUri != null) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        AsyncImage(
-                            model = Uri.parse(imageUri),
-                            contentDescription = null,
+                if (imageUris.isNotEmpty()) {
+                    if (imageUris.size == 1) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            AsyncImage(
+                                model = Uri.parse(imageUris.first()),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { fullScreenImageUri = imageUris.first() },
+                                contentScale = ContentScale.Fit
+                            )
+                            IconButton(
+                                onClick = { imageUris = emptyList() },
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove Image"
+                                )
+                            }
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 300.dp)
-                                .clickable { fullScreenImageUri = imageUri },
-                            contentScale = ContentScale.Fit
-                        )
-                        IconButton(
-                            onClick = { imageUri = null },
-                            modifier = Modifier.align(Alignment.TopEnd)
+                                .height(240.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove Image"
-                            )
+                            items(imageUris) { uri ->
+                                Box {
+                                    AsyncImage(
+                                        model = Uri.parse(uri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .aspectRatio(1f)
+                                            .clickable { fullScreenImageUri = uri },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    IconButton(
+                                        onClick = { imageUris = imageUris - uri },
+                                        modifier = Modifier.align(Alignment.TopEnd)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove Image"
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -610,7 +667,7 @@ fun EditIdeaDialog(
 fun AddIdeaDialog(
     initialText: String,
     onDismiss: () -> Unit,
-    onAddIdea: (String, String?) -> Unit,
+    onAddIdea: (String, List<String>) -> Unit,
     onVttClick: () -> Unit
 ) {
     var textFieldValue by remember {
@@ -621,7 +678,7 @@ fun AddIdeaDialog(
             )
         )
     }
-    var imageUri by remember { mutableStateOf<String?>(null) }
+    var imageUris by remember { mutableStateOf<List<String>>(emptyList()) }
     val focusRequester = remember { FocusRequester() }
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
 
@@ -631,13 +688,13 @@ fun AddIdeaDialog(
 
     val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            uri?.let {
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            uris.forEach { uri ->
                 try {
                     val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
                     context.contentResolver.takePersistableUriPermission(uri, flag)
-                    imageUri = it.toString()
+                    imageUris = imageUris + uri.toString()
                 } catch (e: SecurityException) {
                     Log.e("AddIdeaDialog", "Failed to take persistable URI permission", e)
                 }
@@ -679,7 +736,7 @@ fun AddIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onAddIdea(textFieldValue.text, imageUri) },
+                            onClick = { onAddIdea(textFieldValue.text, imageUris) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
@@ -707,25 +764,57 @@ fun AddIdeaDialog(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                if (imageUri != null) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        AsyncImage(
-                            model = Uri.parse(imageUri),
-                            contentDescription = null,
+                if (imageUris.isNotEmpty()) {
+                    if (imageUris.size == 1) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            AsyncImage(
+                                model = Uri.parse(imageUris.first()),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { fullScreenImageUri = imageUris.first() },
+                                contentScale = ContentScale.Fit
+                            )
+                            IconButton(
+                                onClick = { imageUris = emptyList() },
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove Image"
+                                )
+                            }
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 300.dp)
-                                .clickable { fullScreenImageUri = imageUri },
-                            contentScale = ContentScale.Fit
-                        )
-                        IconButton(
-                            onClick = { imageUri = null },
-                            modifier = Modifier.align(Alignment.TopEnd)
+                                .height(240.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove Image"
-                            )
+                            items(imageUris) { uri ->
+                                Box {
+                                    AsyncImage(
+                                        model = Uri.parse(uri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .aspectRatio(1f)
+                                            .clickable { fullScreenImageUri = uri },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    IconButton(
+                                        onClick = { imageUris = imageUris - uri },
+                                        modifier = Modifier.align(Alignment.TopEnd)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove Image"
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))

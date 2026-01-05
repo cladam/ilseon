@@ -2,6 +2,7 @@ package com.ilseon.data.idea
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,7 @@ interface IdeaDao {
     @Update
     suspend fun updateIdea(idea: Idea)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIdea(idea: Idea)
 
     @Query("SELECT * FROM idea WHERE id = :id")

@@ -83,7 +83,8 @@ abstract class AppModule {
                     MIGRATION_24_25,
                     MIGRATION_25_26,
                     MIGRATION_26_27,
-                    MIGRATION_27_28
+                    MIGRATION_27_28,
+                    MIGRATION_28_29
                 )
                 .build()
         }
@@ -201,6 +202,15 @@ abstract class AppModule {
         private val MIGRATION_27_28 = object : Migration(27, 28) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE Idea ADD COLUMN imageUri TEXT DEFAULT NULL")
+            }
+        }
+
+        private val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Idea RENAME TO Idea_old")
+                db.execSQL("CREATE TABLE Idea (`id` TEXT NOT NULL, `content` TEXT, `imageUris` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `isConverted` INTEGER NOT NULL, `isReference` INTEGER NOT NULL, `isPinned` INTEGER NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("""INSERT INTO Idea (id, content, imageUris, createdAt, isConverted, isReference, isPinned, weight) SELECT id, content, CASE WHEN imageUri IS NOT NULL THEN '["' || imageUri || '"]' ELSE '[]' END, createdAt, isConverted, isReference, isPinned, weight FROM Idea_old""")
+                db.execSQL("DROP TABLE Idea_old")
             }
         }
 

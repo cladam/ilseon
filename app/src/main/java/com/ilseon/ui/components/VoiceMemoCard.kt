@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Pause
@@ -46,7 +46,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ilseon.data.task.TaskContext
 import com.ilseon.data.voicememo.VoiceMemo
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,9 +64,10 @@ fun VoiceMemoCard(
     onSeek: (Float) -> Unit,
     onConvertToTask: (VoiceMemo) -> Unit,
     onDelete: (VoiceMemo) -> Unit,
-    onEditTitle: (VoiceMemo) -> Unit,
+    onEdit: (VoiceMemo) -> Unit,
     onTranscribe: (VoiceMemo) -> Unit,
     showTranscribeOption: Boolean,
+    taskContext: TaskContext?,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -99,21 +104,27 @@ fun VoiceMemoCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Play/Pause and Progress Bar
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PlayPauseButton(isPlaying = isPlaying, onClick = { onPlayPause(memo) })
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.offset(y = (-7).dp)) { // Offset to align with slider track
+                    PlayPauseButton(isPlaying = isPlaying, onClick = { onPlayPause(memo) })
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.weight(1f)) {
                     Slider(
                         value = progress,
                         onValueChange = { onSeek(it) },
-                        modifier = Modifier
-                            .height(24.dp)
-                            .weight(1f),
-
+                        modifier = Modifier.fillMaxWidth(),
                         thumb = {
                             SliderDefaults.Thumb(
                                 interactionSource = remember { MutableInteractionSource() },
-                                modifier = Modifier.size(12.dp), // Smaller thumb
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .offset(y = 1.dp),
                                 colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary)
                             )
                         },
@@ -129,22 +140,61 @@ fun VoiceMemoCard(
                             )
                         }
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = formatDuration(if (isPlaying) (memo.durationSeconds * progress).toLong() else memo.durationSeconds.toLong()),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = formatDuration(if (isPlaying) (memo.durationSeconds * progress).toLong() else memo.durationSeconds.toLong()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column {
+                    Text(
+                        text = SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm",
+                            Locale.getDefault()
+                        ).format(Date(memo.timestamp)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    taskContext?.let {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = it.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
 
             // Dropdown Menu
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false }
             ) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        onEdit(memo)
+                        showMenu = false
+                    },
+                    leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) }
+                )
                 DropdownMenuItem(
                     text = { Text("Convert to Task") },
                     onClick = {
@@ -164,14 +214,6 @@ fun VoiceMemoCard(
                     )
                 }
                 DropdownMenuItem(
-                    text = { Text("Edit title") },
-                    onClick = {
-                        onEditTitle(memo)
-                        showMenu = false
-                    },
-                    leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) }
-                )
-                DropdownMenuItem(
                     text = { Text("Delete") },
                     onClick = {
                         onDelete(memo)
@@ -186,37 +228,21 @@ fun VoiceMemoCard(
 
 @Composable
 fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
-    Icon(
-        imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-        contentDescription = if (isPlaying) "Pause" else "Play",
+    Box(
         modifier = Modifier
-            .size(36.dp)
-            .clickable { onClick() },
-        tint = MaterialTheme.colorScheme.primary
-    )
-}
-
-@Composable
-fun LinearProgressBarWithThumb(
-    progress: Float,
-    onSeek: (Float) -> Unit
-) {
-    val animatedProgress = animateFloatAsState(
-        targetValue = progress,
-        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
-    ).value
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        LinearProgressIndicator(
-            progress = { animatedProgress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primaryContainer
+            .size(30.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            contentDescription = if (isPlaying) "Pause" else "Play",
+            modifier = Modifier.size(32.dp),
+            tint = MaterialTheme.colorScheme.primary
         )
     }
 }
+
 
 private fun formatDuration(seconds: Long): String {
     val minutes = TimeUnit.SECONDS.toMinutes(seconds)

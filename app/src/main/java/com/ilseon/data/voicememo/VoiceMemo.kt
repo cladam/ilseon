@@ -12,5 +12,6 @@ data class VoiceMemo(
     var filePath: String,
     val durationSeconds: Int,
     val timestamp: Long = System.currentTimeMillis(),
-    val weight: Int = 0
+    val weight: Int = 0,
+    val contextId: UUID? = null
 )

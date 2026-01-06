@@ -24,7 +24,7 @@ import java.util.UUID
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 30, exportSchema = false)
+@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 31, exportSchema = false)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

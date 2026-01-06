@@ -15,6 +15,7 @@ import com.ilseon.data.idea.IdeaRepository
 import com.ilseon.data.task.ExtractedTasks
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.Task
+import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.voicememo.VoiceMemo
@@ -38,7 +39,6 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.text.insert
 
 sealed class NavigationEvent {
     data class ToNote(val ideaId: UUID) : NavigationEvent()
@@ -52,7 +52,8 @@ class VoiceMemoViewModel @Inject constructor(
     private val speechTranscriber: SpeechTranscriber,
     private val ideaRepository: IdeaRepository,
     private val taskRepository: TaskRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val taskContextRepository: TaskContextRepository
 ) : ViewModel() {
 
     private var mediaPlayer: MediaPlayer? = null
@@ -77,6 +78,13 @@ class VoiceMemoViewModel @Inject constructor(
     val lastCreatedIdeaId = _lastCreatedIdeaId.asStateFlow()
 
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val taskContexts = taskContextRepository.getContexts()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -338,10 +346,9 @@ class VoiceMemoViewModel @Inject constructor(
         }
     }
 
-
-    fun updateVoiceMemoTitle(memo: VoiceMemo, newTitle: String) {
+    fun updateVoiceMemo(memo: VoiceMemo, newTitle: String, newContextId: UUID?) {
         viewModelScope.launch {
-            if (memo.filePath.startsWith("content://")) {
+            if (memo.title != newTitle && memo.filePath.startsWith("content://")) {
                 val uri = memo.filePath.toUri()
                 val currentDisplayName = getDisplayName(uri)
                 val extension = currentDisplayName?.substringAfterLast(".", "") ?: "m4a"
@@ -358,7 +365,7 @@ class VoiceMemoViewModel @Inject constructor(
                 }
                 context.contentResolver.update(uri, contentValues, null, null)
             }
-            val updatedMemo = memo.copy(title = newTitle)
+            val updatedMemo = memo.copy(title = newTitle, contextId = newContextId)
             voiceMemoRepository.update(updatedMemo)
         }
     }

@@ -85,7 +85,8 @@ abstract class AppModule {
                     MIGRATION_26_27,
                     MIGRATION_27_28,
                     MIGRATION_28_29,
-                    MIGRATION_29_30
+                    MIGRATION_29_30,
+                    MIGRATION_30_31
                 )
                 .build()
         }
@@ -218,6 +219,12 @@ abstract class AppModule {
         private val MIGRATION_29_30 = object : Migration(29, 30) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE Idea ADD COLUMN contextId TEXT")
+            }
+        }
+
+        private val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE voice_memos ADD COLUMN contextId TEXT")
             }
         }
 

@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -168,6 +170,7 @@ fun IdeaInboxScreen(
     var currentView by remember { mutableStateOf("Inbox") }
     val lazyListState = rememberLazyListState()
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
+    var selectedContextId by remember { mutableStateOf<UUID?>(null) }
 
     fullScreenImageUri?.let { uri ->
         FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
@@ -205,9 +208,11 @@ fun IdeaInboxScreen(
         }
     }
 
-    val filteredIdeas = remember(currentView, ideas) {
-        ideas.filter {
-            if (currentView == "Inbox") !it.isReference else it.isReference
+    val filteredIdeas = remember(currentView, ideas, selectedContextId) {
+        ideas.filter { idea ->
+            val contextMatch = selectedContextId == null || idea.contextId == selectedContextId
+            val viewMatch = if (currentView == "Inbox") !idea.isReference else idea.isReference
+            contextMatch && viewMatch
         }.sortedWith(
             compareByDescending<Idea> { it.isPinned }
                 .thenByDescending { it.weight }
@@ -291,6 +296,19 @@ fun IdeaInboxScreen(
                 selectedContentColor = MaterialTheme.colorScheme.primary,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                ContextFilterDropdown(
+                    selectedContextId = selectedContextId,
+                    taskContexts = taskContexts,
+                    onContextSelected = { selectedContextId = it }
+                )
+            }
         }
 
         LazyColumn(
@@ -379,14 +397,6 @@ fun IdeaInboxScreen(
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = taskContext.name,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "No Context",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.primary,
                                                 fontWeight = FontWeight.Bold
@@ -773,7 +783,7 @@ fun AddIdeaDialog(
                     actions = {
                         Box {
                             IconButton(onClick = { contextMenuExpanded = true }) {
-                                Icon(Icons.Default.List, contentDescription = "Select Context")
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Select Context")
                             }
                             DropdownMenu(
                                 expanded = contextMenuExpanded,
@@ -839,7 +849,7 @@ fun AddIdeaDialog(
                     if (imageUris.size == 1) {
                         Box(modifier = Modifier.fillMaxWidth()) {
                             AsyncImage(
-                                model = Uri.parse(imageUris.first()),
+                                model = imageUris.first().toUri(),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -868,7 +878,7 @@ fun AddIdeaDialog(
                             items(imageUris) { uri ->
                                 Box {
                                     AsyncImage(
-                                        model = Uri.parse(uri),
+                                        model = uri.toUri(),
                                         contentDescription = null,
                                         modifier = Modifier
                                             .aspectRatio(1f)
@@ -919,3 +929,60 @@ fun AddIdeaDialog(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContextFilterDropdown(
+    selectedContextId: UUID?,
+    taskContexts: List<TaskContext>,
+    onContextSelected: (UUID?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = if (selectedContextId == null) {
+        "All"
+    } else {
+        taskContexts.find { it.id == selectedContextId }?.name ?: "All"
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.End,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            Text(
+                text = "$selectedName ⌄",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .width(120.dp)
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(120.dp)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("All") },
+                    onClick = {
+                        onContextSelected(null)
+                        expanded = false
+                    }
+                )
+                taskContexts.forEach { context ->
+                    DropdownMenuItem(
+                        text = { Text(context.name) },
+                        onClick = {
+                            onContextSelected(context.id)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+

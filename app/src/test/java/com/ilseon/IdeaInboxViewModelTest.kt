@@ -3,6 +3,7 @@ package com.ilseon
 import app.cash.turbine.test
 import com.ilseon.data.idea.Idea
 import com.ilseon.data.idea.IdeaRepository
+import com.ilseon.data.task.TaskContextRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,13 +25,15 @@ class IdeaInboxViewModelTest {
 
     private lateinit var viewModel: IdeaInboxViewModel
     private lateinit var ideaRepository: IdeaRepository
+    private lateinit var taskContextRepository: TaskContextRepository
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         ideaRepository = mockk(relaxed = true)
-        viewModel = IdeaInboxViewModel(ideaRepository)
+        taskContextRepository = mockk(relaxed = true)
+        viewModel = IdeaInboxViewModel(ideaRepository, taskContextRepository)
     }
 
     @After
@@ -45,7 +48,8 @@ class IdeaInboxViewModelTest {
         coEvery { ideaRepository.getIdeas() } returns flowOf(testIdeas)
 
         // When
-        viewModel = IdeaInboxViewModel(ideaRepository) // Re-init to trigger collection
+        viewModel = IdeaInboxViewModel(ideaRepository, taskContextRepository)
+        testDispatcher.scheduler.advanceUntilIdle() // Re-init to trigger collection
 
         // Then
         viewModel.ideas.test {

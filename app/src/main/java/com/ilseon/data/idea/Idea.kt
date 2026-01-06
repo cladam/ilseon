@@ -17,5 +17,6 @@ data class Idea(
     val isConverted: Boolean = false,
     val isReference: Boolean = false,
     val isPinned: Boolean = false,
-    val weight: Int = 0
+    val weight: Int = 0,
+    val contextId: UUID? = null
 )

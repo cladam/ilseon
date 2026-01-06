@@ -35,6 +35,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -59,6 +60,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -70,6 +72,7 @@ import com.ilseon.IdeaInboxViewModel
 import com.ilseon.NavigationEvent
 import com.ilseon.VoiceMemoViewModel
 import com.ilseon.data.idea.Idea
+import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.MarkdownText
@@ -78,6 +81,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import androidx.core.net.toUri
 
 // Helper functions for markdown formatting
 private fun applyMarkdown(textFieldValue: TextFieldValue, prefix: String, suffix: String = prefix): TextFieldValue {
@@ -159,6 +163,7 @@ fun IdeaInboxScreen(
     newIdeaId: UUID? = null
 ) {
     val ideas by viewModel.ideas.collectAsState()
+    val taskContexts by viewModel.taskContexts.collectAsState()
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
     var currentView by remember { mutableStateOf("Inbox") }
     val lazyListState = rememberLazyListState()
@@ -222,11 +227,12 @@ fun IdeaInboxScreen(
         AddIdeaDialog(
             initialText = vttIdeaContent,
             onDismiss = onDismissAddIdeaDialog,
-            onAddIdea = { content, imageUris ->
-                viewModel.addIdea(content, imageUris)
+            onAddIdea = { content, imageUris, contextId ->
+                viewModel.addIdea(content, imageUris, contextId)
                 onDismissAddIdeaDialog()
             },
-            onVttClick = onVttClick
+            onVttClick = onVttClick,
+            taskContexts = taskContexts
         )
     }
 
@@ -237,7 +243,8 @@ fun IdeaInboxScreen(
             onSave = { updatedIdea ->
                 viewModel.updateIdea(updatedIdea)
                 editingIdea = null
-            }
+            },
+            taskContexts = taskContexts
         )
     }
 
@@ -304,6 +311,7 @@ fun IdeaInboxScreen(
             } else {
                 items(filteredIdeas, key = { it.id }) { idea ->
                     val context = LocalContext.current
+                    val taskContext = taskContexts.find { it.id == idea.contextId }
                     GravitySwipeBox(
                         onSwipeRight = { viewModel.increaseWeight(idea) },
                         onSwipeLeft = { viewModel.decreaseWeight(idea) }
@@ -356,16 +364,35 @@ fun IdeaInboxScreen(
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.Bottom
                                 ) {
-                                    Text(
-                                        text = SimpleDateFormat(
-                                            "yyyy-MM-dd HH:mm",
-                                            Locale.getDefault()
-                                        ).format(Date(idea.createdAt)),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Column {
+                                        Text(
+                                            text = SimpleDateFormat(
+                                                "yyyy-MM-dd HH:mm",
+                                                Locale.getDefault()
+                                            ).format(Date(idea.createdAt)),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        if (taskContext != null) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = taskContext.name,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        } else {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "No Context",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                     Row {
                                         if (currentView == "Inbox") {
                                             IconButton(onClick = { viewModel.saveAsReference(idea) }) {
@@ -495,7 +522,8 @@ fun FormattingBar(
 fun EditIdeaDialog(
     idea: Idea,
     onDismiss: () -> Unit,
-    onSave: (Idea) -> Unit
+    onSave: (Idea) -> Unit,
+    taskContexts: List<TaskContext>
 ) {
     var textFieldValue by remember {
         mutableStateOf(
@@ -506,8 +534,10 @@ fun EditIdeaDialog(
         )
     }
     var imageUris by remember { mutableStateOf(idea.imageUris) }
+    var contextId by remember { mutableStateOf(idea.contextId) }
     val title = if (idea.isReference) "Edit Note" else "Edit Idea"
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
+    var contextMenuExpanded by remember { mutableStateOf(false) }
 
     fullScreenImageUri?.let { uri ->
         FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
@@ -546,6 +576,25 @@ fun EditIdeaDialog(
                         }
                     },
                     actions = {
+                        Box {
+                            IconButton(onClick = { contextMenuExpanded = true }) {
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Select Context")
+                            }
+                            DropdownMenu(
+                                expanded = contextMenuExpanded,
+                                onDismissRequest = { contextMenuExpanded = false }
+                            ) {
+                                taskContexts.forEach { context ->
+                                    DropdownMenuItem(
+                                        text = { Text(context.name) },
+                                        onClick = {
+                                            contextId = context.id
+                                            contextMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         IconButton(onClick = {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -557,7 +606,7 @@ fun EditIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onSave(idea.copy(content = textFieldValue.text, imageUris = imageUris)) },
+                            onClick = { onSave(idea.copy(content = textFieldValue.text, imageUris = imageUris, contextId = contextId)) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(
@@ -589,7 +638,7 @@ fun EditIdeaDialog(
                     if (imageUris.size == 1) {
                         Box(modifier = Modifier.fillMaxWidth()) {
                             AsyncImage(
-                                model = Uri.parse(imageUris.first()),
+                                model = imageUris.first().toUri(),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -667,8 +716,9 @@ fun EditIdeaDialog(
 fun AddIdeaDialog(
     initialText: String,
     onDismiss: () -> Unit,
-    onAddIdea: (String, List<String>) -> Unit,
-    onVttClick: () -> Unit
+    onAddIdea: (String, List<String>, UUID?) -> Unit,
+    onVttClick: () -> Unit,
+    taskContexts: List<TaskContext>
 ) {
     var textFieldValue by remember {
         mutableStateOf(
@@ -679,8 +729,10 @@ fun AddIdeaDialog(
         )
     }
     var imageUris by remember { mutableStateOf<List<String>>(emptyList()) }
+    var contextId by remember { mutableStateOf<UUID?>(null) }
     val focusRequester = remember { FocusRequester() }
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
+    var contextMenuExpanded by remember { mutableStateOf(false) }
 
     fullScreenImageUri?.let { uri ->
         FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
@@ -719,6 +771,25 @@ fun AddIdeaDialog(
                         }
                     },
                     actions = {
+                        Box {
+                            IconButton(onClick = { contextMenuExpanded = true }) {
+                                Icon(Icons.Default.List, contentDescription = "Select Context")
+                            }
+                            DropdownMenu(
+                                expanded = contextMenuExpanded,
+                                onDismissRequest = { contextMenuExpanded = false }
+                            ) {
+                                taskContexts.forEach { context ->
+                                    DropdownMenuItem(
+                                        text = { Text(context.name) },
+                                        onClick = {
+                                            contextId = context.id
+                                            contextMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         IconButton(onClick = {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -736,7 +807,7 @@ fun AddIdeaDialog(
                             )
                         }
                         TextButton(
-                            onClick = { onAddIdea(textFieldValue.text, imageUris) },
+                            onClick = { onAddIdea(textFieldValue.text, imageUris, contextId) },
                             enabled = textFieldValue.text.isNotBlank()
                         ) {
                             Text(

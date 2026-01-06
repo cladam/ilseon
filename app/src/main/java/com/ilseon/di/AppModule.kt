@@ -84,7 +84,8 @@ abstract class AppModule {
                     MIGRATION_25_26,
                     MIGRATION_26_27,
                     MIGRATION_27_28,
-                    MIGRATION_28_29
+                    MIGRATION_28_29,
+                    MIGRATION_29_30
                 )
                 .build()
         }
@@ -213,6 +214,13 @@ abstract class AppModule {
                 db.execSQL("DROP TABLE Idea_old")
             }
         }
+
+        private val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Idea ADD COLUMN contextId TEXT")
+            }
+        }
+
 
         @Provides
         @Singleton

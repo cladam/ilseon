@@ -4,16 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ilseon.data.idea.Idea
 import com.ilseon.data.idea.IdeaRepository
+import com.ilseon.data.task.TaskContext
+import com.ilseon.data.task.TaskContextRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class IdeaInboxViewModel @Inject constructor(
-    private val ideaRepository: IdeaRepository
+    private val ideaRepository: IdeaRepository,
+    private val taskContextRepository: TaskContextRepository
 ) : ViewModel() {
 
     val ideas: StateFlow<List<Idea>> = ideaRepository.getIdeas()
@@ -23,9 +27,16 @@ class IdeaInboxViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    fun addIdea(content: String, imageUris: List<String> = emptyList()) {
+    val taskContexts: StateFlow<List<TaskContext>> = taskContextRepository.getContexts()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun addIdea(content: String, imageUris: List<String> = emptyList(), contextId: UUID? = null) {
         viewModelScope.launch {
-            ideaRepository.insertIdea(content, imageUris)
+            ideaRepository.insertIdea(content, imageUris, contextId = contextId)
         }
     }
 

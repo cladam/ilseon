@@ -81,3 +81,5 @@ Ilseon is 100% **open source**, built for the community.
 ### Contributing
 
 Contributions are welcome! Please feel free to open an issue or submit a pull request.
+
+Built with ❤️ for the neurodivergent community.

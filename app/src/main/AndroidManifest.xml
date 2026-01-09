@@ -39,7 +39,8 @@
             tools:node="merge">
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup" />
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
 
 
@@ -94,7 +95,7 @@
             android:name=".service.RecordingService"
             android:enabled="true"
             android:exported="false"
-            android.foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone" />
 
     </application>
 

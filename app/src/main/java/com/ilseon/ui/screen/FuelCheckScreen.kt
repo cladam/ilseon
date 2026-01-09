@@ -62,7 +62,7 @@ fun FuelCheckScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
-            EnergyLevel.values().forEach { energyLevel ->
+            EnergyLevel.entries.forEach { energyLevel ->
                 EnergyButton(
                     energyLevel = energyLevel,
                     isSelected = userStatus?.currentEnergy == energyLevel,

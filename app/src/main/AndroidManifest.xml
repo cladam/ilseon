@@ -37,11 +37,9 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <!-- If you are using androidx.startup to initialize other components -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
+                android:value="androidx.startup" />
         </provider>
 
 
@@ -96,7 +94,7 @@
             android:name=".service.RecordingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android.foregroundServiceType="microphone" />
 
     </application>
 

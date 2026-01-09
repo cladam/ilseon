@@ -88,6 +88,7 @@ import com.ilseon.data.EnergyLevel
 import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.toColor
+import com.ilseon.notifications.FuelCheckScheduler
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.StreakIndicator
@@ -124,12 +125,17 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.compareTo
+import kotlin.random.Random
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var taskRepository: TaskRepository
+
+    @Inject
+    lateinit var fuelCheckScheduler: FuelCheckScheduler
 
     private val viewModel: TaskViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
@@ -147,6 +153,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
         }
+
+        fuelCheckScheduler.scheduleNextFuelCheck()
 
         setContent {
             val darkTheme = isSystemInDarkTheme()
@@ -286,6 +294,8 @@ class MainActivity : ComponentActivity() {
                 var vttContextDescriptionResult by remember { mutableStateOf("") }
                 var vttTarget by remember { mutableStateOf("quick_capture_title") }
 
+                var showFuelCheckOnStartup by remember { mutableStateOf(false) }
+
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -377,6 +387,9 @@ class MainActivity : ComponentActivity() {
                             when (currentIntent.getStringExtra("navigate_to")) {
                                 "voice_recorder" -> navController.navigate(Screen.Recorder.route)
                             }
+                            if (currentIntent.getStringExtra("destination") == "fuel_check") {
+                                navController.navigate(Screen.FuelCheck.route)
+                            }
                             if (currentIntent.action == "com.ilseon.ACTION_SHOW_REFLECTION") {
                                 val taskIdString = currentIntent.getStringExtra("EXTRA_TASK_ID")
                                 if (taskIdString != null) {
@@ -386,6 +399,20 @@ class MainActivity : ComponentActivity() {
                         }
                         // Clear intent after handling to prevent re-triggering
                         intentState.value = null
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    // 20% chance to show on startup
+                    if (Random.nextFloat() < 0.20f) {
+                        showFuelCheckOnStartup = true
+                    }
+                }
+
+                LaunchedEffect(showFuelCheckOnStartup) {
+                    if (showFuelCheckOnStartup) {
+                        navController.navigate(Screen.FuelCheck.route)
+                        showFuelCheckOnStartup = false
                     }
                 }
 
@@ -545,6 +572,11 @@ class MainActivity : ComponentActivity() {
                                             // Clear the animation state before completing
                                             completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.completeTask(data.task, reflection, energyLevel)
+
+                                            // 30% chance to show FuelCheck after completing a task
+                                            if (Random.nextFloat() < 0.30f) {
+                                                navController.navigate(Screen.FuelCheck.route)
+                                            }
                                         },
                                         onDismiss = {
                                             // Also clear if dismissed without saving

@@ -6,7 +6,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,9 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Battery1Bar
 import androidx.compose.material.icons.filled.Battery3Bar
-import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BatteryFull
-import androidx.compose.material.icons.filled.BatteryStd
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,9 +50,9 @@ import com.ilseon.data.toColor
 import com.ilseon.ui.components.AnimatedTaskItem
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.GravitySwipeBox
+import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TaskDetailsDialog
 import com.ilseon.ui.theme.MutedRed
-import com.ilseon.ui.theme.MutedTeal
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -144,11 +140,11 @@ fun NextUpTasks(
                         isVisible = !completedTaskIds.contains(task.id),
                         onComplete = onAnimationFinished,
                         onHaptic = { viewModel.performHapticNudge() }
-                    ) {
+                    ) { 
                         GravitySwipeBox(
                             onSwipeRight = { onPromoteToCurrentPriority(task) },
                             onSwipeLeft = { /* Optional: demote/defer */ }
-                        ) {
+                        ) { 
                             val rowModifier = if (isUrgentList) {
                                 Modifier
                                     .fillMaxWidth()
@@ -171,12 +167,7 @@ fun NextUpTasks(
                                         colorScheme.primary.copy(alpha = 0.3f),
                                         RoundedCornerShape(8.dp)
                                     )
-                                    .combinedClickable(
-                                        onClick = {},
-                                        onLongClick = {
-                                            taskToShowDetails = it
-                                        }
-                                    )
+                                    .clickable { taskToShowDetails = it }
                                     .padding(vertical = 8.dp, horizontal = 8.dp)
                             }
                             Row(
@@ -196,7 +187,6 @@ fun NextUpTasks(
                                         EnergyLevel.Medium -> Icons.Default.Battery3Bar
                                         EnergyLevel.Low -> Icons.Default.Battery1Bar
                                     }
-                                    val rotation = if (level == EnergyLevel.Medium) 0f else 270f
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = "Energy Level: ${level.name}",
@@ -207,10 +197,8 @@ fun NextUpTasks(
                                     )
                                 }
                                 Spacer(Modifier.width(16.dp))
-                                Text(
-                                    text = it.title,
-                                    color = colorScheme.onBackground,
-                                    fontSize = 16.sp,
+                                MarkdownText(
+                                    markdown = it.title,
                                     modifier = Modifier.weight(1f)
                                 )
                                 if (!isUrgentList) {
@@ -220,9 +208,9 @@ fun NextUpTasks(
                                             .size(24.dp)
                                             .clip(CircleShape)
                                             .border(1.dp, borderColor, CircleShape)
-                                            .clickable {
+                                            .clickable { 
                                                 viewModel.performHapticNudge()
-                                                onComplete(it)
+                                                onComplete(it) 
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {

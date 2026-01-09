@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.theme.toColor
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun TaskDetailsDialog(
@@ -52,15 +55,18 @@ fun TaskDetailsDialog(
                 Text(
                     text = task.title,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
                 task.description?.let {
                     if (it.isNotBlank()) {
-                        MarkdownText(
-                            markdown = it
-                        )
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f, fill = false)) {
+                            MarkdownText(
+                                markdown = it,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                         Spacer(Modifier.height(16.dp))
                     }
                 }
@@ -70,13 +76,13 @@ fun TaskDetailsDialog(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(10.dp)
                             .background(task.priority.toColor(), CircleShape)
                     )
                     Text(
                         text = context?.name ?: "General",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp
+                        fontSize = 14.sp
                     )
                 }
                 Spacer(Modifier.height(24.dp))

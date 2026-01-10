@@ -1,6 +1,7 @@
 package com.ilseon
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.ilseon.data.idea.IdeaRepository
 import com.ilseon.data.task.ReflectionExporter
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
@@ -28,6 +29,7 @@ class SettingsViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var ideaRepository: IdeaRepository
     private lateinit var taskRepository: TaskRepository
     private lateinit var reflectionExporter: ReflectionExporter
     private val testDispatcher = StandardTestDispatcher()
@@ -36,6 +38,7 @@ class SettingsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         settingsRepository = mockk(relaxed = true)
+        ideaRepository = mockk(relaxed = true)
         taskRepository = mockk(relaxed = true)
         reflectionExporter = mockk(relaxed = true)
 
@@ -51,7 +54,7 @@ class SettingsViewModelTest {
     @Test
     fun `setNudgeNotificationsEnabled calls repository`() = runTest {
         // Arrange
-        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter)
+        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter, ideaRepository)
 
         // Act
         viewModel.setNudgeNotificationsEnabled(false)
@@ -67,7 +70,7 @@ class SettingsViewModelTest {
         val tasks = listOf(mockk<com.ilseon.data.task.Task>())
         coEvery { taskRepository.getTasksWithReflections() } returns flowOf(tasks)
         coEvery { reflectionExporter.exportReflections(tasks) } returns "exported data"
-        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter)
+        val viewModel = SettingsViewModel(settingsRepository, taskRepository, reflectionExporter, ideaRepository)
         var exportedData = ""
 
         // Act

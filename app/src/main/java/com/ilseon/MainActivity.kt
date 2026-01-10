@@ -157,20 +157,6 @@ class MainActivity : ComponentActivity() {
         fuelCheckScheduler.scheduleNextFuelCheck()
 
         setContent {
-            val darkTheme = isSystemInDarkTheme()
-            /* DisposableEffect(darkTheme) {
-                enableEdgeToEdge(
-                    statusBarStyle = SystemBarStyle.auto(
-                        Color.TRANSPARENT,
-                        Color.TRANSPARENT,
-                    ) { darkTheme },
-                    navigationBarStyle = SystemBarStyle.auto(
-                        lightScrim,
-                        darkScrim,
-                    ) { darkTheme },
-                )
-                onDispose {}
-            } */
             IlseonTheme {
                 val fuelCheckViewModel: FuelCheckViewModel = hiltViewModel()
                 val userStatus by fuelCheckViewModel.userStatus.collectAsState()
@@ -340,35 +326,6 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val isRightHanded by remember { mutableStateOf(true) }
-
-                val createFileLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.CreateDocument("text/plain"),
-                    onResult = { uri: Uri? ->
-                        uri?.let {
-                            settingsViewModel.exportReflections { exportedData ->
-                                context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                                    OutputStreamWriter(outputStream).use { writer ->
-                                        writer.write(exportedData)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                )
-
-                val openFileLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocument(),
-                    onResult = { uri: Uri? ->
-                        uri?.let {
-                            context.contentResolver.openInputStream(it)?.use { inputStream ->
-                                BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                                    val text = reader.readText()
-                                    settingsViewModel.importReflections(text)
-                                }
-                            }
-                        }
-                    }
-                )
 
                 val intentToShow by remember { intentState }
                 LaunchedEffect(intentToShow) {
@@ -645,16 +602,14 @@ class MainActivity : ComponentActivity() {
                                     onAboutClick = {
                                         navController.navigate(Screen.About.route)
                                     },
-                                    onExportClick = {
-                                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                                        val fileName = "ilseon_tasks_${dateFormat.format(Date())}.txt"
-                                        createFileLauncher.launch(fileName)
-                                    },
-                                    onImportClick = {
-                                        openFileLauncher.launch(arrayOf("text/plain"))
-                                    },
                                     onArchiveClick = {
                                         navController.navigate("archive_tasks")
+                                    },
+                                    onNavigateToIdeaInbox = {
+                                        navController.navigate(Screen.IdeaInbox.route)
+                                    },
+                                    onNavigateToReflections = {
+                                        navController.navigate(Screen.Reflections.route)
                                     }
                                 )
                             }
@@ -873,9 +828,6 @@ class MainActivity : ComponentActivity() {
         intentState.value = intent
     }
 }
-
-private val lightScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
-private val darkScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
 @Composable
 private fun DrawerContent(

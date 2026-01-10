@@ -1,5 +1,8 @@
 package com.ilseon.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -48,15 +52,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.SettingsViewModel
 import com.ilseon.ui.components.AppCard
 import com.ilseon.util.UsageStatsReader
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @Composable
 fun SettingsScreen(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
     onArchiveClick: () -> Unit,
+    onNavigateToIdeaInbox: () -> Unit = {},
+    onNavigateToReflections: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
@@ -64,12 +73,87 @@ fun SettingsScreen(
     val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
     val apiKey by viewModel.apiKey.collectAsState()
+    val context = LocalContext.current
+
+    val exportReflectionsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain"),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                viewModel.exportReflections { exportedData ->
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(exportedData)
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+    val importReflectionsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                        val text = reader.readText()
+                        viewModel.importReflections(text) {
+                            onNavigateToReflections()
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+    val exportIdeasLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain"),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                viewModel.exportIdeas { exportedData ->
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(exportedData)
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+    val importIdeasLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                        val text = reader.readText()
+                        viewModel.importIdeas(text) {
+                            onNavigateToIdeaInbox()
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+
 
     SettingsScreenContent(
         onCompletedTasksClick = onCompletedTasksClick,
         onAboutClick = onAboutClick,
-        onExportClick = onExportClick,
-        onImportClick = onImportClick,
+        onExportReflectionsClick = {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val fileName = "ilseon_reflections_${dateFormat.format(Date())}.txt"
+            exportReflectionsLauncher.launch(fileName)
+        },
+        onImportReflectionsClick = { importReflectionsLauncher.launch(arrayOf("text/plain")) },
+        onExportIdeasClick = {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val fileName = "ilseon_ideas_${dateFormat.format(Date())}.txt"
+            exportIdeasLauncher.launch(fileName)
+        },
+        onImportIdeasClick = { importIdeasLauncher.launch(arrayOf("text/plain")) },
         onArchiveClick = onArchiveClick,
         nudgeNotificationsEnabled = nudgeNotificationsEnabled,
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
@@ -88,8 +172,12 @@ fun SettingsScreen(
 private fun SettingsScreenContent(
     onCompletedTasksClick: () -> Unit,
     onAboutClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
+    onExportReflectionsClick: () -> Unit,
+    onImportReflectionsClick: () -> Unit,
+    onExportIdeasClick: () -> Unit,
+    onImportIdeasClick: () -> Unit,
+    onNavigateToIdeaInbox: () -> Unit = {},
+    onNavigateToReflections: () -> Unit = {},
     onArchiveClick: () -> Unit,
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit,
@@ -156,8 +244,10 @@ private fun SettingsScreenContent(
         item {
             DataManagementCard(
                 onCompletedTasksClick = onCompletedTasksClick,
-                onExportClick = onExportClick,
-                onImportClick = onImportClick,
+                onExportReflectionsClick = onExportReflectionsClick,
+                onImportReflectionsClick = onImportReflectionsClick,
+                onExportIdeasClick = onExportIdeasClick,
+                onImportIdeasClick = onImportIdeasClick,
                 onArchiveClick = onArchiveClick
             )
         }
@@ -296,8 +386,10 @@ private fun SpeechToTextSettingsCard(
 @Composable
 private fun DataManagementCard(
     onCompletedTasksClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
+    onExportReflectionsClick: () -> Unit,
+    onImportReflectionsClick: () -> Unit,
+    onExportIdeasClick: () -> Unit,
+    onImportIdeasClick: () -> Unit,
     onArchiveClick: () -> Unit
 ) {
     AppCard {
@@ -318,13 +410,25 @@ private fun DataManagementCard(
                 icon = Icons.Default.Download,
                 title = "Export Reflections",
                 subtitle = "Save your reflections to a file",
-                onClick = onExportClick
+                onClick = onExportReflectionsClick
             )
             SettingsItem(
-                icon = Icons.Default.Download, // Note: Consider a more appropriate icon like Upload
+                icon = Icons.Default.Upload,
                 title = "Import Reflections",
                 subtitle = "Load reflections from a file",
-                onClick = onImportClick
+                onClick = onImportReflectionsClick
+            )
+            SettingsItem(
+                icon = Icons.Default.Download,
+                title = "Export Ideas",
+                subtitle = "Save your ideas to a file",
+                onClick = onExportIdeasClick
+            )
+            SettingsItem(
+                icon = Icons.Default.Upload,
+                title = "Import Ideas",
+                subtitle = "Load ideas from a file",
+                onClick = onImportIdeasClick
             )
             SettingsItem(
                 icon = Icons.Default.Archive,
@@ -490,4 +594,3 @@ private fun ApiKeyDialog(
         }
     )
 }
-

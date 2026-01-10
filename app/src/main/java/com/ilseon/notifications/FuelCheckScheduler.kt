@@ -31,7 +31,7 @@ class WorkManagerFuelCheckScheduler @Inject constructor(
     private val workManager = WorkManager.getInstance(context)
 
     override fun scheduleNextFuelCheck() {
-        val randomHours = Random.nextLong(2, 6) // 2-6 hours
+        val randomHours = Random.nextLong(3, 9)
 
         val fuelCheckWorkRequest = PeriodicWorkRequestBuilder<FuelCheckWorker>(
             repeatInterval = randomHours,

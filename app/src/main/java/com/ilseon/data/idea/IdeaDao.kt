@@ -26,6 +26,9 @@ interface IdeaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIdea(idea: Idea)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertIdeas(ideas: List<Idea>)
+
     @Query("SELECT * FROM idea WHERE id = :id")
     suspend fun getIdea(id: UUID): Idea?
 

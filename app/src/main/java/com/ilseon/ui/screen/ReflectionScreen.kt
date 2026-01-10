@@ -165,7 +165,10 @@ private fun ReflectionScreenContent(
             .toSortedMap(compareByDescending<Pair<Int, Int>> { it.first }.thenByDescending { it.second })
     }
 
-    var expandedWeeks by remember { mutableStateOf(setOf(groupedReflections.keys.firstOrNull())) }
+    // Expand the first week when reflections change
+    var expandedWeeks by remember(reflections) {
+        mutableStateOf(setOfNotNull(groupedReflections.keys.firstOrNull()))
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

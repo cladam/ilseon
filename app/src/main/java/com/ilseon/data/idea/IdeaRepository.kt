@@ -14,6 +14,10 @@ class IdeaRepository @Inject constructor(
         return ideaDao.getIdeas()
     }
 
+    suspend fun insertIdeas(ideas: List<Idea>) {
+        ideaDao.insertIdeas(ideas)
+    }
+
     suspend fun convertIdea(id: UUID) {
         ideaDao.convertIdea(id)
     }

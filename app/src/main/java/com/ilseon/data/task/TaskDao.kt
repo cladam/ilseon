@@ -6,14 +6,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.ilseon.data.ContextDistribution
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
-
-// Data class for the result of the focus distribution query
-data class FocusDistribution(
-    val contextId: UUID,
-    val count: Int
-)
 
 @Dao
 interface TaskDao {
@@ -121,8 +116,8 @@ interface TaskDao {
 
     // --- Analytics Queries ---
 
-    @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0 GROUP BY contextId")
-    suspend fun getFocusDistribution(startTime: Long, endTime: Long): List<FocusDistribution>
+    @Query("SELECT contextId, COUNT(*) as count FROM tasks WHERE isComplete = 1 AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0 AND contextId IS NOT NULL GROUP BY contextId")
+    suspend fun getFocusDistribution(startTime: Long, endTime: Long): List<ContextDistribution>
 
     @Query("SELECT AVG(endTime - startTime) FROM tasks WHERE isComplete = 1 AND schedulingType = 'TimeBlock' AND startTime IS NOT NULL AND endTime IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime AND isArchived = 0")
     suspend fun getAverageTimeBlockMillis(startTime: Long, endTime: Long): Double?

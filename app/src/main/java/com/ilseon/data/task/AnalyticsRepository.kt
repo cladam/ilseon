@@ -2,12 +2,15 @@ package com.ilseon.data.task
 
 import android.content.Context
 import com.ilseon.TimeInterval
+import com.ilseon.data.idea.IdeaDao
+import com.ilseon.data.voicememo.VoiceMemoDao
 import com.ilseon.ui.screen.AnalyticsData
 import com.ilseon.util.UsageStatsReader
 import com.ilseon.util.allStopWords
 import com.ilseon.util.cleanTextForAnalysis
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,20 +18,31 @@ import javax.inject.Singleton
 class AnalyticsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
-    private val taskContextDao: TaskContextDao
+    private val taskContextDao: TaskContextDao,
+    private val ideaDao: IdeaDao,
+    private val voiceMemoDao: VoiceMemoDao
 ) {
     private val usageStatsReader = UsageStatsReader(context)
 
     suspend fun getAnalyticsData(interval: TimeInterval): AnalyticsData {
         val (startTime, endTime) = calculateTimeRange(interval)
 
-        val focusDistributionRaw = taskDao.getFocusDistribution(startTime, endTime)
-        val totalCompletedTasks = focusDistributionRaw.sumOf { it.count }.toFloat()
-        val focusDistribution = if (totalCompletedTasks > 0) {
-            focusDistributionRaw.mapNotNull {
-                val context = taskContextDao.getContext(it.contextId)
+        val taskDistribution = taskDao.getFocusDistribution(startTime, endTime)
+        val ideaDistribution = ideaDao.getContextDistribution(startTime, endTime)
+        val voiceMemoDistribution = voiceMemoDao.getContextDistribution(startTime, endTime)
+
+        val combinedDistribution = (taskDistribution.map { it.contextId to it.count } +
+                ideaDistribution.map { it.contextId to it.count } +
+                voiceMemoDistribution.map { it.contextId to it.count })
+            .groupBy { it.first }
+            .mapValues { entry -> entry.value.sumOf { it.second } }
+
+        val totalItems = combinedDistribution.values.sum().toFloat()
+        val focusDistribution = if (totalItems > 0) {
+            combinedDistribution.mapNotNull { (contextId, count) ->
+                val context = contextId?.let { taskContextDao.getContext(it) }
                 if (context != null) {
-                    context.name to it.count / totalCompletedTasks
+                    context.name to count / totalItems
                 } else {
                     null
                 }
@@ -79,13 +93,18 @@ class AnalyticsRepository @Inject constructor(
             }
         }
 
+        val ideasCount = ideaDao.getIdeasCount(startTime, endTime)
+        val voiceMemosCount = voiceMemoDao.getVoiceMemosCount(startTime, endTime)
+
         return AnalyticsData(
             focusDistribution = focusDistribution,
             averageTimeBlockMinutes = averageTimeBlockMinutes,
             averageDurationMinutes = averageDurationMinutes,
             topKeywords = topKeywords,
             overdueTasksCount = overdueTasksCount,
-            interruptedTasksCount = interruptedTasksCount
+            interruptedTasksCount = interruptedTasksCount,
+            ideasCount = ideasCount,
+            voiceMemosCount = voiceMemosCount
         )
     }
 
@@ -97,14 +116,17 @@ class AnalyticsRepository @Inject constructor(
                 calendar.add(Calendar.DAY_OF_YEAR, -7)
                 calendar.timeInMillis
             }
+
             TimeInterval.MONTH -> {
                 calendar.add(Calendar.MONTH, -1)
                 calendar.timeInMillis
             }
+
             TimeInterval.YEAR -> {
                 calendar.add(Calendar.YEAR, -1)
                 calendar.timeInMillis
             }
+
             TimeInterval.ALL_TIME -> 0L
         }
         return Pair(startTime, endTime)

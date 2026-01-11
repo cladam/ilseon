@@ -1,14 +1,39 @@
 package com.ilseon.ui.screen
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,6 +48,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.AnalyticsViewModel
 import com.ilseon.TimeInterval
 import com.ilseon.ui.components.AppCard
+import com.ilseon.ui.theme.BlueTeal
+import com.ilseon.ui.theme.MutedGreen
+import com.ilseon.ui.theme.MutedRed
+import com.ilseon.ui.theme.MutedTeal
+import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.SlateBlue
 
 // Data class to hold simulated analysis results
 data class AnalyticsData(
@@ -32,7 +62,9 @@ data class AnalyticsData(
     val averageDurationMinutes: Int,
     val topKeywords: List<Pair<String, Int>>, // Keyword and count
     val overdueTasksCount: Int,
-    val interruptedTasksCount: Int
+    val interruptedTasksCount: Int,
+    val ideasCount: Int,
+    val voiceMemosCount: Int
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -155,6 +187,54 @@ fun AnalyticsScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     text = "${data!!.averageDurationMinutes} min",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        AppCard(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Ideas Captured",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "${data!!.ideasCount}",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        AppCard(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Voice Memos",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp) // Ensures consistent height
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "${data!!.voiceMemosCount}",
                                     style = MaterialTheme.typography.headlineLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
@@ -299,50 +379,87 @@ fun TimeIntervalDropdown(
 
 @Composable
 fun FocusDistributionChart(distribution: Map<String, Float>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 240.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    val total = distribution.values.sum()
+    val sortedDistribution = remember(distribution) {
+        distribution.entries.sortedByDescending { it.value }
+    }
+
+    val chartColors = remember(sortedDistribution.size) {
+        listOf(
+            MutedTeal,
+            QuietAmber,
+            MutedRed,
+            BlueTeal,
+            MutedGreen,
+            SlateBlue
+        ).let { baseColors ->
+            if (sortedDistribution.size > baseColors.size) {
+                baseColors + (baseColors.indices).flatMap {
+                    listOf(baseColors[it].copy(alpha = 0.7f), baseColors[it].copy(alpha = 0.4f))
+                }
+            } else {
+                baseColors
+            }
+        }.take(sortedDistribution.size)
+    }
+
+    var animationPlayed by remember { mutableStateOf(false) }
+    val animationProgress by animateFloatAsState(
+        targetValue = if (animationPlayed) 1f else 0f,
+        animationSpec = tween(durationMillis = 1000)
+    )
+
+    LaunchedEffect(Unit) {
+        animationPlayed = true
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        distribution.entries.sortedByDescending { it.value }.forEach { (context, percentage) ->
-            val barColor = MaterialTheme.colorScheme.primary
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = context,
-                    modifier = Modifier.width(80.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .height(10.dp)
-                        .weight(1f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Gray.copy(alpha = 0.2f))
-                ) {
+        Box(
+            modifier = Modifier.size(150.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                var startAngle = -90f
+                sortedDistribution.forEachIndexed { index, item ->
+                    val sweepAngle = (item.value / total) * 360f * animationProgress
+                    drawArc(
+                        color = chartColors[index],
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = true
+                    )
+                    startAngle += (item.value / total) * 360f
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(24.dp))
+
+        // Legend
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            sortedDistribution.forEachIndexed { index, entry ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(fraction = percentage)
-                            .background(barColor)
+                            .size(16.dp)
+                            .background(chartColors[index], CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${entry.key}: ${String.format("%.1f", entry.value / total * 100)}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${(percentage * 100).toInt()}%",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
             }
         }
     }
 }
+
 
 @Composable
 fun KeywordChip(keyword: String) {

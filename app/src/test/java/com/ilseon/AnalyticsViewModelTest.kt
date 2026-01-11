@@ -81,6 +81,8 @@ class AnalyticsViewModelTest {
             averageDurationMinutes = 30,
             topKeywords = listOf("Test" to 1),
             overdueTasksCount = 5,
+            ideasCount = 3,
+            voiceMemosCount = 2,
             interruptedTasksCount = 2
         )
         val monthlyData = AnalyticsData(
@@ -89,6 +91,8 @@ class AnalyticsViewModelTest {
             averageDurationMinutes = 45,
             topKeywords = listOf("Review" to 5),
             overdueTasksCount = 20,
+            ideasCount = 15,
+            voiceMemosCount = 10,
             interruptedTasksCount = 10
         )
 

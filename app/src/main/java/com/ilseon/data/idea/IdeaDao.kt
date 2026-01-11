@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.ilseon.data.ContextDistribution
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -37,5 +38,11 @@ interface IdeaDao {
 
     @Query("SELECT * FROM idea WHERE isConverted = 1")
     suspend fun getConvertedIdeas(): List<Idea>
+
+    @Query("SELECT COUNT(*) FROM idea WHERE createdAt BETWEEN :startTime AND :endTime")
+    suspend fun getIdeasCount(startTime: Long, endTime: Long): Int
+
+    @Query("SELECT contextId, COUNT(*) as count FROM idea WHERE createdAt BETWEEN :startTime AND :endTime AND contextId IS NOT NULL GROUP BY contextId")
+    suspend fun getContextDistribution(startTime: Long, endTime: Long): List<ContextDistribution>
 
 }

@@ -35,7 +35,7 @@ object WidgetTheme {
         // We can map our Semantic colors to unused slots or
         // access them via a custom object (recommended below)
         tertiary = MutedTeal,
-        error = MutedRed
+        error = MutedAmber
     )
 
     val colors = ColorProviders(

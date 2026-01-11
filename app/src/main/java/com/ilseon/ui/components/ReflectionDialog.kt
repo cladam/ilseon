@@ -97,7 +97,7 @@ fun ReflectionDialog(
                         OutlinedTextField(
                             value = reflectionText,
                             onValueChange = { reflectionText = it },
-                            label = { Text("Your reflection...") },
+                            label = { Text("Your reflection... (optional) ") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
                                 focusedTextColor = MaterialTheme.colorScheme.onSurface,

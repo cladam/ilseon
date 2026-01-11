@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import com.ilseon.MainActivity
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
 import com.ilseon.service.HapticManager
@@ -37,20 +38,32 @@ class NotificationActionReceiver : BroadcastReceiver() {
             if (task != null) {
                 when (intent.action) {
                     "com.ilseon.ACTION_COMPLETE_TASK" -> {
-                        taskRepository.updateTask(task.copy(isComplete = true, timerState = TimerState.Finished))
+                        val mainActivityIntent = Intent(context, MainActivity::class.java).apply {
+                            action = "com.ilseon.ACTION_SHOW_REFLECTION"
+                            putExtra("EXTRA_TASK_ID", taskId.toString())
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                        context.startActivity(mainActivityIntent)
+
                         hapticManager.performSuccess()
                         // Dismiss the notification
-                        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                        val notificationManager =
+                            context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                         notificationManager.cancel(taskIdString.hashCode())
                     }
 
                     "com.ilseon.ACTION_START_TASK" -> {
                         val updatedTask =
-                            task.copy(timerState = TimerState.Running, timerStartTime = System.currentTimeMillis())
+                            task.copy(
+                                timerState = TimerState.Running,
+                                timerStartTime = System.currentTimeMillis()
+                            )
                         taskRepository.updateTask(updatedTask)
 
                         val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
-                        val tier = tierName?.let { NotificationTier.valueOf(it) } ?: NotificationTier.CriticalDecision
+                        val tier =
+                            tierName?.let { NotificationTier.valueOf(it) }
+                                ?: NotificationTier.CriticalDecision
 
                         if (ContextCompat.checkSelfPermission(
                                 context,

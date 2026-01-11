@@ -134,9 +134,12 @@ class ReminderManager @Inject constructor(
             scheduleAlarmIfNotDuplicate(task, preStartTime, NotificationTier.PreStartWarning)
         }
 
-        // Start Time Alert - always schedule
+        // Start Time Alert - always schedule if no other alarm is at the same time
         if (startTime > now) {
-            scheduleAlarmIfNotDuplicate(task, startTime, NotificationTier.CriticalDecision)
+            val isSlotTaken = scheduledAlarms.values.any { it == startTime }
+            if (!isSlotTaken) {
+                scheduleAlarmIfNotDuplicate(task, startTime, NotificationTier.CriticalDecision)
+            }
         }
 
         // Pre-Block Warning (only if enough gap from start and task is long enough)

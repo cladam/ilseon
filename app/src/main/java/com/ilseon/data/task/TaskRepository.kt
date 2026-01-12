@@ -2,6 +2,7 @@ package com.ilseon.data.task
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.ilseon.data.EnergyLevel
 import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.userstatus.UserStatusRepository
@@ -116,7 +117,7 @@ class TaskRepository @Inject constructor(
             val urgentOutOfContext = todayTasks.filter { task ->
                 task.contextId != activeFocusBlock.contextId && task.isUrgent && !task.isComplete
             }
-            (focusContextTasks + urgentOutOfContext).sortedWith(ilseonComparator)
+            focusContextTasks.sortedWith(ilseonComparator) + urgentOutOfContext.sortedWith(ilseonComparator)
         } else {
             val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
             todayTasks.filter { task ->
@@ -205,6 +206,7 @@ class TaskRepository @Inject constructor(
         val userStatus = userStatusRepository.getStatus("user").first()
         val sortedTasks = getDashboardTasks(tasks, allFocusBlocks, userStatus)
         val now = System.currentTimeMillis()
+        Log.d("PriorityWidget", "getCurrentPriorityTaskForWidget: $sortedTasks")
         return sortedTasks.firstOrNull { task ->
             task.startTime == null || task.startTime <= now
         }

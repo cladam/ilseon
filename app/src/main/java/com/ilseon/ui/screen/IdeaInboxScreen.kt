@@ -126,6 +126,16 @@ private fun applyList(textFieldValue: TextFieldValue): TextFieldValue {
     return textFieldValue.copy(text = newText, selection = newSelection)
 }
 
+private fun applyCheckbox(textFieldValue: TextFieldValue): TextFieldValue {
+    val selection = textFieldValue.selection
+    val text = textFieldValue.text
+    val currentLineStart =
+        text.lastIndexOf("\n", selection.start - 1).let { if (it == -1) 0 else it + 1 }
+    val newText = text.take(currentLineStart) + "- [ ] " + text.substring(currentLineStart)
+    val newSelection = TextRange(selection.start + 6, selection.end + 6)
+    return textFieldValue.copy(text = newText, selection = newSelection)
+}
+
 @Composable
 private fun FullScreenImageDialog(imageUri: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -486,6 +496,7 @@ fun FormattingBar(
     onItalicClick: () -> Unit,
     onUnderscoreClick: () -> Unit,
     onListClick: () -> Unit,
+    onCheckbockClick: () -> Unit,
     onHeadingClick: () -> Unit
 ) {
     Row(
@@ -516,6 +527,12 @@ fun FormattingBar(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.List,
                 contentDescription = "List"
+            )
+        }
+        IconButton(onClick = onCheckbockClick) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Checkbox"
             )
         }
         IconButton(onClick = onHeadingClick) {
@@ -633,7 +650,8 @@ fun EditIdeaDialog(
                     onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "_") },
                     onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
                     onListClick = { textFieldValue = applyList(textFieldValue) },
-                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
+                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) },
+                    onCheckbockClick = { textFieldValue = applyCheckbox(textFieldValue) }
                 )
             }
         ) { paddingValues ->
@@ -834,7 +852,8 @@ fun AddIdeaDialog(
                     onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
                     onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
                     onListClick = { textFieldValue = applyList(textFieldValue) },
-                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) }
+                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) },
+                    onCheckbockClick = { textFieldValue = applyCheckbox(textFieldValue) }
                 )
             }
         ) { paddingValues ->

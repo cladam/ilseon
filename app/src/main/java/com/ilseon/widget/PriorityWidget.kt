@@ -2,6 +2,7 @@ package com.ilseon.widget
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -144,6 +145,7 @@ class PriorityWidget : GlanceAppWidget() {
     private fun PriorityWidgetContent(task: Task?) {
         val isOverdue = task?.dueTime?.let { it < System.currentTimeMillis() } ?: false
         val dividerColor = if (isOverdue) GlanceTheme.colors.error else ColorProvider(WidgetAction.Voice.baseColor)
+        Log.d("PriorityWidget", "PriorityWidgetContent: $task")
 
         Column(
             modifier = GlanceModifier
@@ -195,6 +197,7 @@ class PriorityWidget : GlanceAppWidget() {
 
     @Composable
     private fun TaskSection(task: Task, dividerColor: ColorProvider) {
+        Log.d("PriorityWidget", "TaskSection: $task")
         Column(modifier = GlanceModifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (task.isUrgent) {

@@ -89,6 +89,8 @@ import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.toColor
 import com.ilseon.notifications.FuelCheckScheduler
+import com.ilseon.ui.onboarding.OnboardingManager
+import com.ilseon.ui.onboarding.OnboardingScreen
 import com.ilseon.ui.components.NavigationDrawerHeader
 import com.ilseon.ui.components.ReflectionDialog
 import com.ilseon.ui.components.StreakIndicator
@@ -137,6 +139,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var fuelCheckScheduler: FuelCheckScheduler
 
+    @Inject
+    lateinit var onboardingManager: OnboardingManager
+
     private val viewModel: TaskViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val contextViewModel: TaskContextViewModel by viewModels()
@@ -148,13 +153,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         intentState.value = intent
         installSplashScreen()
-        // enableEdgeToEdge()
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
         }
 
-        fuelCheckScheduler.scheduleNextFuelCheck()
+        if (onboardingManager.isOnboardingCompleted()) {
+            fuelCheckScheduler.scheduleNextFuelCheck()
+        }
 
         setContent {
             IlseonTheme {
@@ -164,6 +170,8 @@ class MainActivity : ComponentActivity() {
                     Log.d("FuelCheck", "userStatus: $userStatus, energy: ${userStatus?.currentEnergy}")
                 }
                 val context = LocalContext.current
+                var onboardingCompleted by remember { mutableStateOf(onboardingManager.isOnboardingCompleted()) }
+
                 var hasNotificationPermission by remember {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         mutableStateOf(
@@ -208,24 +216,24 @@ class MainActivity : ComponentActivity() {
                     }
                 )
 
-                LaunchedEffect(Unit) {
-                    val permissionsToRequest = mutableListOf<String>()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        permissionsToRequest.add(Manifest.permission.BLUETOOTH_CONNECT)
-                    }
-                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                }
-
                 var showExactAlarmPermissionDialog by remember { mutableStateOf(false) }
                 val alarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                    LaunchedEffect(Unit) {
-                        showExactAlarmPermissionDialog = true
+                LaunchedEffect(onboardingCompleted) {
+                    if (onboardingCompleted) {
+                        val permissionsToRequest = mutableListOf<String>()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            permissionsToRequest.add(Manifest.permission.BLUETOOTH_CONNECT)
+                        }
+                        permissionLauncher.launch(permissionsToRequest.toTypedArray())
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                            showExactAlarmPermissionDialog = true
+                        }
                     }
                 }
 
@@ -360,8 +368,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(Unit) {
-                    // 20% chance to show on startup
-                    if (Random.nextFloat() < 0.20f) {
+                    if (onboardingManager.isOnboardingCompleted() && Random.nextFloat() < 0.20f) {
                         showFuelCheckOnStartup = true
                     }
                 }
@@ -372,6 +379,8 @@ class MainActivity : ComponentActivity() {
                         showFuelCheckOnStartup = false
                     }
                 }
+
+                val startDestination = if (onboardingCompleted) Screen.DailyDashboard.route else Screen.Onboarding.route
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -396,7 +405,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            // Hide top bar for recorder screen for a more immersive experience
                             if (currentRoute != Screen.Recorder.route) {
                                 TopAppBar(
                                     title = { },
@@ -465,7 +473,6 @@ class MainActivity : ComponentActivity() {
                                             Icon(
                                                 Icons.Filled.Mic,
                                                 contentDescription = "Record",
-                                                //tint = MutedRed,
                                                 modifier = Modifier.size(36.dp)
                                             )
                                             Text(
@@ -477,7 +484,6 @@ class MainActivity : ComponentActivity() {
                                             Icon(
                                                 Icons.Filled.Add,
                                                 contentDescription = "Quick Capture",
-                                                //tint = MutedRed,
                                                 modifier = Modifier.size(36.dp)
                                             )
                                             Text(
@@ -493,9 +499,19 @@ class MainActivity : ComponentActivity() {
                     ) { paddingValues ->
                         NavHost(
                             navController = navController,
-                            startDestination = Screen.DailyDashboard.route,
+                            startDestination = startDestination,
                             modifier = Modifier.padding(paddingValues)
                         ) {
+                            composable(Screen.Onboarding.route) {
+                                OnboardingScreen(onOnboardingFinished = {
+                                    onboardingManager.setOnboardingCompleted()
+                                    onboardingCompleted = true
+                                    fuelCheckScheduler.scheduleNextFuelCheck()
+                                    navController.navigate(Screen.DailyDashboard.route) {
+                                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                    }
+                                })
+                            }
                             composable(Screen.DailyDashboard.route) {
                                 val reflectionData by viewModel.taskForReflection.collectAsState()
                                 val postCompletionAction by viewModel.postCompletionAction.collectAsState()
@@ -526,17 +542,14 @@ class MainActivity : ComponentActivity() {
                                         taskTitle = data.task.title,
                                         phonePickups = data.phonePickups,
                                         onSave = { reflection, energyLevel ->
-                                            // Clear the animation state before completing
                                             completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.completeTask(data.task, reflection, energyLevel)
 
-                                            // 30% chance to show FuelCheck after completing a task
                                             if (Random.nextFloat() < 0.30f) {
                                                 navController.navigate(Screen.FuelCheck.route)
                                             }
                                         },
                                         onDismiss = {
-                                            // Also clear if dismissed without saving
                                             completedTaskIds = completedTaskIds - data.task.id
                                             viewModel.onReflectionDialogDismiss()
                                         },
@@ -549,7 +562,6 @@ class MainActivity : ComponentActivity() {
                                     completedTaskIds = completedTaskIds,
                                     onAnimateComplete = { task ->
                                         completedTaskIds = completedTaskIds + task.id
-                                        // Show reflection dialog AFTER animation completes
                                         viewModel.onShowReflectionDialog(task.id)
                                     },
                                     onTaskComplete = { task ->
@@ -596,21 +608,11 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(Screen.Settings.route) {
                                 SettingsScreen(
-                                    onCompletedTasksClick = {
-                                        navController.navigate("completed_tasks")
-                                    },
-                                    onAboutClick = {
-                                        navController.navigate(Screen.About.route)
-                                    },
-                                    onArchiveClick = {
-                                        navController.navigate("archive_tasks")
-                                    },
-                                    onNavigateToIdeaInbox = {
-                                        navController.navigate(Screen.IdeaInbox.route)
-                                    },
-                                    onNavigateToReflections = {
-                                        navController.navigate(Screen.Reflections.route)
-                                    }
+                                    onCompletedTasksClick = { navController.navigate("completed_tasks") },
+                                    onAboutClick = { navController.navigate(Screen.About.route) },
+                                    onArchiveClick = { navController.navigate("archive_tasks") },
+                                    onNavigateToIdeaInbox = { navController.navigate(Screen.IdeaInbox.route) },
+                                    onNavigateToReflections = { navController.navigate(Screen.Reflections.route) }
                                 )
                             }
                             composable(Screen.About.route) {
@@ -649,22 +651,18 @@ class MainActivity : ComponentActivity() {
                                         onTaskSavedFromIdea = true
                                         scope.launch { sheetState.show() }
                                     },
-                                    onNavigateToDashboard = {
-                                        navController.navigate(Screen.DailyDashboard.route)
-                                    },
+                                    onNavigateToDashboard = { navController.navigate(Screen.DailyDashboard.route) },
                                     showAddIdeaDialog = showAddIdeaDialog,
                                     onDismissAddIdeaDialog = {
                                         showAddIdeaDialog = false
-                                        vttIdeaContentResult = "" // Reset after dialog dismiss
+                                        vttIdeaContentResult = ""
                                     },
                                     vttIdeaContent = vttIdeaContentResult,
                                     onVttClick = {
                                         vttTarget = "idea_content"
                                         startVtt()
                                     },
-                                    onSwipeUp = {
-                                        showAddIdeaDialog = true
-                                    },
+                                    onSwipeUp = { showAddIdeaDialog = true },
                                     newIdeaId = backStackEntry.arguments?.getString("ideaId")?.let { UUID.fromString(it) }
                                 )
                             }
@@ -766,7 +764,6 @@ class MainActivity : ComponentActivity() {
                 if (sheetState.isVisible) {
                     ModalBottomSheet(
                         onDismissRequest = {
-                            // Only dismiss if not currently expanded
                             if (sheetState.currentValue != SheetValue.Expanded) {
                                 vttTitleResult = ""
                                 vttDescriptionResult = ""

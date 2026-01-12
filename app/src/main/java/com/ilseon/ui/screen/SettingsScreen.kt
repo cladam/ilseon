@@ -546,6 +546,7 @@ private fun AISettingsCard(
 
     AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            // TODO: Add a link to https://aistudio.google.com/app/apikey
             Text(
                 text = "AI Settings",
                 style = MaterialTheme.typography.titleLarge,

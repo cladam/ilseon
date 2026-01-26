@@ -64,6 +64,16 @@ class RecorderViewModel @Inject constructor(
 
     fun getRecordingResult(): RecordingResult? = _recordingResult
 
+    fun stopRecordingAndGetResult(): RecordingResult? {
+        durationJob?.cancel()
+        _uiState.value = RecorderState.Stopped
+        return stopRecording()
+    }
+
+    fun setSaving() {durationJob?.cancel()
+        _uiState.value = RecorderState.Saving
+    }
+
     fun resetState() {
         _uiState.value = RecorderState.Idle
         _durationSeconds.value = 0

@@ -697,6 +697,7 @@ class MainActivity : ComponentActivity() {
                                 val voiceMemoViewModel: VoiceMemoViewModel = hiltViewModel()
                                 val recorderState by recorderViewModel.uiState.collectAsState()
                                 val duration by recorderViewModel.durationSeconds.collectAsState()
+                                val showSaveConfirmation by voiceMemoViewModel.showSaveConfirmation.collectAsState()
 
                                 LaunchedEffect(Unit) {
                                     recorderViewModel.startRecording()
@@ -705,23 +706,18 @@ class MainActivity : ComponentActivity() {
                                 RecorderScreen(
                                     recorderState = recorderState,
                                     durationSeconds = duration,
+                                    showSaveConfirmation = showSaveConfirmation,
                                     onStartRecording = { recorderViewModel.startRecording() },
                                     onPauseRecording = { recorderViewModel.pauseRecording() },
                                     onResumeRecording = { recorderViewModel.resumeRecording() },
                                     onStopRecording = {
-                                        val result = recorderViewModel.getRecordingResult() ?: recorderViewModel.stopRecording()
-                                        result?.let {
+                                        recorderViewModel.setSaving() // Add this line
+                                        val result = recorderViewModel.stopRecording()
+                                        if (result != null) {
                                             voiceMemoViewModel.saveVoiceMemo(
-                                                filePath = it.filePath,
-                                                durationSeconds = it.durationSeconds,
-                                                onComplete = {
-                                                    navController.navigate(Screen.VoiceInbox.route) {
-                                                        popUpTo(Screen.Recorder.route) { inclusive = true }
-                                                    }
-                                                }
+                                                filePath = result.filePath,
+                                                durationSeconds = result.durationSeconds
                                             )
-                                        } ?: navController.navigate(Screen.VoiceInbox.route) {
-                                            popUpTo(Screen.Recorder.route) { inclusive = true }
                                         }
                                     },
                                     onCancel = {
@@ -729,20 +725,17 @@ class MainActivity : ComponentActivity() {
                                         navController.popBackStack()
                                     },
                                     onSave = {
-                                        Log.d("RecorderScreen", "onSave called")
-                                        val result = recorderViewModel.getRecordingResult() ?: recorderViewModel.stopRecording()
-                                        Log.d("RecorderScreen", "onSave result: $result")
+                                        val result = recorderViewModel.getRecordingResult() ?: recorderViewModel.stopRecordingAndGetResult()
                                         result?.let {
                                             voiceMemoViewModel.saveVoiceMemo(
                                                 filePath = it.filePath,
-                                                durationSeconds = it.durationSeconds,
-                                                onComplete = {
-                                                    navController.navigate(Screen.VoiceInbox.route) {
-                                                        popUpTo(Screen.Recorder.route) { inclusive = true }
-                                                    }
-                                                }
+                                                durationSeconds = it.durationSeconds
                                             )
-                                        } ?: navController.navigate(Screen.VoiceInbox.route) {
+                                        } ?: navController.popBackStack() // Navigate back if there's no result
+                                    },
+                                    onConfirmationShown = {
+                                        voiceMemoViewModel.resetSaveConfirmation()
+                                        navController.navigate(Screen.VoiceInbox.route) {
                                             popUpTo(Screen.Recorder.route) { inclusive = true }
                                         }
                                     }

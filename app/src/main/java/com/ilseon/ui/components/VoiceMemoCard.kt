@@ -23,6 +23,8 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +39,7 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +74,30 @@ fun VoiceMemoCard(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Confirm Deletion") },
+            text = { Text("Are you sure you want to delete this voice memo?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete(memo)
+                        showDeleteConfirmation = false
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -216,7 +243,7 @@ fun VoiceMemoCard(
                 DropdownMenuItem(
                     text = { Text("Delete") },
                     onClick = {
-                        onDelete(memo)
+                        showDeleteConfirmation = true
                         showMenu = false
                     },
                     leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) }

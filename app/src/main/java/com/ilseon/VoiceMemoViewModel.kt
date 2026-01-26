@@ -77,6 +77,9 @@ class VoiceMemoViewModel @Inject constructor(
     private val _lastCreatedIdeaId = MutableStateFlow<UUID?>(null)
     val lastCreatedIdeaId = _lastCreatedIdeaId.asStateFlow()
 
+    private val _showSaveConfirmation = MutableStateFlow(false)
+    val showSaveConfirmation = _showSaveConfirmation.asStateFlow()
+
     val voiceMemos = voiceMemoRepository.getVoiceMemos()
         .stateIn(
             scope = viewModelScope,
@@ -192,6 +195,10 @@ class VoiceMemoViewModel @Inject constructor(
         _navigationEvent.value = null
     }
 
+    fun resetSaveConfirmation() {
+        _showSaveConfirmation.value = false
+    }
+
     private fun startPlayback(memo: VoiceMemo) {
         stopPlayback() // Stop any previous playback
         mediaPlayer = MediaPlayer().apply {
@@ -283,6 +290,10 @@ class VoiceMemoViewModel @Inject constructor(
                     durationSeconds = durationSeconds
                 )
                 voiceMemoRepository.insert(voiceMemo)
+                withContext(Dispatchers.Main) {
+                    _showSaveConfirmation.value = true
+                    onComplete()
+                }
                 Log.d("VoiceMemoVM", "VoiceMemo inserted: ${voiceMemo.id}")
             }
             withContext(Dispatchers.Main) {

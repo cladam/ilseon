@@ -45,21 +45,53 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.RecorderState
 import com.ilseon.ui.theme.MutedTeal
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun RecorderScreen(
     recorderState: RecorderState,
     durationSeconds: Int,
+    showSaveConfirmation: Boolean,
     onStartRecording: () -> Unit,
     onPauseRecording: () -> Unit,
     onResumeRecording: () -> Unit,
     onStopRecording: () -> Unit,
     onSave: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onConfirmationShown: () -> Unit
 ) {
     if (recorderState == RecorderState.Saving) {
-        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        Box(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            if (showSaveConfirmation) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Saved",
+                        modifier = Modifier.size(64.dp),
+                        tint = MutedTeal
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Saved",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                LaunchedEffect(Unit) {
+                    delay(1000) // Keep the confirmation for 1 second
+                    onConfirmationShown()
+                }
+            } else {
+                CircularProgressIndicator()
+            }
+        }
         return
     }
     Box(
@@ -202,29 +234,8 @@ fun RecorderScreen(
                     }
                 }
                 RecorderState.Saving -> {
-                    // Show a loading indicator or "Saving..." text
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Saving...",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
+                    // This is handled in the initial block
                 }
-//                RecorderState.Starting -> {
-//                    // Show a loading indicator
-//                    CircularProgressIndicator(
-//                        modifier = Modifier.size(48.dp),
-//                        color = MaterialTheme.colorScheme.primary
-//                    )
-//                    Text(
-//                        text = "Starting...",
-//                        style = MaterialTheme.typography.titleMedium,
-//                        modifier = Modifier.padding(top = 16.dp)
-//                    )
-//                }
             }
         }
     }

@@ -47,8 +47,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 116
-        versionName = "0.37.0"
+        versionCode = 117
+        versionName = "0.38.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -106,8 +106,8 @@ tasks.register("printVersionCodeAndName") {
 }
 
 dependencies {
-    implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation(libs.coil.compose)
+    implementation(libs.generativeai)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.foundation.layout)
@@ -138,8 +138,8 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
 
     // Pager
-    implementation("com.google.accompanist:accompanist-pager:0.28.0")
-    implementation("com.google.accompanist:accompanist-pager-indicators:0.28.0")
+    implementation(libs.accompanist.pager)
+    implementation(libs.accompanist.pager.indicators)
 
     // ** Hilt (Dependency Injection) **
     implementation(libs.hilt.android)

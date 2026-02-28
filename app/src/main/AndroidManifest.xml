@@ -64,7 +64,17 @@
         <activity
             android:name=".ActionTrampolineActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="com.ilseon.action.NEW_TASK" />
+                <action android:name="com.ilseon.action.NEW_IDEA" />
+                <action android:name="com.ilseon.action.NEW_VOICE_MEMO" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
 
         <receiver
             android:name=".notifications.ReminderBroadcastReceiver"

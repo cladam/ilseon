@@ -131,7 +131,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.compareTo
 import kotlin.random.Random
 
 @AndroidEntryPoint
@@ -154,9 +153,9 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         intentState.value = intent
-        installSplashScreen()
 
         lifecycleScope.launch {
             taskRepository.rescheduleAllReminders()
@@ -164,7 +163,11 @@ class MainActivity : ComponentActivity() {
 
         if (onboardingManager.isOnboardingCompleted()) {
             fuelCheckScheduler.scheduleNextFuelCheck()
-            publishShortcuts(this)
+            try {
+                publishShortcuts(this)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to publish shortcuts", e)
+            }
         }
 
         setContent {
@@ -420,11 +423,14 @@ class MainActivity : ComponentActivity() {
                                     },
                                     actions = {
                                         val energyLevel = userStatus?.currentEnergy
-                                        val icon = when (energyLevel) {
-                                            EnergyLevel.High -> Icons.Filled.BatteryFull
-                                            EnergyLevel.Medium -> Icons.Filled.Battery3Bar
-                                            EnergyLevel.Low -> Icons.Filled.Battery1Bar
-                                            else -> Icons.Filled.BatteryChargingFull
+                                        val icon = if (energyLevel != null) {
+                                            when (energyLevel) {
+                                                EnergyLevel.High -> Icons.Filled.BatteryFull
+                                                EnergyLevel.Medium -> Icons.Filled.Battery3Bar
+                                                EnergyLevel.Low -> Icons.Filled.Battery1Bar
+                                            }
+                                        } else {
+                                            Icons.Filled.BatteryChargingFull
                                         }
                                         val tint = energyLevel?.toColor() ?: MaterialTheme.colorScheme.onSurfaceVariant
 

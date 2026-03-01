@@ -70,11 +70,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
@@ -160,6 +164,7 @@ class MainActivity : ComponentActivity() {
 
         if (onboardingManager.isOnboardingCompleted()) {
             fuelCheckScheduler.scheduleNextFuelCheck()
+            publishShortcuts(this)
         }
 
         setContent {
@@ -816,6 +821,41 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intentState.value = intent
+    }
+
+    private fun publishShortcuts(context: Context) {
+        val voiceShortcut = ShortcutInfoCompat.Builder(context, "instant_record")
+            .setShortLabel("Instant Record")
+            .setLongLabel("Start recording a voice memo immediately")
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_outline_mic_24))
+            .setIntent(
+                Intent(context, ActionTrampolineActivity::class.java).apply {
+                    action = "com.ilseon.action.NEW_VOICE_MEMO"
+                }
+            )
+            .build()
+
+        val taskShortcut = ShortcutInfoCompat.Builder(context, "new_task")
+            .setShortLabel("New Task")
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_outline_add_task_24))
+            .setIntent(
+                Intent(context, ActionTrampolineActivity::class.java).apply {
+                    action = "com.ilseon.action.NEW_TASK"
+                }
+            )
+            .build()
+
+        val ideaShortcut = ShortcutInfoCompat.Builder(context, "new_idea")
+            .setShortLabel("New Idea")
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_outline_lightbulb_24))
+            .setIntent(
+                Intent(context, ActionTrampolineActivity::class.java).apply {
+                    action = "com.ilseon.action.NEW_IDEA"
+                }
+            )
+            .build()
+
+        ShortcutManagerCompat.addDynamicShortcuts(context, listOf(voiceShortcut, taskShortcut, ideaShortcut))
     }
 }
 

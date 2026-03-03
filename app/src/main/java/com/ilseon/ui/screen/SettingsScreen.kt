@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.SettingsInputComponent
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -71,6 +72,7 @@ fun SettingsScreen(
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
     val naggingNotificationsEnabled by viewModel.naggingNotificationsEnabled.collectAsState()
     val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
+    val mediaButtonTriggerEnabled by viewModel.mediaButtonTriggerEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
     val apiKey by viewModel.apiKey.collectAsState()
     val context = LocalContext.current
@@ -161,6 +163,8 @@ fun SettingsScreen(
         onNaggingNotificationsChange = viewModel::setNaggingNotificationsEnabled,
         bluetoothSstEnabled = bluetoothSstEnabled,
         onBluetoothSstEnabledChange = viewModel::setBluetoothSstEnabled,
+        mediaButtonTriggerEnabled = mediaButtonTriggerEnabled,
+        onMediaButtonTriggerEnabledChange = viewModel::setMediaButtonTriggerEnabled,
         sstLanguage = sstLanguage,
         onSstLanguageChange = viewModel::setSstLanguage,
         apiKey = apiKey,
@@ -185,6 +189,8 @@ private fun SettingsScreenContent(
     onNaggingNotificationsChange: (Boolean) -> Unit,
     bluetoothSstEnabled: Boolean,
     onBluetoothSstEnabledChange: (Boolean) -> Unit,
+    mediaButtonTriggerEnabled: Boolean,
+    onMediaButtonTriggerEnabledChange: (Boolean) -> Unit,
     sstLanguage: String,
     onSstLanguageChange: (String) -> Unit,
     apiKey: String,
@@ -233,6 +239,12 @@ private fun SettingsScreenContent(
                 onBluetoothSstEnabledChange = onBluetoothSstEnabledChange,
                 sstLanguage = sstLanguage,
                 onLanguageClick = { showLanguageDialog = true }
+            )
+        }
+        item {
+            HardwareSettingsCard(
+                mediaButtonTriggerEnabled = mediaButtonTriggerEnabled,
+                onMediaButtonTriggerEnabledChange = onMediaButtonTriggerEnabledChange
             )
         }
         item {
@@ -378,6 +390,30 @@ private fun SpeechToTextSettingsCard(
                 title = "Language",
                 subtitle = Locale(sstLanguage.split("-")[0], sstLanguage.split("-")[1]).displayName,
                 onClick = onLanguageClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun HardwareSettingsCard(
+    mediaButtonTriggerEnabled: Boolean,
+    onMediaButtonTriggerEnabledChange: (Boolean) -> Unit
+) {
+    AppCard {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Hardware Controllers",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsSwitchItem(
+                icon = Icons.Default.SettingsInputComponent,
+                title = "Media Button Trigger",
+                subtitle = "Toggle recording using external play/pause buttons",
+                checked = mediaButtonTriggerEnabled,
+                onCheckedChange = onMediaButtonTriggerEnabledChange
             )
         }
     }

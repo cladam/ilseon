@@ -47,8 +47,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 119
-        versionName = "0.38.2"
+        versionCode = 120
+        versionName = "0.39.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -169,6 +169,9 @@ dependencies {
 
     // In-app reviews
     implementation(libs.play.review)
+
+    // Media for Bluetooth buttons
+    implementation(libs.androidx.media)
 
     // ** Test Dependencies **
     testImplementation(libs.kotlinx.coroutines.test)

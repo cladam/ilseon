@@ -49,6 +49,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = false
         )
 
+    val mediaButtonTriggerEnabled = settingsRepository.mediaButtonTriggerEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
     val sstLanguage = settingsRepository.sstLanguage
         .stateIn(
             scope = viewModelScope,
@@ -71,6 +78,12 @@ class SettingsViewModel @Inject constructor(
     fun setBluetoothSstEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setBluetoothSstEnabled(enabled)
+        }
+    }
+
+    fun setMediaButtonTriggerEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setMediaButtonTriggerEnabled(enabled)
         }
     }
 

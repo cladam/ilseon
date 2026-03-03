@@ -20,6 +20,9 @@ interface SettingsRepository {
     val bluetoothSstEnabled: Flow<Boolean>
     suspend fun setBluetoothSstEnabled(enabled: Boolean)
 
+    val mediaButtonTriggerEnabled: Flow<Boolean>
+    suspend fun setMediaButtonTriggerEnabled(enabled: Boolean)
+
     val sstLanguage: Flow<String>
     suspend fun setSstLanguage(language: String)
 
@@ -39,6 +42,7 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_NUDGE_NOTIFICATIONS = "nudge_notifications_enabled"
         const val KEY_NAGGING_NOTIFICATIONS = "nagging_notifications_enabled"
         const val KEY_BLUETOOTH_SST_ENABLED = "bluetooth_sst_enabled"
+        const val KEY_MEDIA_BUTTON_TRIGGER = "media_button_trigger_enabled"
         const val KEY_SST_LANGUAGE = "sst_language"
         const val KEY_API_KEY = "gemini_api_key"
     }
@@ -50,7 +54,6 @@ class SettingsRepositoryImpl @Inject constructor(
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        // Send initial value
         trySend(prefs.getBoolean(KEY_NUDGE_NOTIFICATIONS, true))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
@@ -95,6 +98,23 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override val mediaButtonTriggerEnabled: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_MEDIA_BUTTON_TRIGGER) {
+                trySend(prefs.getBoolean(KEY_MEDIA_BUTTON_TRIGGER, false))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_MEDIA_BUTTON_TRIGGER, false))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setMediaButtonTriggerEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_MEDIA_BUTTON_TRIGGER, enabled)
+        }
+    }
+
     override val sstLanguage: Flow<String> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == KEY_SST_LANGUAGE) {
@@ -119,7 +139,6 @@ class SettingsRepositoryImpl @Inject constructor(
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        // Send initial value
         trySend(prefs.getString(KEY_API_KEY, "") ?: "")
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }

@@ -20,7 +20,6 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.util.Log
 import android.view.KeyEvent
-import androidx.core.app.NotificationCompat
 import com.ilseon.MainActivity
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.voicememo.VoiceMemo
@@ -33,7 +32,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
@@ -88,7 +86,7 @@ class RecordingService : Service() {
                     tryToGainFocus()
                     // Stay alive in foreground to keep MediaSession priority
                     if (mediaRecorder == null) {
-                        startForeground(NOTIFICATION_ID, createNotification("Hardware trigger active"))
+                        startForegroundWithType(createNotification("Hardware trigger active"))
                     }
                     Log.d("RecordingService", "MediaSession Active")
                 } else {
@@ -132,13 +130,27 @@ class RecordingService : Service() {
 
     private fun setupMediaSession() {
         // Use the platform MediaSession API directly (not MediaSessionCompat).
-        // MediaSessionCompat's auto-discovery creates broadcast PendingIntents that
-        // the system caches as "last known PendingIntent". These go stale on process
-        // death → CanceledException. The platform API gives us full control.
         mediaSession = MediaSession(this, "IlseonRecordingSession").apply {
-            // Explicitly clear the media button receiver — no broadcast PI will be cached.
+            // Register a *service* PendingIntent as the media button receiver.
+            // This tells the system to deliver media button events directly to
+            // onStartCommand via startForegroundService — bypassing broadcast receivers
+            // entirely. Service PIs don't go stale like broadcast PIs.
+            val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+                setClass(this@RecordingService, RecordingService::class.java)
+            }
+            val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(
+                    this@RecordingService, 0, mediaButtonIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                )
+            } else {
+                PendingIntent.getService(
+                    this@RecordingService, 0, mediaButtonIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            }
             @Suppress("DEPRECATION")
-            setMediaButtonReceiver(null)
+            setMediaButtonReceiver(pi)
 
             @Suppress("DEPRECATION")
             setFlags(
@@ -168,13 +180,16 @@ class RecordingService : Service() {
                 }
             })
 
+            // STATE_PLAYING is required on Android 14+ for the system to route media
+            // button events to this session. With STATE_PAUSED, the system ignores
+            // the session and falls through to the stale cached broadcast PendingIntent.
             val stateBuilder = PlaybackState.Builder()
                 .setActions(
                     PlaybackState.ACTION_PLAY or
                             PlaybackState.ACTION_PAUSE or
                             PlaybackState.ACTION_PLAY_PAUSE
                 )
-                .setState(PlaybackState.STATE_PAUSED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
             setPlaybackState(stateBuilder.build())
 
             // Activate immediately so the session claims media button events right away.
@@ -209,42 +224,42 @@ class RecordingService : Service() {
     }
 
     fun startRecording() {
+        Log.d("RecordingService", "startRecording: mediaRecorder=${mediaRecorder != null}")
         if (mediaRecorder != null) return
 
-        val outputFile = createOutputFile() ?: return
+        val outputFile = createOutputFile()
+        if (outputFile == null) {
+            Log.e("RecordingService", "startRecording: createOutputFile returned null")
+            return
+        }
         activeOutputFile = outputFile
 
         mediaRecorder = createMediaRecorder(outputFile).apply {
             try {
                 prepare()
                 start()
+                Log.d("RecordingService", "startRecording: recording started to ${outputFile.absolutePath}")
                 startTime = System.currentTimeMillis()
                 totalPausedMillis = 0
                 
                 updatePlaybackState(true)
-
-                val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                } else {
-                    0
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(NOTIFICATION_ID, createNotification("Capturing thought..."), type)
-                } else {
-                    startForeground(NOTIFICATION_ID, createNotification("Capturing thought..."))
-                }
-            } catch (e: IOException) {
+                startForegroundWithType(createNotification("Capturing thought..."))
+            } catch (e: Exception) {
+                Log.e("RecordingService", "startRecording: failed", e)
                 cancelRecording()
             }
         }
     }
 
     private fun updatePlaybackState(isRecording: Boolean) {
-        val state = if (isRecording) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
+        // Always use STATE_PLAYING to keep this session as the system's "media button session".
+        // On Android 14+, only sessions with STATE_PLAYING receive media button events.
+        // We use different speeds to distinguish: 1f = idle/ready, 0f = recording.
+        val speed = if (isRecording) 0f else 1f
         mediaSession?.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE)
-                .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
                 .build()
         )
     }
@@ -276,7 +291,7 @@ class RecordingService : Service() {
         
         serviceScope.launch {
             if (settingsRepository.mediaButtonTriggerEnabled.first()) {
-                startForeground(NOTIFICATION_ID, createNotification("Hardware trigger active"))
+                startForegroundWithType(createNotification("Hardware trigger active"))
             } else {
                 stopForeground(STOP_FOREGROUND_REMOVE)
             }
@@ -334,23 +349,35 @@ class RecordingService : Service() {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Ilseon Invisible Capture")
-            .setContentText(contentText)
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setOngoing(true)
-            .setContentIntent(pendingIntent)
-            .apply {
-                mediaSession?.sessionToken?.let { token ->
-                    setStyle(
-                        androidx.media.app.NotificationCompat.MediaStyle()
-                            .setMediaSession(
-                                android.support.v4.media.session.MediaSessionCompat.Token.fromToken(token)
-                            )
-                    )
+        // On Android 16+, the system only routes media buttons to sessions that have
+        // a notification with MediaStyle. Without MediaStyle, the session is invisible
+        // to the media button dispatch logic. Use platform Notification.Builder + MediaStyle
+        // (NOT the compat version, which creates a MediaSessionCompat that registers
+        // stale broadcast PendingIntents).
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle("Ilseon Invisible Capture")
+                .setContentText(contentText)
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
+                .apply {
+                    mediaSession?.sessionToken?.let { token ->
+                        setStyle(Notification.MediaStyle().setMediaSession(token))
+                    }
                 }
-            }
-            .build()
+                .build()
+        } else {
+            // Pre-O: no notification channels, use compat builder without MediaStyle
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+                .setContentTitle("Ilseon Invisible Capture")
+                .setContentText(contentText)
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
+                .build()
+        }
     }
 
     override fun onDestroy() {
@@ -368,15 +395,26 @@ class RecordingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("RecordingService", "onStartCommand: action=${intent?.action}")
+
+        // ALWAYS call startForeground immediately — required within 5 seconds of
+        // startForegroundService(). Must be synchronous, NOT in a coroutine.
+        try {
+            startForegroundWithType(createNotification("Hardware trigger active"))
+        } catch (e: Exception) {
+            Log.e("RecordingService", "startForeground failed in onStartCommand", e)
+        }
+
         if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
-            // Ensure foreground state when started via startForegroundService()
-            if (mediaRecorder == null) {
-                startForeground(NOTIFICATION_ID, createNotification("Hardware trigger active"))
+            // Only handle if the trigger is enabled — otherwise let other apps handle it
+            val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("media_button_trigger_enabled", false)) {
+                Log.d("RecordingService", "Media button trigger disabled, ignoring")
+                return START_STICKY
             }
 
-            // Extract the KeyEvent directly and dispatch to the session callback,
-            // or handle it ourselves as a fallback
             val keyEvent = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+            Log.d("RecordingService", "KeyEvent: keyCode=${keyEvent?.keyCode}, action=${keyEvent?.action}")
             if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
                 when (keyEvent.keyCode) {
                     KeyEvent.KEYCODE_MEDIA_PLAY,
@@ -386,6 +424,14 @@ class RecordingService : Service() {
             }
         }
         return START_STICKY
+    }
+
+    private fun startForegroundWithType(notification: Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     companion object {

@@ -8,8 +8,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.ilseon.data.task.SchedulingType
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TimerState
+import com.ilseon.service.RecordingService
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -18,9 +24,33 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
 
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == "com.ilseon.REMINDER_NOTIFICATION") {
-            handleNotification(context, intent)
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED -> handleBootCompleted(context)
+            "com.ilseon.REMINDER_NOTIFICATION" -> handleNotification(context, intent)
+        }
+    }
+
+    private fun handleBootCompleted(context: Context) {
+        // Start RecordingService on boot if media button trigger is enabled
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val enabled = settingsRepository.mediaButtonTriggerEnabled.first()
+                if (enabled) {
+                    val serviceIntent = Intent(context, RecordingService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                }
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

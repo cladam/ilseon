@@ -1,5 +1,8 @@
 package com.ilseon
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +15,9 @@ import com.ilseon.data.task.ReflectionExporter
 import com.ilseon.data.task.ReflectionImporter
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
+import com.ilseon.service.RecordingService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -22,6 +27,7 @@ import kotlin.onFailure
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val taskRepository: TaskRepository,
     private val reflectionExporter: ReflectionExporter,
@@ -84,6 +90,17 @@ class SettingsViewModel @Inject constructor(
     fun setMediaButtonTriggerEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setMediaButtonTriggerEnabled(enabled)
+        }
+        // Start/stop the RecordingService so the MediaSession is alive to receive events
+        val serviceIntent = Intent(context, RecordingService::class.java)
+        if (enabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } else {
+            context.stopService(serviceIntent)
         }
     }
 

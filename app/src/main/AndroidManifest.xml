@@ -17,7 +17,6 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
@@ -80,9 +79,13 @@
         <receiver
             android:name=".notifications.ReminderBroadcastReceiver"
             android:enabled="true"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.ilseon.REMINDER_NOTIFICATION" />
+                <action android:name="com.ilseon.REMINDER_HAPTIC" />
             </intent-filter>
         </receiver>
 
@@ -106,8 +109,29 @@
             android:name=".service.RecordingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
 
+        <!-- Both receivers must remain: the system persists the last known media button
+             receiver ComponentName across reboots. Different builds registered different
+             receivers, so we keep both to ensure delivery regardless of which one the
+             system has cached. Both forward to RecordingService. -->
+        <receiver android:name=".service.MediaButtonBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

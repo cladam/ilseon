@@ -63,6 +63,14 @@ class RecordingService : Service() {
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         Log.d("RecordingService", "AudioFocus change: $focusChange")
+        // If we lose focus, we might want to try to regain it if the trigger is still enabled
+        if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            serviceScope.launch {
+                if (settingsRepository.mediaButtonTriggerEnabled.first()) {
+                    // Optionally attempt to regain focus here if appropriate
+                }
+            }
+        }
     }
 
     inner class LocalBinder : Binder() {
@@ -107,7 +115,9 @@ class RecordingService : Service() {
                 .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build()
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            // Use AUDIOFOCUS_GAIN_TRANSIENT (without MAY_DUCK) to pause other media apps
+            // like Spotify, ensuring this session takes priority for media buttons.
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(playbackAttributes)
                 .setAcceptsDelayedFocusGain(true)
                 .setOnAudioFocusChangeListener(audioFocusChangeListener)
@@ -132,9 +142,6 @@ class RecordingService : Service() {
         // Use the platform MediaSession API directly (not MediaSessionCompat).
         mediaSession = MediaSession(this, "IlseonRecordingSession").apply {
             // Register a *service* PendingIntent as the media button receiver.
-            // This tells the system to deliver media button events directly to
-            // onStartCommand via startForegroundService — bypassing broadcast receivers
-            // entirely. Service PIs don't go stale like broadcast PIs.
             val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
                 setClass(this@RecordingService, RecordingService::class.java)
             }
@@ -181,8 +188,7 @@ class RecordingService : Service() {
             })
 
             // STATE_PLAYING is required on Android 14+ for the system to route media
-            // button events to this session. With STATE_PAUSED, the system ignores
-            // the session and falls through to the stale cached broadcast PendingIntent.
+            // button events to this session.
             val stateBuilder = PlaybackState.Builder()
                 .setActions(
                     PlaybackState.ACTION_PLAY or
@@ -192,8 +198,6 @@ class RecordingService : Service() {
                 .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
             setPlaybackState(stateBuilder.build())
 
-            // Activate immediately so the session claims media button events right away.
-            // The collectLatest flow below will deactivate if the setting is disabled.
             isActive = true
         }
     }
@@ -253,8 +257,6 @@ class RecordingService : Service() {
 
     private fun updatePlaybackState(isRecording: Boolean) {
         // Always use STATE_PLAYING to keep this session as the system's "media button session".
-        // On Android 14+, only sessions with STATE_PLAYING receive media button events.
-        // We use different speeds to distinguish: 1f = idle/ready, 0f = recording.
         val speed = if (isRecording) 0f else 1f
         mediaSession?.setPlaybackState(
             PlaybackState.Builder()
@@ -349,11 +351,6 @@ class RecordingService : Service() {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        // On Android 16+, the system only routes media buttons to sessions that have
-        // a notification with MediaStyle. Without MediaStyle, the session is invisible
-        // to the media button dispatch logic. Use platform Notification.Builder + MediaStyle
-        // (NOT the compat version, which creates a MediaSessionCompat that registers
-        // stale broadcast PendingIntents).
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle("Ilseon Invisible Capture")
@@ -368,7 +365,6 @@ class RecordingService : Service() {
                 }
                 .build()
         } else {
-            // Pre-O: no notification channels, use compat builder without MediaStyle
             @Suppress("DEPRECATION")
             Notification.Builder(this)
                 .setContentTitle("Ilseon Invisible Capture")
@@ -397,8 +393,6 @@ class RecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("RecordingService", "onStartCommand: action=${intent?.action}")
 
-        // ALWAYS call startForeground immediately — required within 5 seconds of
-        // startForegroundService(). Must be synchronous, NOT in a coroutine.
         try {
             startForegroundWithType(createNotification("Hardware trigger active"))
         } catch (e: Exception) {
@@ -406,7 +400,6 @@ class RecordingService : Service() {
         }
 
         if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
-            // Only handle if the trigger is enabled — otherwise let other apps handle it
             val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
             if (!prefs.getBoolean("media_button_trigger_enabled", false)) {
                 Log.d("RecordingService", "Media button trigger disabled, ignoring")

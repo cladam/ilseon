@@ -110,7 +110,7 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="microphone">
-            <intent-filter>
+            <intent-filter android:priority="2147483647">
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
@@ -121,14 +121,14 @@
              system has cached. Both forward to RecordingService. -->
         <receiver android:name=".service.MediaButtonBroadcastReceiver"
             android:exported="true">
-            <intent-filter>
+            <intent-filter android:priority="2147483647">
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
 
         <receiver android:name="androidx.media.session.MediaButtonReceiver"
             android:exported="true">
-            <intent-filter>
+            <intent-filter android:priority="2147483647">
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>

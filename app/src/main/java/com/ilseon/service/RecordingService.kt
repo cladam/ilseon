@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaMetadata
@@ -24,6 +25,7 @@ import android.service.media.MediaBrowserService
 import android.util.Log
 import android.view.KeyEvent
 import com.ilseon.MainActivity
+import com.ilseon.data.bluetooth.BluetoothChecker
 import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.voicememo.VoiceMemo
 import com.ilseon.data.voicememo.VoiceMemoRepository
@@ -51,6 +53,9 @@ class RecordingService : MediaBrowserService() {
     @Inject
     lateinit var hapticManager: HapticManager
 
+    @Inject
+    lateinit var bluetoothChecker: BluetoothChecker
+
     private var mediaRecorder: MediaRecorder? = null
     private var activeOutputFile: File? = null
     private var startTime: Long = 0
@@ -60,6 +65,8 @@ class RecordingService : MediaBrowserService() {
     private var mediaSession: MediaSession? = null
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
+
+    private var isScoStarted = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -276,6 +283,8 @@ class RecordingService : MediaBrowserService() {
         // Request audio focus only when actually recording
         requestRecordingFocus()
 
+        startBluetoothRouting()
+
         mediaRecorder = createMediaRecorder(outputFile).apply {
             try {
                 prepare()
@@ -310,6 +319,7 @@ class RecordingService : MediaBrowserService() {
             release()
         }
         mediaRecorder = null
+        stopBluetoothRouting()
         abandonFocus() // Release audio focus so other apps can play
         updatePlaybackState(false)
         
@@ -332,6 +342,7 @@ class RecordingService : MediaBrowserService() {
             release()
         }
         mediaRecorder = null
+        stopBluetoothRouting()
         abandonFocus() // Release audio focus so other apps can play
         updatePlaybackState(false)
         activeOutputFile?.delete()
@@ -360,14 +371,51 @@ class RecordingService : MediaBrowserService() {
     }
 
     private fun createMediaRecorder(file: File): MediaRecorder {
+        val hasHeadset = bluetoothChecker.isHeadsetConnected()
         return (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this)
         else @Suppress("DEPRECATION") MediaRecorder()).apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
+            // Using VOICE_COMMUNICATION source is generally better for Bluetooth SCO routing
+            setAudioSource(if (hasHeadset) MediaRecorder.AudioSource.VOICE_COMMUNICATION else MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)
             setAudioEncodingBitRate(128_000)
             setAudioSamplingRate(44_100)
             setOutputFile(file.absolutePath)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasHeadset) {
+                getBluetoothAudioDevice()?.let { device ->
+                    Log.d("RecordingService", "Setting preferred device: ${device.productName}")
+                    setPreferredDevice(device)
+                }
+            }
+        }
+    }
+
+    private fun startBluetoothRouting() {
+        if (bluetoothChecker.isHeadsetConnected()) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                Log.d("RecordingService", "Starting Bluetooth SCO for legacy API")
+                audioManager.startBluetoothSco()
+                audioManager.isBluetoothScoOn = true
+                isScoStarted = true
+            }
+        }
+    }
+
+    private fun stopBluetoothRouting() {
+        if (isScoStarted) {
+            Log.d("RecordingService", "Stopping Bluetooth SCO")
+            audioManager.stopBluetoothSco()
+            audioManager.isBluetoothScoOn = false
+            isScoStarted = false
+        }
+    }
+
+    private fun getBluetoothAudioDevice(): AudioDeviceInfo? {
+        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+        return devices.find {
+            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && it.type == AudioDeviceInfo.TYPE_BLE_HEADSET)
         }
     }
 
@@ -405,6 +453,7 @@ class RecordingService : MediaBrowserService() {
     override fun onDestroy() {
         mediaSession?.release()
         mediaSession = null
+        stopBluetoothRouting()
         abandonFocus()
         super.onDestroy()
     }

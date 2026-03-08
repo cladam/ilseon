@@ -17,6 +17,22 @@ branch_types:
   release: release_
 automatic_tags:
   release_prefix: v
+radar:
+  enabled: true          # Off by default, opt-in
+  level: file            # file | line
+  on_sync: true          # Show warnings during tbdflow sync
+  on_commit: off         # off | warn | confirm
+  ignore_patterns:
+    - "*.lock"
+    - "*-lock.*"
+    - "CHANGELOG.md"
+review:
+  enabled: true
+  strategy: github-issue
+  default_reviewers:
+    - cladam
+ci_check:
+  enabled: true   # default: false
 lint:
   conventional_commit_type:
     enabled: true

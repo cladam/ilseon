@@ -108,18 +108,17 @@
         <service
             android:name=".service.RecordingService"
             android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="microphone">
+            android:exported="true"
+            android:foregroundServiceType="microphone"
+            tools:ignore="ExportedService">
             <intent-filter android:priority="2147483647">
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
         </service>
 
-        <!-- Both receivers must remain: the system persists the last known media button
-             receiver ComponentName across reboots. Different builds registered different
-             receivers, so we keep both to ensure delivery regardless of which one the
-             system has cached. Both forward to RecordingService. -->
-        <!-- android:priority="2147483647" (the maximum integer value) tells the Android system that ilseon's manifest-registered receivers should be considered first if no other app is currently "owning" the media controls. -->
         <receiver android:name=".service.MediaButtonBroadcastReceiver"
             android:exported="true">
             <intent-filter android:priority="2147483647">

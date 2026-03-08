@@ -168,6 +168,8 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.e("MainActivity", "Failed to publish shortcuts", e)
             }
+            // Automatically re-assert media priority when app is opened
+            settingsViewModel.refreshMediaPriority()
         }
 
         setContent {
@@ -827,6 +829,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intentState.value = intent
+        // Refresh priority when returning to the app
+        settingsViewModel.refreshMediaPriority()
     }
 
     private fun publishShortcuts(context: Context) {

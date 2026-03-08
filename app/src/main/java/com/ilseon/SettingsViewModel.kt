@@ -87,11 +87,30 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Pings the RecordingService to re-assert its MediaSession and AudioFocus priority.
+     * This helps "win" priority back from aggressive apps like Spotify without
+     * requiring a full toggle of the setting.
+     */
+    fun refreshMediaPriority() {
+        viewModelScope.launch {
+            if (settingsRepository.mediaButtonTriggerEnabled.first()) {
+                val serviceIntent = Intent(context, RecordingService::class.java).apply {
+                    action = "REFRESH_PRIORITY"
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+            }
+        }
+    }
+
     fun setMediaButtonTriggerEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setMediaButtonTriggerEnabled(enabled)
         }
-        // Start/stop the RecordingService so the MediaSession is alive to receive events
         val serviceIntent = Intent(context, RecordingService::class.java)
         if (enabled) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

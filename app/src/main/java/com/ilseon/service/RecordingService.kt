@@ -4,20 +4,23 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.MediaMetadata
 import android.media.MediaRecorder
+import android.media.browse.MediaBrowser
 import android.os.Binder
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.os.IBinder
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.service.media.MediaBrowserService
 import android.util.Log
 import android.view.KeyEvent
 import com.ilseon.MainActivity
@@ -28,6 +31,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -36,7 +40,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class RecordingService : Service() {
+class RecordingService : MediaBrowserService() {
 
     @Inject
     lateinit var voiceMemoRepository: VoiceMemoRepository
@@ -63,11 +67,14 @@ class RecordingService : Service() {
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         Log.d("RecordingService", "AudioFocus change: $focusChange")
-        // If we lose focus, we might want to try to regain it if the trigger is still enabled
         if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            // Another app (e.g. Spotify) took audio focus — that's fine, let them play.
+            // But re-assert our MediaSession to stay on top for media button routing.
+            // We do NOT reclaim audio focus here.
             serviceScope.launch {
-                if (settingsRepository.mediaButtonTriggerEnabled.first()) {
-                    // Optionally attempt to regain focus here if appropriate
+                delay(2000) // Wait for the other app to fully settle
+                if (settingsRepository.mediaButtonTriggerEnabled.first() && mediaRecorder == null) {
+                    reassertPriority()
                 }
             }
         }
@@ -77,30 +84,37 @@ class RecordingService : Service() {
         fun getService(): RecordingService = this@RecordingService
     }
 
-    override fun onBind(intent: Intent): IBinder = binder
+    override fun onBind(intent: Intent): IBinder? {
+        if (SERVICE_INTERFACE == intent.action) {
+            return super.onBind(intent)
+        }
+        return binder
+    }
+
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+        // Return a dummy root so the system sees us as a valid media player
+        return BrowserRoot("root", null)
+    }
+
+    override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowser.MediaItem>>) {
+        // No media content to browse
+        result.sendResult(mutableListOf())
+    }
 
     override fun onCreate() {
         super.onCreate()
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         createNotificationChannel()
         
-        // Initialize MediaSession synchronously to ensure it's ready for onStartCommand
         setupMediaSession()
 
         serviceScope.launch {
             settingsRepository.mediaButtonTriggerEnabled.collectLatest { enabled ->
                 if (enabled) {
-                    mediaSession?.isActive = true
-                    tryToGainFocus()
-                    // Stay alive in foreground to keep MediaSession priority
-                    if (mediaRecorder == null) {
-                        startForegroundWithType(createNotification("Hardware trigger active"))
-                    }
-                    Log.d("RecordingService", "MediaSession Active")
+                    reassertPriority()
                 } else {
                     mediaSession?.isActive = false
                     abandonFocus()
-                    Log.d("RecordingService", "MediaSession Inactive")
                     if (mediaRecorder == null) {
                         stopForeground(STOP_FOREGROUND_REMOVE)
                     }
@@ -109,15 +123,45 @@ class RecordingService : Service() {
         }
     }
 
-    private fun tryToGainFocus() {
+    private fun reassertPriority() {
+        val session = mediaSession ?: return
+        serviceScope.launch {
+            Log.d("RecordingService", "Cycling MediaSession priority")
+            session.isActive = false
+            delay(150)
+            session.isActive = true
+
+            val metadata = MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, "Ilseon Invisible Capture")
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, "Hardware Trigger Active")
+                .build()
+            session.setMetadata(metadata)
+
+            val speed = if (mediaRecorder != null) 0f else 1f
+            val stateBuilder = PlaybackState.Builder()
+                .setActions(
+                    PlaybackState.ACTION_PLAY or 
+                    PlaybackState.ACTION_PAUSE or 
+                    PlaybackState.ACTION_PLAY_PAUSE or
+                    PlaybackState.ACTION_STOP
+                )
+                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
+            session.setPlaybackState(stateBuilder.build())
+            
+            if (mediaRecorder == null) {
+                startForegroundWithType(createNotification("Hardware trigger active"))
+            }
+        }
+    }
+
+    private fun requestRecordingFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val playbackAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
-            // Use AUDIOFOCUS_GAIN_TRANSIENT (without MAY_DUCK) to pause other media apps
-            // like Spotify, ensuring this session takes priority for media buttons.
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                 .setAudioAttributes(playbackAttributes)
                 .setAcceptsDelayedFocusGain(true)
                 .setOnAudioFocusChangeListener(audioFocusChangeListener)
@@ -125,7 +169,7 @@ class RecordingService : Service() {
             audioFocusRequest?.let { audioManager.requestAudioFocus(it) }
         } else {
             @Suppress("DEPRECATION")
-            audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         }
     }
 
@@ -139,45 +183,53 @@ class RecordingService : Service() {
     }
 
     private fun setupMediaSession() {
-        // Use the platform MediaSession API directly (not MediaSessionCompat).
         mediaSession = MediaSession(this, "IlseonRecordingSession").apply {
-            // Register a *service* PendingIntent as the media button receiver.
             val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
                 setClass(this@RecordingService, RecordingService::class.java)
             }
-            val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                PendingIntent.getForegroundService(
-                    this@RecordingService, 0, mediaButtonIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                )
+            val piFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             } else {
-                PendingIntent.getService(
-                    this@RecordingService, 0, mediaButtonIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                )
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            
+            val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(this@RecordingService, 0, mediaButtonIntent, piFlags)
+            } else {
+                @Suppress("DEPRECATION")
+                PendingIntent.getService(this@RecordingService, 0, mediaButtonIntent, piFlags)
             }
             @Suppress("DEPRECATION")
             setMediaButtonReceiver(pi)
 
+            val playbackAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                setPlaybackToLocal(playbackAttributes)
+            }
+
             @Suppress("DEPRECATION")
-            setFlags(
-                MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
-                        MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
-            )
+            setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
+            
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() {
-                    handleMediaButtonClick()
-                }
-                override fun onPause() {
-                    handleMediaButtonClick()
-                }
+                override fun onPlay() { handleMediaButtonClick() }
+                override fun onPause() { handleMediaButtonClick() }
                 override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
-                    val keyEvent = mediaButtonIntent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+                    val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                    }
                     if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
                         when (keyEvent.keyCode) {
                             KeyEvent.KEYCODE_MEDIA_PLAY,
                             KeyEvent.KEYCODE_MEDIA_PAUSE,
-                            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                            KeyEvent.KEYCODE_HEADSETHOOK -> {
                                 handleMediaButtonClick()
                                 return true
                             }
@@ -186,22 +238,11 @@ class RecordingService : Service() {
                     return super.onMediaButtonEvent(mediaButtonIntent)
                 }
             })
-
-            // STATE_PLAYING is required on Android 14+ for the system to route media
-            // button events to this session.
-            val stateBuilder = PlaybackState.Builder()
-                .setActions(
-                    PlaybackState.ACTION_PLAY or
-                            PlaybackState.ACTION_PAUSE or
-                            PlaybackState.ACTION_PLAY_PAUSE
-                )
-                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
-            setPlaybackState(stateBuilder.build())
-
             isActive = true
         }
+        // Set the MediaBrowserService session token so the system binds media controls to our session
+        mediaSession?.sessionToken?.let { setSessionToken(it) }
     }
-
 
     private fun handleMediaButtonClick() {
         if (mediaRecorder == null) {
@@ -228,24 +269,19 @@ class RecordingService : Service() {
     }
 
     fun startRecording() {
-        Log.d("RecordingService", "startRecording: mediaRecorder=${mediaRecorder != null}")
         if (mediaRecorder != null) return
-
-        val outputFile = createOutputFile()
-        if (outputFile == null) {
-            Log.e("RecordingService", "startRecording: createOutputFile returned null")
-            return
-        }
+        val outputFile = createOutputFile() ?: return
         activeOutputFile = outputFile
+
+        // Request audio focus only when actually recording
+        requestRecordingFocus()
 
         mediaRecorder = createMediaRecorder(outputFile).apply {
             try {
                 prepare()
                 start()
-                Log.d("RecordingService", "startRecording: recording started to ${outputFile.absolutePath}")
                 startTime = System.currentTimeMillis()
                 totalPausedMillis = 0
-                
                 updatePlaybackState(true)
                 startForegroundWithType(createNotification("Capturing thought..."))
             } catch (e: Exception) {
@@ -253,17 +289,6 @@ class RecordingService : Service() {
                 cancelRecording()
             }
         }
-    }
-
-    private fun updatePlaybackState(isRecording: Boolean) {
-        // Always use STATE_PLAYING to keep this session as the system's "media button session".
-        val speed = if (isRecording) 0f else 1f
-        mediaSession?.setPlaybackState(
-            PlaybackState.Builder()
-                .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE)
-                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
-                .build()
-        )
     }
 
     fun pauseRecording() {
@@ -281,14 +306,11 @@ class RecordingService : Service() {
     fun stopRecording(): RecordingResult? {
         val duration = ((System.currentTimeMillis() - startTime - totalPausedMillis) / 1000).toInt()
         mediaRecorder?.apply {
-            try {
-                stop()
-            } catch (e: IllegalStateException) {
-                e.printStackTrace()
-            }
+            try { stop() } catch (e: Exception) { Log.e("RecordingService", "Stop failed", e) }
             release()
         }
         mediaRecorder = null
+        abandonFocus() // Release audio focus so other apps can play
         updatePlaybackState(false)
         
         serviceScope.launch {
@@ -301,25 +323,29 @@ class RecordingService : Service() {
 
         val resultFile = activeOutputFile ?: return null
         activeOutputFile = null
-        return RecordingResult(
-            filePath = resultFile.absolutePath,
-            durationSeconds = duration
-        )
+        return RecordingResult(filePath = resultFile.absolutePath, durationSeconds = duration)
     }
 
     fun cancelRecording() {
         mediaRecorder?.apply {
-            try {
-                stop()
-            } catch (e: IllegalStateException) {
-                e.printStackTrace()
-            }
+            try { stop() } catch (e: Exception) { Log.e("RecordingService", "Stop failed", e) }
             release()
         }
         mediaRecorder = null
+        abandonFocus() // Release audio focus so other apps can play
         updatePlaybackState(false)
         activeOutputFile?.delete()
         activeOutputFile = null
+    }
+
+    private fun updatePlaybackState(isRecording: Boolean) {
+        val speed = if (isRecording) 0f else 1f
+        mediaSession?.setPlaybackState(
+            PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE)
+                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
+                .build()
+        )
     }
 
     private fun createOutputFile(): File? {
@@ -330,9 +356,7 @@ class RecordingService : Service() {
             if (!dir.exists()) dir.mkdirs()
             dir
         }
-
-        if (outputDir == null) return null
-        return File(outputDir, "voice_memo_${UUID.randomUUID()}.m4a")
+        return if (outputDir == null) null else File(outputDir, "voice_memo_${UUID.randomUUID()}.m4a")
     }
 
     private fun createMediaRecorder(file: File): MediaRecorder {
@@ -360,7 +384,9 @@ class RecordingService : Service() {
                 .setContentIntent(pendingIntent)
                 .apply {
                     mediaSession?.sessionToken?.let { token ->
-                        setStyle(Notification.MediaStyle().setMediaSession(token))
+                        val style = Notification.MediaStyle()
+                            .setMediaSession(token)
+                        setStyle(style)
                     }
                 }
                 .build()
@@ -391,28 +417,36 @@ class RecordingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("RecordingService", "onStartCommand: action=${intent?.action}")
+        if (intent == null || intent.action == null || intent.action == "REFRESH_PRIORITY") {
+            serviceScope.launch {
+                if (settingsRepository.mediaButtonTriggerEnabled.first()) {
+                    reassertPriority()
+                }
+            }
+        }
 
         try {
             startForegroundWithType(createNotification("Hardware trigger active"))
-        } catch (e: Exception) {
-            Log.e("RecordingService", "startForeground failed in onStartCommand", e)
-        }
+        } catch (e: Exception) { Log.e("RecordingService", "Start foreground failed", e) }
 
         if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
             val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
             if (!prefs.getBoolean("media_button_trigger_enabled", false)) {
-                Log.d("RecordingService", "Media button trigger disabled, ignoring")
                 return START_STICKY
             }
 
-            val keyEvent = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-            Log.d("RecordingService", "KeyEvent: keyCode=${keyEvent?.keyCode}, action=${keyEvent?.action}")
+            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            }
             if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
                 when (keyEvent.keyCode) {
                     KeyEvent.KEYCODE_MEDIA_PLAY,
                     KeyEvent.KEYCODE_MEDIA_PAUSE,
-                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> handleMediaButtonClick()
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                    KeyEvent.KEYCODE_HEADSETHOOK -> handleMediaButtonClick()
                 }
             }
         }
@@ -420,7 +454,7 @@ class RecordingService : Service() {
     }
 
     private fun startForegroundWithType(notification: Notification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         } else {
             startForeground(NOTIFICATION_ID, notification)

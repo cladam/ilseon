@@ -283,6 +283,10 @@ class RecordingService : MediaBrowserService() {
         // Request audio focus only when actually recording
         requestRecordingFocus()
 
+        // Start Bluetooth SCO routing if a headset is connected.
+        // We don't wait for SCO to fully connect — we start recording immediately.
+        // The system will route audio through the BT mic as soon as SCO is ready.
+        // At worst, the very first ~200-500ms may come from the phone mic.
         startBluetoothRouting()
 
         mediaRecorder = createMediaRecorder(outputFile).apply {
@@ -291,6 +295,7 @@ class RecordingService : MediaBrowserService() {
                 start()
                 startTime = System.currentTimeMillis()
                 totalPausedMillis = 0
+                Log.d("RecordingService", "startRecording: recording started to ${outputFile.absolutePath}")
                 updatePlaybackState(true)
                 startForegroundWithType(createNotification("Capturing thought..."))
             } catch (e: Exception) {
@@ -372,10 +377,12 @@ class RecordingService : MediaBrowserService() {
 
     private fun createMediaRecorder(file: File): MediaRecorder {
         val hasHeadset = bluetoothChecker.isHeadsetConnected()
+        val audioSource = if (hasHeadset) MediaRecorder.AudioSource.VOICE_COMMUNICATION else MediaRecorder.AudioSource.MIC
+        Log.d("RecordingService", "createMediaRecorder: hasHeadset=$hasHeadset, audioSource=$audioSource, isScoStarted=$isScoStarted, scoOn=${audioManager.isBluetoothScoOn}")
         return (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this)
         else @Suppress("DEPRECATION") MediaRecorder()).apply {
             // Using VOICE_COMMUNICATION source is generally better for Bluetooth SCO routing
-            setAudioSource(if (hasHeadset) MediaRecorder.AudioSource.VOICE_COMMUNICATION else MediaRecorder.AudioSource.MIC)
+            setAudioSource(audioSource)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD)
             setAudioEncodingBitRate(128_000)
@@ -393,12 +400,11 @@ class RecordingService : MediaBrowserService() {
 
     private fun startBluetoothRouting() {
         if (bluetoothChecker.isHeadsetConnected()) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                Log.d("RecordingService", "Starting Bluetooth SCO for legacy API")
-                audioManager.startBluetoothSco()
-                audioManager.isBluetoothScoOn = true
-                isScoStarted = true
-            }
+            Log.d("RecordingService", "Starting Bluetooth SCO routing")
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            audioManager.startBluetoothSco()
+            audioManager.isBluetoothScoOn = true
+            isScoStarted = true
         }
     }
 
@@ -407,16 +413,20 @@ class RecordingService : MediaBrowserService() {
             Log.d("RecordingService", "Stopping Bluetooth SCO")
             audioManager.stopBluetoothSco()
             audioManager.isBluetoothScoOn = false
+            audioManager.mode = AudioManager.MODE_NORMAL
             isScoStarted = false
         }
     }
 
     private fun getBluetoothAudioDevice(): AudioDeviceInfo? {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
-        return devices.find {
+        Log.d("RecordingService", "Available input devices: ${devices.map { "${it.productName}(type=${it.type})" }}")
+        val btDevice = devices.find {
             it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && it.type == AudioDeviceInfo.TYPE_BLE_HEADSET)
         }
+        Log.d("RecordingService", "Bluetooth audio device: ${btDevice?.productName ?: "none"}")
+        return btDevice
     }
 
     private fun createNotification(contentText: String): Notification {

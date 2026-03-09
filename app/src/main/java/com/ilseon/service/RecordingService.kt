@@ -394,8 +394,9 @@ class RecordingService : MediaBrowserService() {
             setAudioSamplingRate(44_100)
             setOutputFile(file.absolutePath)
 
-            // On API 28+, route the mic input to the Bluetooth device directly.
-            // This does NOT require SCO or MODE_IN_COMMUNICATION.
+            // On API 28+, route the mic input to the Bluetooth device.
+            // SCO is started in startBluetoothRouting() to open the mic channel;
+            // setPreferredDevice() then steers recording to that device.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasHeadset) {
                 getBluetoothAudioDevice()?.let { device ->
                     Log.d("RecordingService", "Setting preferred device: ${device.productName} (type=${device.type})")
@@ -406,24 +407,28 @@ class RecordingService : MediaBrowserService() {
     }
 
     /**
-     * Start Bluetooth SCO routing — only needed on legacy APIs (< 28).
-     * On API 28+, setPreferredDevice() on MediaRecorder is sufficient and
-     * we must NOT touch SCO or audio mode (it breaks all audio output).
+     * Open the Bluetooth SCO mic channel so audio can flow from the headset.
+     *
+     * On API < 28:  MODE_IN_COMMUNICATION + SCO (the only way).
+     * On API >= 28:  SCO only (no mode change).  setPreferredDevice() on the
+     *                MediaRecorder steers the audio to the BT mic once SCO is up.
+     *                NOT changing mode avoids killing Spotify / other audio output.
      */
     private fun startBluetoothRouting() {
         if (!bluetoothChecker.isHeadsetConnected()) return
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            Log.d("RecordingService", "Starting Bluetooth SCO (legacy API)")
+            Log.d("RecordingService", "Starting Bluetooth SCO (legacy API, with MODE_IN_COMMUNICATION)")
             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-            @Suppress("DEPRECATION")
-            audioManager.startBluetoothSco()
-            @Suppress("DEPRECATION")
-            audioManager.isBluetoothScoOn = true
-            isScoStarted = true
         } else {
-            Log.d("RecordingService", "Bluetooth routing via setPreferredDevice (no SCO needed)")
+            Log.d("RecordingService", "Starting Bluetooth SCO (modern API, no mode change)")
         }
+
+        @Suppress("DEPRECATION")
+        audioManager.startBluetoothSco()
+        @Suppress("DEPRECATION")
+        audioManager.isBluetoothScoOn = true
+        isScoStarted = true
     }
 
     private fun stopBluetoothRouting() {
@@ -433,7 +438,9 @@ class RecordingService : MediaBrowserService() {
             audioManager.stopBluetoothSco()
             @Suppress("DEPRECATION")
             audioManager.isBluetoothScoOn = false
-            audioManager.mode = AudioManager.MODE_NORMAL
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
             isScoStarted = false
         }
     }

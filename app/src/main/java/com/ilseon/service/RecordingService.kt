@@ -67,6 +67,8 @@ class RecordingService : MediaBrowserService() {
     private var audioFocusRequest: AudioFocusRequest? = null
 
     private var isScoStarted = false
+    private var lastMediaButtonClickTime = 0L
+    private val MEDIA_BUTTON_DEBOUNCE_MS = 1500L
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -144,7 +146,11 @@ class RecordingService : MediaBrowserService() {
                 .build()
             session.setMetadata(metadata)
 
-            val speed = if (mediaRecorder != null) 0f else 1f
+            // Use STATE_PAUSED when idle so the system doesn't think we're
+            // actively playing — STATE_PLAYING triggers auto-resume / event re-dispatch.
+            val isRecording = mediaRecorder != null
+            val state = if (isRecording) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
+            val speed = if (isRecording) 1f else 0f
             val stateBuilder = PlaybackState.Builder()
                 .setActions(
                     PlaybackState.ACTION_PLAY or 
@@ -152,7 +158,7 @@ class RecordingService : MediaBrowserService() {
                     PlaybackState.ACTION_PLAY_PAUSE or
                     PlaybackState.ACTION_STOP
                 )
-                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
+                .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
             session.setPlaybackState(stateBuilder.build())
             
             if (mediaRecorder == null) {
@@ -251,6 +257,13 @@ class RecordingService : MediaBrowserService() {
     }
 
     private fun handleMediaButtonClick() {
+        val now = System.currentTimeMillis()
+        if (now - lastMediaButtonClickTime < MEDIA_BUTTON_DEBOUNCE_MS) {
+            Log.d("RecordingService", "handleMediaButtonClick: debounced (${now - lastMediaButtonClickTime}ms since last)")
+            return
+        }
+        lastMediaButtonClickTime = now
+
         if (mediaRecorder == null) {
             hapticManager.performNudge()
             startRecording()
@@ -354,11 +367,12 @@ class RecordingService : MediaBrowserService() {
     }
 
     private fun updatePlaybackState(isRecording: Boolean) {
-        val speed = if (isRecording) 0f else 1f
+        val state = if (isRecording) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
+        val speed = if (isRecording) 1f else 0f
         mediaSession?.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE)
-                .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
+                .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, speed)
                 .build()
         )
     }

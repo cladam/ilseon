@@ -15,8 +15,8 @@ android {
         applicationId = "com.ilseon"
         minSdk = 30
         targetSdk = 36
-        versionCode = 129
-        versionName = "0.41.4"
+        versionCode = 130
+        versionName = "0.42.0"
     }
 
     signingConfigs {

@@ -15,8 +15,10 @@ android {
         applicationId = "com.ilseon"
         minSdk = 30
         targetSdk = 36
-        versionCode = 130
-        versionName = "0.42.0"
+        // Offset by 1_000_000 to avoid versionCode collisions with the phone app.
+        // Phone uses 130, 131, … — Wear uses 1_000_130, 1_000_131, …
+        versionCode = 1_000_131
+        versionName = "0.42.1-wear"
     }
 
     signingConfigs {

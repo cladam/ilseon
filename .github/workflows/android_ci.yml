@@ -114,7 +114,7 @@ jobs:
         with:
           name: wear-release-${{ env.VERSION_NAME }}
           path: wear/build/outputs/bundle/release/wear-release.aab
-          retention-days: 5
+          retention-days: 30
 
       - name: Upload Phone App to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -125,12 +125,8 @@ jobs:
           track: internal
           status: draft
 
-      - name: Upload Wear App to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.ilseon
-          releaseFiles: wear/build/outputs/bundle/release/wear-release.aab
-          track: wear:internal
-          status: draft
+      # NOTE: The Wear OS AAB must be uploaded manually through Play Console.
+      # Go to: Play Console → Release → Wear OS → Internal testing → Create release
+      # Upload the wear-release AAB from the artifacts above.
+      # The r0adkll/upload-google-play action does not support Wear OS form-factor tracks.
 

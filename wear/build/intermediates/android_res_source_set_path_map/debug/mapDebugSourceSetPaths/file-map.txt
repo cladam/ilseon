@@ -1,8 +1,0 @@
-com.ilseon.wear-pngs-0 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/generated/res/pngs/debug
-com.ilseon.wear-resValues-1 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/generated/res/resValues/debug
-com.ilseon.wear-updated_navigation_xml-2 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/generated/updated_navigation_xml/debug
-com.ilseon.wear-packageDebugResources-3 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.ilseon.wear-packageDebugResources-4 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.ilseon.wear-debug-5 /Users/claes.adamsson/Offwork/code/ilseon/wear/build/intermediates/merged_res/debug/mergeDebugResources
-com.ilseon.wear-debug-6 /Users/claes.adamsson/Offwork/code/ilseon/wear/src/debug/res
-com.ilseon.wear-main-7 /Users/claes.adamsson/Offwork/code/ilseon/wear/src/main/res

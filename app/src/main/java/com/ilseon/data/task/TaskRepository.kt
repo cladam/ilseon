@@ -7,6 +7,7 @@ import com.ilseon.data.EnergyLevel
 import com.ilseon.data.userstatus.UserStatus
 import com.ilseon.data.userstatus.UserStatusRepository
 import com.ilseon.notifications.IReminderManager
+import com.ilseon.wear.WearDataSender
 import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -228,6 +229,7 @@ class TaskRepository @Inject constructor(
             }
         }
         updateWidget()
+        updateWear(newPriorityTask)
     }
 
 
@@ -472,5 +474,9 @@ class TaskRepository @Inject constructor(
             action = PriorityWidgetReceiver.UPDATE_ACTION
         }
         context.sendBroadcast(intent)
+    }
+
+    private suspend fun updateWear(task: Task?) {
+        WearDataSender.sendPriorityTask(context, task)
     }
 }

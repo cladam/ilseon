@@ -52,6 +52,19 @@
                 android:value="0" />
         </service>
 
+        <service
+            android:name=".tile.TaskDataListenerService"
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.BIND_LISTENER">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/priority-task" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

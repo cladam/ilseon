@@ -18,6 +18,7 @@ Project Specification-1.0.md
 
 # Build files
 /build
+/wear/build
 /captures
 .externalNativeBuild
 .cxx

@@ -173,6 +173,10 @@ dependencies {
     // Media for Bluetooth buttons
     implementation(libs.androidx.media)
 
+    // Wearable Data Layer (phone ↔ watch communication)
+    implementation(libs.play.services.wearable)
+    implementation(libs.kotlinx.coroutines.play.services)
+
     // ** Test Dependencies **
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)

@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,11 +12,33 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.ilseon.wear"
+        applicationId = "com.ilseon"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 129
+        versionName = "0.41.4"
+    }
+
+    signingConfigs {
+        create("release") {
+            val signingStoreFilePath = System.getenv("SIGNING_STORE_FILE_PATH")
+            if (signingStoreFilePath != null) {
+                storeFile = file(signingStoreFilePath)
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            } else {
+                val keystorePropertiesFile = rootProject.file("keystore.properties")
+                if (keystorePropertiesFile.exists()) {
+                    val keystoreProperties = Properties()
+                    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                    keyAlias = keystoreProperties["keyAlias"] as String
+                    keyPassword = keystoreProperties["keyPassword"] as String
+                    storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                    storePassword = keystoreProperties["storePassword"] as String
+                }
+            }
+        }
     }
 
     buildTypes {
@@ -21,6 +46,14 @@ android {
             ndk {
                 debugSymbolLevel = "NONE"
             }
+        }
+        getByName("release") {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

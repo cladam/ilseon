@@ -1,0 +1,147 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.ilseon.wear-mergeDebugResources-74:/values-en-rXC/values-en-rXC.xml",
+            "map": [
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/ed020a4b44cec3a7fd4a0927d9288637/transformed/foundation/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,243",
+                        "endColumns": "187,186",
+                        "endOffsets": "238,425"
+                    },
+                    "to": {
+                        "startLines": "93,94",
+                        "startColumns": "4,4",
+                        "startOffsets": "16688,16876",
+                        "endColumns": "187,186",
+                        "endOffsets": "16871,17058"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/6a3c0cb7284264beb1aefaeab1342e8c/transformed/wear-1.3.0/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "55,267,493,707,919",
+                        "endColumns": "211,225,213,211,215",
+                        "endOffsets": "262,488,702,914,1130"
+                    },
+                    "to": {
+                        "startLines": "65,66,67,97,98",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "11012,11224,11450,17415,17627",
+                        "endColumns": "211,225,213,211,215",
+                        "endOffsets": "11219,11445,11659,17622,17838"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/80a44edffc3e1598496d342582f414dd/transformed/material/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "190",
+                        "endOffsets": "241"
+                    },
+                    "to": {
+                        "startLines": "74",
+                        "startColumns": "4",
+                        "startOffsets": "12815",
+                        "endColumns": "190",
+                        "endOffsets": "13001"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/8d2a3f0f648dc85a9558ce819126b9ea/transformed/preference-1.1.0/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "105,292,593,775",
+                        "endColumns": "186,300,181,169",
+                        "endOffsets": "287,588,770,940"
+                    },
+                    "to": {
+                        "startLines": "71,86,95,96",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "12250,15013,17063,17245",
+                        "endColumns": "186,300,181,169",
+                        "endOffsets": "12432,15309,17240,17410"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,251,456,657,858,1065,1270,1482",
+                        "endColumns": "195,204,200,200,206,204,211,203",
+                        "endOffsets": "246,451,652,853,1060,1265,1477,1681"
+                    },
+                    "to": {
+                        "startLines": "56,57,58,59,60,61,62,85",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "9209,9405,9610,9811,10012,10219,10424,14809",
+                        "endColumns": "195,204,200,200,206,204,211,203",
+                        "endOffsets": "9400,9605,9806,10007,10214,10419,10631,15008"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/c8207088b7405688891bd16f8a4b1052/transformed/ui/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,296,481,678,880,1067,1252,1445,1633,1820,2001,2186,2352,2538,2716,2891,3062,3241,3408",
+                        "endColumns": "190,184,196,201,186,184,192,187,186,180,184,165,185,177,174,170,178,166,237",
+                        "endOffsets": "291,476,673,875,1062,1247,1440,1628,1815,1996,2181,2347,2533,2711,2886,3057,3236,3403,3641"
+                    },
+                    "to": {
+                        "startLines": "63,64,68,69,70,72,73,75,76,77,78,80,81,82,83,84,87,88,89",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "10636,10827,11664,11861,12063,12437,12622,13006,13194,13381,13562,13933,14099,14285,14463,14638,15314,15493,15660",
+                        "endColumns": "190,184,196,201,186,184,192,187,186,180,184,165,185,177,174,170,178,166,237",
+                        "endOffsets": "10822,11007,11856,12058,12245,12617,12810,13189,13376,13557,13742,14094,14280,14458,14633,14804,15488,15655,15893"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/7c9e770095ef74d6f30345804a3872d9/transformed/watchface-complications-data-1.3.0/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,6,10,14,18,22,26,27,28,29,30,31",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,600,1100,1606,2110,2617,3121,3303,3512,3786,3969,4269",
+                        "endLines": "5,9,13,17,21,25,26,27,28,29,30,31",
+                        "endColumns": "14,14,14,14,14,14,181,208,273,182,299,306",
+                        "endOffsets": "595,1095,1601,2105,2612,3116,3298,3507,3781,3964,4264,4571"
+                    },
+                    "to": {
+                        "startLines": "2,6,10,14,18,22,26,27,28,90,91,92",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,600,1100,1606,2110,2617,3121,3303,3512,15898,16081,16381",
+                        "endLines": "5,9,13,17,21,25,26,27,28,90,91,92",
+                        "endColumns": "14,14,14,14,14,14,181,208,273,182,299,306",
+                        "endOffsets": "595,1095,1601,2105,2612,3116,3298,3507,3781,16076,16376,16683"
+                    }
+                },
+                {
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/368c0fb69e96b8da14cb1bb463419856/transformed/appcompat-1.6.1/res/values-en-rXC/values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,312,515,725,912,1113,1329,1509,1684,1878,2072,2267,2464,2663,2858,3056,3253,3447,3641,3826,4031,4234,4435,4641,4846,5053,5327,5528",
+                        "endColumns": "206,202,209,186,200,215,179,174,193,193,194,196,198,194,197,196,193,193,184,204,202,200,205,204,206,273,200,185",
+                        "endOffsets": "307,510,720,907,1108,1324,1504,1679,1873,2067,2262,2459,2658,2853,3051,3248,3442,3636,3821,4026,4229,4430,4636,4841,5048,5322,5523,5709"
+                    },
+                    "to": {
+                        "startLines": "29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,79",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "3786,3993,4196,4406,4593,4794,5010,5190,5365,5559,5753,5948,6145,6344,6539,6737,6934,7128,7322,7507,7712,7915,8116,8322,8527,8734,9008,13747",
+                        "endColumns": "206,202,209,186,200,215,179,174,193,193,194,196,198,194,197,196,193,193,184,204,202,200,205,204,206,273,200,185",
+                        "endOffsets": "3988,4191,4401,4588,4789,5005,5185,5360,5554,5748,5943,6140,6339,6534,6732,6929,7123,7317,7502,7707,7910,8111,8317,8522,8729,9003,9204,13928"
+                    }
+                }
+            ]
+        }
+    ]
+}

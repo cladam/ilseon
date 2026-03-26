@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+    <plurals formatted="false" msgid="3878057769320887026" name="time_difference_short_days">
+      <item quantity="other"><ns1:g id="NUMBER_OF_DAYS_1">%d</ns1:g> к.</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_DAYS_0">%d</ns1:g> к.</item>
+    </plurals>
+    <plurals formatted="false" msgid="6016687406802669982" name="time_difference_short_hours">
+      <item quantity="other"><ns1:g id="NUMBER_OF_HOURS_1">%d</ns1:g> с.</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_HOURS_0">%d</ns1:g> с.</item>
+    </plurals>
+    <plurals formatted="false" msgid="6752732458902810711" name="time_difference_short_minutes">
+      <item quantity="other"><ns1:g id="NUMBER_OF_MINUTES_1">%d</ns1:g> мүн.</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_MINUTES_0">%d</ns1:g> мүн.</item>
+    </plurals>
+    <plurals formatted="false" msgid="5109682345086392533" name="time_difference_words_days">
+      <item quantity="other"><ns1:g id="NUMBER_OF_DAYS_1">%d</ns1:g> күн</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_DAYS_0">%d</ns1:g> күн</item>
+    </plurals>
+    <plurals formatted="false" msgid="3172220157267000186" name="time_difference_words_hours">
+      <item quantity="other"><ns1:g id="NUMBER_OF_HOURS_1">%d</ns1:g> саат</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_HOURS_0">%d</ns1:g> саат</item>
+    </plurals>
+    <plurals formatted="false" msgid="529404827937478243" name="time_difference_words_minutes">
+      <item quantity="other"><ns1:g id="NUMBER_OF_MINUTES_1">%d</ns1:g> мүн.</item>
+      <item quantity="one"><ns1:g id="NUMBER_OF_MINUTES_0">%d</ns1:g> мүн.</item>
+    </plurals>
+    <string msgid="7852919842618918232" name="a11y_no_data">"Маалымат жок"</string>
+    <string msgid="5096448958769268379" name="a11y_no_permission">"Маалыматты колдонууга уруксат жок"</string>
+    <string msgid="6767297740293592275" name="a11y_template_range">"<ns1:g id="MAX">%2$f</ns1:g> ичинен <ns1:g id="VALUE">%1$f</ns1:g>"</string>
+    <string msgid="5976598919945601918" name="abc_action_bar_home_description">"Башкы бетке чабыттоо"</string>
+    <string msgid="8388173803310557296" name="abc_action_bar_up_description">"Мурунку экранга өтүү"</string>
+    <string msgid="3937310113216875497" name="abc_action_menu_overflow_description">"Дагы параметрлер"</string>
+    <string msgid="4692188335987374352" name="abc_action_mode_done">"Бүттү"</string>
+    <string msgid="1189761859438369441" name="abc_activity_chooser_view_see_all">"Баарын көрүү"</string>
+    <string msgid="2165779757652331008" name="abc_activitychooserview_choose_application">"Колдонмо тандоо"</string>
+    <string msgid="4215997306490295099" name="abc_capital_off">"ӨЧҮК"</string>
+    <string msgid="884982626291842264" name="abc_capital_on">"КҮЙҮК"</string>
+    <string msgid="8833365367933412986" name="abc_menu_alt_shortcut_label">"Alt+"</string>
+    <string msgid="2223301931652355242" name="abc_menu_ctrl_shortcut_label">"Ctrl+"</string>
+    <string msgid="838001238306846836" name="abc_menu_delete_shortcut_label">"delete"</string>
+    <string msgid="7986526966204849475" name="abc_menu_enter_shortcut_label">"enter"</string>
+    <string msgid="375214403600139847" name="abc_menu_function_shortcut_label">"Function+"</string>
+    <string msgid="4192209724446364286" name="abc_menu_meta_shortcut_label">"Meta+"</string>
+    <string msgid="4741552369836443843" name="abc_menu_shift_shortcut_label">"Shift+"</string>
+    <string msgid="5473865519181928982" name="abc_menu_space_shortcut_label">"боштук"</string>
+    <string msgid="6180552449598693998" name="abc_menu_sym_shortcut_label">"Sym+"</string>
+    <string msgid="5520303668377388990" name="abc_prepend_shortcut_label">"Menu+"</string>
+    <string msgid="7208076849092622260" name="abc_search_hint">"Издөө…"</string>
+    <string msgid="3741173234950517107" name="abc_searchview_description_clear">"Сурамды өчүрүү"</string>
+    <string msgid="693312494995508443" name="abc_searchview_description_query">"Изделген сурам"</string>
+    <string msgid="3417662926640357176" name="abc_searchview_description_search">"Издөө"</string>
+    <string msgid="1486535517437947103" name="abc_searchview_description_submit">"Сурам тапшыруу"</string>
+    <string msgid="2293578557972875415" name="abc_searchview_description_voice">"Айтып издөө"</string>
+    <string msgid="8875138169939072951" name="abc_shareactionprovider_share_with">"Төмөнкү менен бөлүшүү"</string>
+    <string msgid="9055268688411532828" name="abc_shareactionprovider_share_with_application">"<ns1:g id="APPLICATION_NAME">%s</ns1:g> аркылуу бөлүшүү"</string>
+    <string msgid="1656852541809559762" name="abc_toolbar_collapse_description">"Жыйыштыруу"</string>
+    <string msgid="8719607706653693137" name="androidx_compose_foundation_autofill">"Автотолтуруу"</string>
+    <string msgid="1150566100598813236" name="androidx_compose_ui_autofill">"Автотолтуруу"</string>
+    <string msgid="881409763997275156" name="call_notification_answer_action">"Жооп берүү"</string>
+    <string msgid="8793775615905189152" name="call_notification_answer_video_action">"Видео"</string>
+    <string msgid="3229508546291798546" name="call_notification_decline_action">"Четке кагуу"</string>
+    <string msgid="2659457946726154263" name="call_notification_hang_up_action">"Чалууну бүтүрүү"</string>
+    <string msgid="6107532579223922871" name="call_notification_incoming_text">"Чалып жатат"</string>
+    <string msgid="8623827134497363134" name="call_notification_ongoing_text">"Учурдагы чалуу"</string>
+    <string msgid="59049573811482460" name="call_notification_screening_text">"Кирүүчү чалууну иргөө"</string>
+    <string msgid="406453423630273620" name="close_drawer">"Чабыттоо менюсун жабуу"</string>
+    <string msgid="7573152094250666567" name="close_sheet">"Баракты жабуу"</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Иштетүү</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">Google Play кызматтарын иштетмейиңизче %1$s иштебейт.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Google Play кызматтарын иштетүү</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Орнотуу</string>
+    <string name="common_google_play_services_install_text">Google Play кызматтарысыз %1$s иштебейт. Алар түзмөгүңүздө жок болуп жатат.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Google Play кызматтарын алуу</string>
+    <string name="common_google_play_services_notification_channel_name">Google Play кызматтарынын иштеши</string>
+    <string name="common_google_play_services_notification_ticker">Google Play кызматтарынын катасы</string>
+    <string name="common_google_play_services_unknown_issue">%1$s колдонмосунун Google Play кызматтары менен иштөөдө көйгөй чыкты. Кайталап көрүңүз.</string>
+    <string name="common_google_play_services_unsupported_text">%1$s колдонмосу сиздин түзмөгүңүздө колдоого алынбаган Google Play кызматтары болбосо иштебейт.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Жаңыртуу</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">Google Play кызматтары жаңыртылмайынча %1$s иштебейт.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Google Play кызматтарын жаңыртуу</string>
+    <string name="common_google_play_services_updating_text">Google Play кызматтарысыз %1$s иштебейт, алар учурда жаңыртылууда.</string>
+    <string name="common_google_play_services_wear_update_text">Google Play кызматтарынын жаңы версиясы талап кылынат. Бир аздан кийин ал өзү эле жаңырат.</string>
+    <string name="common_open_on_phone">Телефондо ачык</string>
+    <string name="common_signin_button_text">Кирүү</string>
+    <string name="common_signin_button_text_long">Google менен кирүү</string>
+    <string msgid="6412144553299494336" name="confirmation_overlay_a11y_description_fail">"Ката"</string>
+    <string msgid="8809042819843332546" name="confirmation_overlay_a11y_description_phone">"Саатыңызда ачылды"</string>
+    <string msgid="2936753235333429892" name="confirmation_overlay_a11y_description_success">"Ийгилик"</string>
+    <string msgid="3209159573327985035" name="copy">"Көчүрүү"</string>
+    <string msgid="8038256446254964252" name="default_error_message">"Киргизилген маалымат жараксыз"</string>
+    <string msgid="6312721426453364202" name="default_popup_window_title">"Калкыма терезе"</string>
+    <string msgid="1890207353314751437" name="dropdown_menu">"Түрүлмө меню"</string>
+    <string msgid="1234962710353108940" name="expand_button_title">"Өркүндөтүлгөн"</string>
+    <string msgid="6827826412747255547" name="in_progress">"Аткарылууда"</string>
+    <string msgid="7933458017204019916" name="indeterminate">"Жарым-жартылай текшерилди"</string>
+    <string msgid="8471891128988107974" name="mc2_snackbar_pane_title">"Эскертүү"</string>
+    <string msgid="542007171693138492" name="navigation_menu">"Чабыттоо менюсу"</string>
+    <string msgid="6610465462668679431" name="not_selected">"Тандалган жок"</string>
+    <string msgid="478774118347071097" name="not_set">"Коюлган эмес"</string>
+    <string msgid="7961817945132860002" name="preference_copied">"\"<ns1:g id="SUMMARY">%1$s</ns1:g>\" алмашуу буферине көчүрүлдү."</string>
+    <string msgid="5941395253238309765" name="range_end">"Диапазондун аягы"</string>
+    <string msgid="7097486360902471446" name="range_start">"Диапазондун башы"</string>
+    <string msgid="6264217191555673260" name="search_menu_title">"Издөө"</string>
+    <string msgid="6043586758067023" name="selected">"Тандалды"</string>
+    <string msgid="2792228137354697160" name="snackbar_pane_title">"Эскертүү"</string>
+    <string msgid="4139871816613051306" name="state_empty">"Бош"</string>
+    <string msgid="5834637030682409883" name="state_off">"Өчүк"</string>
+    <string msgid="1490883874751719580" name="state_on">"Күйүк"</string>
+    <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string msgid="5190123168583152844" name="summary_collapsed_preference_list">"<ns1:g id="CURRENT_ITEMS">%1$s</ns1:g>, <ns1:g id="ADDED_ITEMS">%2$s</ns1:g>"</string>
+    <string msgid="2561197295334830845" name="switch_role">"Которгуч"</string>
+    <string msgid="1672349317127674378" name="tab">"Өтмөк"</string>
+    <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> пайыз."</string>
+    <string msgid="2068359133884605223" name="time_difference_now">"Азыр"</string>
+    <string msgid="2384500200491672870" name="time_difference_short_days_and_hours">"<ns1:g id="SHORT_DAYS">%1$s</ns1:g> <ns1:g id="SHORT_HOURS">%2$s</ns1:g>"</string>
+    <string msgid="8030280938566792191" name="time_difference_short_hours_and_minutes">"<ns1:g id="SHORT_HOURS">%1$s</ns1:g> <ns1:g id="SHORT_MINUTES">%2$s</ns1:g>"</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"калкып чыгуучу кеңеш"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"калкып чыгуучу кеңешти көрсөтүү"</string>
+    <string msgid="5138405918326871307" name="v7_preference_off">"ӨЧҮК"</string>
+    <string msgid="27351710992731591" name="v7_preference_on">"КҮЙҮК"</string>
+    <string msgid="8863821639144537553" name="ws_action_drawer_content_description">"Аракет суурмасы"</string>
+    <string msgid="777117228299084604" name="ws_navigation_drawer_content_description">"Чабыттоо суурмасы"</string>
+</resources>

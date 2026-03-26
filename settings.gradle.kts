@@ -27,3 +27,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ilseon"
 include(":app")
+include(":wear")

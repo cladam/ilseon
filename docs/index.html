@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ilseon | Minimalist ADHD Task Manager</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // Setting Inter as the default sans font
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                    },
+                    colors: {
+                        teal: {
+                            brand: '#5A9B80',
+                            dark: '#487d67',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #5A9B80; border-radius: 10px; }
+        body { background-color: #0f172a; font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const IlseonLanding = () => {
+        return (
+            <div className="min-h-screen text-slate-200 selection:bg-teal-brand/30">
+
+                {/* HERO */}
+                <header className="px-6 py-20 lg:py-32 max-w-5xl mx-auto text-center">
+                    <div className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest text-teal-brand uppercase bg-teal-brand/10 rounded-full border border-teal-brand/20">
+                        The ADHD Front Line
+                    </div>
+                    <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-white mb-6">
+                        Productivity without the noise.
+                    </h1>
+                    <p className="text-lg lg:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+                        Ilseon is a minimalist task manager designed for executive dysfunction.
+                        Built to help you regain control over your attention by showing only what matters.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+                        <a href="#" className="w-full sm:w-auto px-8 py-4 bg-teal-brand hover:bg-teal-dark text-slate-900 font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-teal-brand/20">
+                            Download on Google Play
+                        </a>
+                        <a href="https://github.com/cladam/ilseon" target="_blank" className="w-full sm:w-auto px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-all border border-slate-700">
+                            View on GitHub
+                        </a>
+                    </div>
+                </header>
+
+                {/* CORE FEATURE: MOMENTUM */}
+                <section className="py-20 max-w-5xl mx-auto px-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white mb-6">Build momentum, not stress.</h2>
+                            <p className="text-slate-400 mb-8 leading-relaxed">
+                                Traditional apps punish you for missing a day. Ilseon focuses on the <strong>Front Line</strong>.
+                                By finishing just one small task, you build the momentum needed to tackle the next.
+                            </p>
+                            <ul className="space-y-4">
+                                {[
+                                    "Visual progress without the pressure.",
+                                    "Focus on the next immediate step.",
+                                    "Celebrate consistency over quantity."
+                                ].map((text, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-sm">
+                                        <div className="w-5 h-5 bg-teal-brand/20 rounded-full flex items-center justify-center border border-teal-brand/30">
+                                            <div className="w-2 h-2 bg-teal-brand rounded-full"></div>
+                                        </div>
+                                        {text}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Momentum Visualization */}
+                        <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
+                            <div className="flex gap-2 items-end h-32 mb-4">
+                                {[40, 70, 45, 90, 65, 80, 100].map((height, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex-1 bg-teal-brand/20 rounded-t-lg border-t border-x border-teal-brand/30 transition-all hover:bg-teal-brand/40"
+                                        style={{ height: `${height}%` }}
+                                    ></div>
+                                ))}
+                            </div>
+                            <div className="text-center text-xs font-bold tracking-widest text-teal-brand/60 uppercase">
+                                Your Focus Timeline
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* PROBLEM/SOLUTION */}
+                <section className="py-24 bg-slate-950/50 border-y border-slate-800/50">
+                    <div className="max-w-4xl mx-auto px-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="p-8 bg-slate-900/30 rounded-2xl border border-slate-800">
+                                <h3 className="text-slate-500 font-bold uppercase tracking-tighter text-xs mb-4">The Noise</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed">Most apps are built for "power users" with infinite executive function. They flood you with red text, reminders, and complex sub-menus.</p>
+                            </div>
+                            <div className="p-8 bg-teal-brand/5 rounded-2xl border border-teal-brand/20">
+                                <h3 className="text-teal-brand font-bold uppercase tracking-tighter text-xs mb-4">The Stillness</h3>
+                                <p className="text-sm text-slate-200 leading-relaxed">Ilseon assumes your attention is precious. We hide the clutter so you can actually do the work you planned to do.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* FOOTER */}
+                <footer className="py-16 px-6 text-center">
+                    <div className="mb-8 h-px w-24 bg-slate-800 mx-auto"></div>
+                    <p className="text-slate-500 text-sm max-w-xs mx-auto">
+                        Designed for stillness. Built for the neurodivergent mind.
+                    </p>
+                </footer>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<IlseonLanding />);
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+[
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/xml_backup_rules.xml.flat",
+        "source": "com.ilseon.wear-main-78:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-mdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-mdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/xml_data_extraction_rules.xml.flat",
+        "source": "com.ilseon.wear-main-78:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_outline_lightbulb_24.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_outline_lightbulb_24.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-hdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-hdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_focus_ring.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_focus_ring.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/font_inter_regular.ttf.flat",
+        "source": "com.ilseon.wear-main-78:/font/inter_regular.ttf"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/xml_priority_widget_info.xml.flat",
+        "source": "com.ilseon.wear-main-78:/xml/priority_widget_info.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/raw_critical_alert.mp3.flat",
+        "source": "com.ilseon.wear-main-78:/raw/critical_alert.mp3"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_splash.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_splash.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/raw_mid_block_warning.mp3.flat",
+        "source": "com.ilseon.wear-main-78:/raw/mid_block_warning.mp3"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_launcher.png.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_launcher.png"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_img.png.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/img.png"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/layout_priority_widget_layout.xml.flat",
+        "source": "com.ilseon.wear-main-78:/layout/priority_widget_layout.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/font_inter_bold.ttf.flat",
+        "source": "com.ilseon.wear-main-78:/font/inter_bold.ttf"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xxxhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xxxhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_outline_mic_24.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_outline_mic_24.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/xml_shortcuts.xml.flat",
+        "source": "com.ilseon.wear-main-78:/xml/shortcuts.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/drawable_ic_outline_add_task_24.xml.flat",
+        "source": "com.ilseon.wear-main-78:/drawable/ic_outline_add_task_24.xml"
+    },
+    {
+        "merged": "com.ilseon.wear-debug-76:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.ilseon.wear-main-78:/mipmap-xhdpi/ic_launcher.webp"
+    }
+]

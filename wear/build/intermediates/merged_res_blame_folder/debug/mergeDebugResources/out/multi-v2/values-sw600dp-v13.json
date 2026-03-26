@@ -4,7 +4,7 @@
             "outputFile": "com.ilseon.wear-mergeDebugResources-74:/values-sw600dp-v13/values-sw600dp-v13.xml",
             "map": [
                 {
-                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/368c0fb69e96b8da14cb1bb463419856/transformed/appcompat-1.6.1/res/values-sw600dp-v13/values-sw600dp-v13.xml",
+                    "source": "/Users/claes.adamsson/.gradle/caches/9.3.1/transforms/75f77552194b48e543568bbbdd3dc685/transformed/appcompat-1.6.1/res/values-sw600dp-v13/values-sw600dp-v13.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

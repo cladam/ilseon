@@ -20,32 +20,32 @@
 13-->/Users/claes.adamsson/Offwork/code/ilseon/wear/src/main/AndroidManifest.xml:5:22-63
 14
 15    <queries>
-15-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f399b77035d2c2d087dc813e28d1e334/transformed/tiles-1.6.0/AndroidManifest.xml:7:5-11:15
+15-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/407ff865ae64c0932e0e9b36360d44a6/transformed/tiles-1.6.0/AndroidManifest.xml:7:5-11:15
 16        <intent>
-16-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f399b77035d2c2d087dc813e28d1e334/transformed/tiles-1.6.0/AndroidManifest.xml:8:9-10:18
+16-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/407ff865ae64c0932e0e9b36360d44a6/transformed/tiles-1.6.0/AndroidManifest.xml:8:9-10:18
 17            <action android:name="androidx.wear.tiles.action.BIND_UPDATE_REQUESTER" />
-17-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f399b77035d2c2d087dc813e28d1e334/transformed/tiles-1.6.0/AndroidManifest.xml:9:13-87
-17-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f399b77035d2c2d087dc813e28d1e334/transformed/tiles-1.6.0/AndroidManifest.xml:9:21-84
+17-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/407ff865ae64c0932e0e9b36360d44a6/transformed/tiles-1.6.0/AndroidManifest.xml:9:13-87
+17-->[androidx.wear.tiles:tiles:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/407ff865ae64c0932e0e9b36360d44a6/transformed/tiles-1.6.0/AndroidManifest.xml:9:21-84
 18        </intent>
 19    </queries>
 20
 21    <permission
-21-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:22:5-24:47
+21-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:22:5-24:47
 22        android:name="com.ilseon.wear.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-22-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:23:9-81
+22-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:23:9-81
 23        android:protectionLevel="signature" />
-23-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:24:9-44
+23-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:24:9-44
 24
 25    <uses-permission android:name="com.ilseon.wear.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-25-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:26:5-97
-25-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:26:22-94
+25-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:26:5-97
+25-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:26:22-94
 26
 27    <application
 27-->/Users/claes.adamsson/Offwork/code/ilseon/wear/src/main/AndroidManifest.xml:7:5-55:19
 28        android:allowBackup="true"
 28-->/Users/claes.adamsson/Offwork/code/ilseon/wear/src/main/AndroidManifest.xml:8:9-35
 29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-29-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/a8eeae3ee920fcb46aba90afd62929e3/transformed/core-1.18.0/AndroidManifest.xml:28:18-86
+29-->[androidx.core:core:1.18.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/23bec81f69b0bf90ad5875b1a35b235d/transformed/core-1.18.0/AndroidManifest.xml:28:18-86
 30        android:debuggable="true"
 31        android:extractNativeLibs="false"
 31-->INJECTED
@@ -136,120 +136,120 @@
 77        </service>
 78
 79        <uses-library
-79-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/837efd7ef57ec6ed902debe764af0fa6/transformed/compose-foundation-1.6.0/AndroidManifest.xml:23:9-25:40
+79-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/1c32b4ae80d7926f7cde57cb03a968bf/transformed/compose-foundation-1.6.0/AndroidManifest.xml:23:9-25:40
 80            android:name="wear-sdk"
-80-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/837efd7ef57ec6ed902debe764af0fa6/transformed/compose-foundation-1.6.0/AndroidManifest.xml:24:13-36
+80-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/1c32b4ae80d7926f7cde57cb03a968bf/transformed/compose-foundation-1.6.0/AndroidManifest.xml:24:13-36
 81            android:required="false" />
-81-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/837efd7ef57ec6ed902debe764af0fa6/transformed/compose-foundation-1.6.0/AndroidManifest.xml:25:13-37
+81-->[androidx.wear.compose:compose-foundation:1.6.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/1c32b4ae80d7926f7cde57cb03a968bf/transformed/compose-foundation-1.6.0/AndroidManifest.xml:25:13-37
 82
 83        <activity
-83-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/41f4966050b70b1a75a26cc32cd66b73/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
+83-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/02c7b9d9fe76f685b02a8e5326e536b7/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
 84            android:name="androidx.compose.ui.tooling.PreviewActivity"
-84-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/41f4966050b70b1a75a26cc32cd66b73/transformed/ui-tooling/AndroidManifest.xml:24:13-71
+84-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/02c7b9d9fe76f685b02a8e5326e536b7/transformed/ui-tooling/AndroidManifest.xml:24:13-71
 85            android:exported="true" />
-85-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/41f4966050b70b1a75a26cc32cd66b73/transformed/ui-tooling/AndroidManifest.xml:25:13-36
+85-->[androidx.compose.ui:ui-tooling-android:1.10.6] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/02c7b9d9fe76f685b02a8e5326e536b7/transformed/ui-tooling/AndroidManifest.xml:25:13-36
 86
 87        <uses-library
-87-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/7c9e770095ef74d6f30345804a3872d9/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:8:9-10:40
+87-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/99e298d87fa2e3ffd06e287cb18a1877/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:8:9-10:40
 88            android:name="com.google.android.wearable"
-88-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/7c9e770095ef74d6f30345804a3872d9/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:9:13-55
+88-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/99e298d87fa2e3ffd06e287cb18a1877/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:9:13-55
 89            android:required="false" />
-89-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/7c9e770095ef74d6f30345804a3872d9/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:10:13-37
+89-->[androidx.wear.watchface:watchface-complications-data:1.3.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/99e298d87fa2e3ffd06e287cb18a1877/transformed/watchface-complications-data-1.3.0/AndroidManifest.xml:10:13-37
 90
 91        <activity
-91-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2f4d5dd6734c534b92d2a542089e4267/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+91-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cfd29caf050557ebcd03c323ea4acfad/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
 92            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-92-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2f4d5dd6734c534b92d2a542089e4267/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+92-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cfd29caf050557ebcd03c323ea4acfad/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
 93            android:exported="false"
-93-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2f4d5dd6734c534b92d2a542089e4267/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+93-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cfd29caf050557ebcd03c323ea4acfad/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
 94            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-94-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2f4d5dd6734c534b92d2a542089e4267/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
+94-->[com.google.android.gms:play-services-base:18.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cfd29caf050557ebcd03c323ea4acfad/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
 95
-96        <meta-data
-96-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2832d1b7dd07e71ee3acec593b434d6a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
-97            android:name="com.google.android.gms.version"
-97-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2832d1b7dd07e71ee3acec593b434d6a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
-98            android:value="@integer/google_play_services_version" />
-98-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/2832d1b7dd07e71ee3acec593b434d6a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
-99
-100        <uses-library
-100-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:23:9-25:40
-101            android:name="androidx.window.extensions"
-101-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:24:13-54
-102            android:required="false" />
-102-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:25:13-37
-103        <uses-library
-103-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:26:9-28:40
-104            android:name="androidx.window.sidecar"
-104-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:27:13-51
-105            android:required="false" />
-105-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/64e86b0fb429e78ef549ddd27fac4ab3/transformed/window-1.5.0/AndroidManifest.xml:28:13-37
-106
-107        <provider
-107-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
-108            android:name="androidx.startup.InitializationProvider"
-108-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
-109            android:authorities="com.ilseon.wear.androidx-startup"
-109-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
-110            android:exported="false" >
-110-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
-111            <meta-data
-111-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
-112                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-112-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
-113                android:value="androidx.startup" />
-113-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/b197351d3d0a4124634b7214eafb1ab4/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
-114            <meta-data
-114-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cafdf3317a0abd7fe3295902fc38e790/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
-115                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-115-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cafdf3317a0abd7fe3295902fc38e790/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
-116                android:value="androidx.startup" />
-116-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/cafdf3317a0abd7fe3295902fc38e790/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
-117            <meta-data
-117-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
-118                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-118-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
-119                android:value="androidx.startup" />
-119-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
-120        </provider>
-121
-122        <receiver
-122-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-123            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-123-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-124            android:directBootAware="false"
-124-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-125            android:enabled="true"
-125-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-126            android:exported="true"
-126-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-127            android:permission="android.permission.DUMP" >
-127-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
-128            <intent-filter>
-128-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-129                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-129-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-129-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
-130            </intent-filter>
-131            <intent-filter>
-131-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-132                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-132-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-132-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-133            </intent-filter>
-134            <intent-filter>
-134-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-135                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-135-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-135-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-136            </intent-filter>
-137            <intent-filter>
-137-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-138                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-138-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-138-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/57eb157d4b480a4a3d8bbc0e9325bcf2/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-139            </intent-filter>
-140        </receiver>
+96        <provider
+96-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
+97            android:name="androidx.startup.InitializationProvider"
+97-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
+98            android:authorities="com.ilseon.wear.androidx-startup"
+98-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
+99            android:exported="false" >
+99-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
+100            <meta-data
+100-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
+101                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+101-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
+102                android:value="androidx.startup" />
+102-->[androidx.emoji2:emoji2:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/f32a3c74c16e4bcd8adfb083b909efab/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
+103            <meta-data
+103-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/d653d1ed3c3e646846251f9b4c6495ce/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
+104                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+104-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/d653d1ed3c3e646846251f9b4c6495ce/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
+105                android:value="androidx.startup" />
+105-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/d653d1ed3c3e646846251f9b4c6495ce/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
+106            <meta-data
+106-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+107                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+108                android:value="androidx.startup" />
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+109        </provider>
+110
+111        <receiver
+111-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+112            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+112-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+113            android:directBootAware="false"
+113-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+114            android:enabled="true"
+114-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+115            android:exported="true"
+115-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+116            android:permission="android.permission.DUMP" >
+116-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+117            <intent-filter>
+117-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+118                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+118-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+118-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+119            </intent-filter>
+120            <intent-filter>
+120-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+121                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+121-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+121-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+122            </intent-filter>
+123            <intent-filter>
+123-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+124                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+124-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+124-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+125            </intent-filter>
+126            <intent-filter>
+126-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+127                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+127-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+127-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/4b13bddabd13c9bb08904618b6f270ca/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+128            </intent-filter>
+129        </receiver>
+130
+131        <uses-library
+131-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:23:9-25:40
+132            android:name="androidx.window.extensions"
+132-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:24:13-54
+133            android:required="false" />
+133-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:25:13-37
+134        <uses-library
+134-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:26:9-28:40
+135            android:name="androidx.window.sidecar"
+135-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:27:13-51
+136            android:required="false" />
+136-->[androidx.window:window:1.5.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/193f96e715feada83fbc1261fc5d2eb4/transformed/window-1.5.0/AndroidManifest.xml:28:13-37
+137
+138        <meta-data
+138-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/5f479031057e8bbef49e05e04984d88a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
+139            android:name="com.google.android.gms.version"
+139-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/5f479031057e8bbef49e05e04984d88a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
+140            android:value="@integer/google_play_services_version" />
+140-->[com.google.android.gms:play-services-basement:18.4.0] /Users/claes.adamsson/.gradle/caches/9.3.1/transforms/5f479031057e8bbef49e05e04984d88a/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
 141    </application>
 142
 143</manifest>

@@ -54,8 +54,7 @@
 
         <service
             android:name=".tile.TaskDataListenerService"
-            android:exported="true"
-            android:permission="com.google.android.gms.permission.BIND_LISTENER">
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
                 <data

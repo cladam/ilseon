@@ -6,6 +6,7 @@ import android.util.Log
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.tasks.await
+import androidx.core.net.toUri
 
 /**
  * Shared helper for loading the current priority task from the Wearable DataClient.
@@ -23,7 +24,7 @@ object WearTaskDataLoader {
         return try {
             val dataClient = Wearable.getDataClient(context)
             val dataItems = dataClient.getDataItems(
-                Uri.parse("wear://*${WearTaskData.PATH_PRIORITY_TASK}")
+                "wear://*${WearTaskData.PATH_PRIORITY_TASK}".toUri()
             ).await()
 
             val item = dataItems.firstOrNull()
@@ -55,6 +56,10 @@ object WearTaskDataLoader {
     suspend fun sendAction(context: Context, actionPath: String) {
         try {
             val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+            Log.d(TAG, "Connected nodes: ${nodes.size} — ${nodes.map { "${it.displayName}(${it.id})" }}")
+            if (nodes.isEmpty()) {
+                Log.w(TAG, "No connected nodes found — message won't be delivered")
+            }
             val messageClient = Wearable.getMessageClient(context)
             for (node in nodes) {
                 messageClient.sendMessage(node.id, actionPath, byteArrayOf()).await()

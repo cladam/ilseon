@@ -3,6 +3,7 @@ package com.ilseon
 import android.app.Application
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -11,6 +12,7 @@ import com.ilseon.data.task.SettingsRepository
 import com.ilseon.notifications.NotificationHelper
 import com.ilseon.service.HapticWorker
 import com.ilseon.service.RecordingService
+import com.ilseon.wear.WearActionListenerService
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +38,7 @@ class IlseonApplication : Application(), Configuration.Provider {
         notificationHelper.createNotificationChannels()
         setupHapticWorker()
         startRecordingServiceIfNeeded()
+        registerWearMessageListener()
     }
 
     private fun startRecordingServiceIfNeeded() {
@@ -61,5 +64,21 @@ class IlseonApplication : Application(), Configuration.Provider {
             ExistingPeriodicWorkPolicy.KEEP,
             workRequest
         )
+    }
+
+    /**
+     * Registers a programmatic MessageClient listener as a backup.
+     * The manifest-declared WearableListenerService can sometimes fail to be
+     * discovered by GMS. This listener works while the app process is alive.
+     */
+    private fun registerWearMessageListener() {
+        try {
+            val listener = WearActionListenerService.createMessageListener(this)
+            com.google.android.gms.wearable.Wearable.getMessageClient(this)
+                .addListener(listener)
+            Log.d("IlseonApp", "Registered programmatic Wearable message listener")
+        } catch (e: Exception) {
+            Log.d("IlseonApp", "Wearable API not available, skipping message listener", e)
+        }
     }
 }

@@ -61,6 +61,10 @@
                     android:scheme="wear"
                     android:host="*"
                     android:pathPrefix="/priority-task" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/recording-state" />
             </intent-filter>
         </service>
 

@@ -1,39 +1,29 @@
 package com.ilseon.wear
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Build
+import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
-import com.ilseon.ActionTrampolineActivity
-import com.ilseon.R
+import com.ilseon.service.RecordingService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
- * Listens for messages from the Wear OS watch and launches the
- * corresponding action on the phone via a heads-up notification.
- *
- * Two delivery paths ensure reliability:
- * 1. Manifest-declared WearableListenerService (works even if app is killed)
- * 2. Programmatic MessageClient.OnMessageReceivedListener (registered in IlseonApplication)
+ * Listens for messages from the Wear OS watch.
+ * Handles /action/toggle-recording by directly toggling RecordingService.
  */
 class WearActionListenerService : WearableListenerService() {
 
     companion object {
         private const val TAG = "WearActionListener"
-        private const val CHANNEL_ID = "ilseon_wear_action"
-        private const val NOTIFICATION_ID = 9001
 
-        /**
-         * Creates a programmatic listener that can be registered via
-         * MessageClient.addListener(). Uses the same notification logic
-         * as the manifest-declared service.
-         */
         fun createMessageListener(context: Context): MessageClient.OnMessageReceivedListener {
             return MessageClient.OnMessageReceivedListener { messageEvent ->
                 Log.d(TAG, "[Programmatic] Message received: ${messageEvent.path}")
@@ -42,58 +32,49 @@ class WearActionListenerService : WearableListenerService() {
         }
 
         private fun handleMessage(context: Context, messageEvent: MessageEvent) {
-            val (intentAction, label) = when (messageEvent.path) {
-                "/action/new-task"       -> "com.ilseon.action.NEW_TASK" to "New Task"
-                "/action/new-idea"       -> "com.ilseon.action.NEW_IDEA" to "New Idea"
-                "/action/new-voice-memo" -> "com.ilseon.action.NEW_VOICE_MEMO" to "New Voice Memo"
-                else -> {
-                    Log.w(TAG, "Unknown message path: ${messageEvent.path}")
-                    return
-                }
+            when (messageEvent.path) {
+                "/action/toggle-recording" -> toggleRecording(context)
+                else -> Log.w(TAG, "Unknown message path: ${messageEvent.path}")
             }
-
-            ensureNotificationChannel(context)
-
-            val intent = Intent(context, ActionTrampolineActivity::class.java).apply {
-                action = intentAction
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                intentAction.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Ilseon")
-                .setContentText(label)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
-
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, notification)
-            Log.d(TAG, "Posted notification for: $intentAction")
         }
 
-        private fun ensureNotificationChannel(context: Context) {
+        private fun toggleRecording(context: Context) {
+            Log.d(TAG, "Toggling recording from watch")
+
+            val intent = Intent(context, RecordingService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(
-                    CHANNEL_ID,
-                    "Watch Shortcuts",
-                    NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = "Actions triggered from your watch"
-                    setSound(null, null)
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+
+            val connection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+                    val service = (binder as RecordingService.LocalBinder).getService()
+                    // Toggle: same logic as the hardware media button
+                    if (service.isRecording()) {
+                        val result = service.stopRecording()
+                        if (result != null) {
+                            // Process the recording (save to voice memos)
+                            service.processRecordingFromWear(result)
+                        }
+                        sendRecordingState(context, false)
+                    } else {
+                        service.startRecording()
+                        sendRecordingState(context, true)
+                    }
+                    context.unbindService(this)
                 }
-                val manager =
-                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                manager.createNotificationChannel(channel)
+
+                override fun onServiceDisconnected(name: ComponentName?) {}
+            }
+
+            context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+
+        private fun sendRecordingState(context: Context, isRecording: Boolean) {
+            CoroutineScope(Dispatchers.IO).launch {
+                WearDataSender.sendRecordingState(context, isRecording)
             }
         }
     }

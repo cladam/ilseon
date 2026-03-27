@@ -23,7 +23,8 @@ class PriorityTaskTileService : SuspendingTileService() {
         }
 
         val task = WearTaskDataLoader.loadTaskData(this)
-        val layout = PriorityTaskTileRenderer.buildLayout(task, this)
+        val isRecording = WearTaskDataLoader.loadRecordingState(this)
+        val layout = PriorityTaskTileRenderer.buildLayout(task, isRecording, this)
 
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)

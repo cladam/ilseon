@@ -143,7 +143,7 @@
                 <data
                     android:scheme="wear"
                     android:host="*"
-                    android:pathPrefix="/action/" />
+                    android:pathPrefix="/action/toggle" />
             </intent-filter>
         </service>
 

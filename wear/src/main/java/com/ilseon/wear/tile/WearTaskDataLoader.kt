@@ -9,17 +9,14 @@ import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
 
 /**
- * Shared helper for loading the current priority task from the Wearable DataClient.
- * Used by both the Tile service and the main Activity.
+ * Shared helper for loading data from the Wearable DataClient
+ * and sending messages to the phone.
  */
 object WearTaskDataLoader {
 
     private const val TAG = "WearTaskDataLoader"
 
-    /**
-     * Loads the current priority task from the DataClient.
-     * Returns null if no task is synced yet (empty state).
-     */
+    /** Loads the current priority task from the DataClient. */
     suspend fun loadTaskData(context: Context): WearTaskData? {
         return try {
             val dataClient = Wearable.getDataClient(context)
@@ -50,9 +47,35 @@ object WearTaskDataLoader {
         }
     }
 
-    /**
-     * Sends an action message to all connected phone nodes.
-     */
+    /** Loads the current recording state from the DataClient. */
+    suspend fun loadRecordingState(context: Context): Boolean {
+        return try {
+            val dataClient = Wearable.getDataClient(context)
+            val dataItems = dataClient.getDataItems(
+                "wear://*${WearTaskData.PATH_RECORDING_STATE}".toUri()
+            ).await()
+
+            val item = dataItems.firstOrNull()
+            val isRecording = if (item != null) {
+                val dataMap = DataMapItem.fromDataItem(item).dataMap
+                dataMap.getBoolean(WearTaskData.KEY_IS_RECORDING, false)
+            } else {
+                false
+            }
+            dataItems.release()
+            isRecording
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not read recording state", e)
+            false
+        }
+    }
+
+    /** Sends a toggle-recording message to the phone. */
+    suspend fun toggleRecording(context: Context) {
+        sendAction(context, WearTaskData.ACTION_TOGGLE_RECORDING)
+    }
+
+    /** Sends an action message to all connected phone nodes. */
     suspend fun sendAction(context: Context, actionPath: String) {
         try {
             val nodes = Wearable.getNodeClient(context).connectedNodes.await()
@@ -70,4 +93,3 @@ object WearTaskDataLoader {
         }
     }
 }
-

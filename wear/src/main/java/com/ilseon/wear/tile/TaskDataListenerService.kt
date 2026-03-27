@@ -18,15 +18,16 @@ class TaskDataListenerService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         Log.d(TAG, "Data changed, ${dataEvents.count} event(s)")
 
-        var taskDataChanged = false
+        var shouldRefresh = false
         for (event in dataEvents) {
-            if (event.dataItem.uri.path == WearTaskData.PATH_PRIORITY_TASK) {
-                taskDataChanged = true
+            val path = event.dataItem.uri.path
+            if (path == WearTaskData.PATH_PRIORITY_TASK || path == WearTaskData.PATH_RECORDING_STATE) {
+                shouldRefresh = true
                 break
             }
         }
 
-        if (taskDataChanged) {
+        if (shouldRefresh) {
             Log.d(TAG, "Priority task changed, requesting tile update")
             TileService.getUpdater(this)
                 .requestUpdate(PriorityTaskTileService::class.java)

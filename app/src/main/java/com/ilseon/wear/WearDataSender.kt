@@ -18,10 +18,12 @@ object WearDataSender {
 
     // Must match the constants in wear/.../WearTaskData.kt
     private const val PATH_PRIORITY_TASK = "/priority-task"
+    private const val PATH_RECORDING_STATE = "/recording-state"
     private const val KEY_TITLE = "title"
     private const val KEY_DESCRIPTION = "description"
     private const val KEY_IS_URGENT = "is_urgent"
     private const val KEY_DUE_TIME = "due_time"
+    private const val KEY_IS_RECORDING = "is_recording"
 
     /**
      * Returns true if the Wearable API is usable on this device.
@@ -77,6 +79,26 @@ object WearDataSender {
             Log.d(TAG, "Sent priority task to watch: ${task.title}")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send task to watch", e)
+        }
+    }
+
+    /**
+     * Sends the current recording state to the watch.
+     */
+    suspend fun sendRecordingState(context: Context, isRecording: Boolean) {
+        if (!isWearableAvailable(context)) return
+
+        try {
+            val putDataReq = PutDataMapRequest.create(PATH_RECORDING_STATE).apply {
+                dataMap.putBoolean(KEY_IS_RECORDING, isRecording)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }.asPutDataRequest()
+                .setUrgent()
+
+            Wearable.getDataClient(context).putDataItem(putDataReq).await()
+            Log.d(TAG, "Sent recording state to watch: isRecording=$isRecording")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to send recording state to watch", e)
         }
     }
 }

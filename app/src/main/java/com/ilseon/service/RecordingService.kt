@@ -287,6 +287,20 @@ class RecordingService : MediaBrowserService() {
         }
     }
 
+    /** Called by WearActionListenerService to save a recording triggered from the watch. */
+    fun processRecordingFromWear(result: RecordingResult) {
+        serviceScope.launch(Dispatchers.IO) {
+            val voiceMemo = VoiceMemo(
+                title = "Watch Capture",
+                filePath = result.filePath,
+                durationSeconds = result.durationSeconds
+            )
+            voiceMemoRepository.insert(voiceMemo)
+        }
+    }
+
+    fun isRecording(): Boolean = mediaRecorder != null
+
     fun startRecording() {
         if (mediaRecorder != null) return
         val outputFile = createOutputFile() ?: return

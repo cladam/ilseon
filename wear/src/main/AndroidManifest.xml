@@ -35,18 +35,27 @@
             </intent-filter>
         </service>
 
+        <!-- Trampoline activity for complication tap → toggle recording -->
+        <activity
+            android:name=".complication.ToggleRecordingActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
         <service
             android:name=".complication.StartRecordingComplicationService"
             android:exported="true"
-            android:label="Start Recording"
-            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_DATA_SOURCE">
+            android:icon="@drawable/ic_complication_mic"
+            android:label="Ilseon Voice Memo"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
-                <action android:name="androidx.wear.watchface.complications.datasource.ComplicationDataSourceService.ACTION_COMPLICATION_DATA_SOURCE_UPDATE" />
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
             </intent-filter>
 
             <meta-data
                 android:name="android.support.wearable.complications.SUPPORTED_TYPES"
-                android:value="SHORT_TEXT" />
+                android:value="SHORT_TEXT,RANGED_VALUE,ICON,SMALL_IMAGE" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
                 android:value="0" />

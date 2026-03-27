@@ -73,7 +73,6 @@ class WearActionListenerService : WearableListenerService() {
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .setFullScreenIntent(pendingIntent, true)
                 .build()
 
             val notificationManager =

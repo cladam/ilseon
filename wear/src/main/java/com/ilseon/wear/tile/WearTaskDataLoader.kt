@@ -49,7 +49,7 @@ object WearTaskDataLoader {
             |- Get dressed and prep for the day
             |- Leave for work
         """.trimMargin(),
-        isUrgent = true,
+        isUrgent = false,
         dueTime = null
     )
 

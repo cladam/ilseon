@@ -71,7 +71,10 @@ object PriorityTaskTileRenderer {
                     )
                     .setPadding(
                         Padding.Builder()
-                            .setAll(dp(14f))
+                            .setTop(dp(28f))
+                            .setStart(dp(14f))
+                            .setEnd(dp(14f))
+                            .setBottom(dp(14f))
                             .build()
                     )
                     .build()
@@ -191,7 +194,7 @@ object PriorityTaskTileRenderer {
     }
 
     private fun titleRow(task: WearTaskData): LayoutElement {
-        val titleText = if (task.isUrgent) "🔥 ${task.title}" else task.title
+        val titleText = if (task.isUrgent) "      🔥 ${task.title}" else "       ${task.title}"
         return Text.Builder()
             .setText(titleText)
             .setMaxLines(2)

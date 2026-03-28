@@ -24,6 +24,16 @@ class WearActionListenerService : WearableListenerService() {
     companion object {
         private const val TAG = "WearActionListener"
 
+        /**
+         * Guard against duplicate delivery.  Both the manifest-declared
+         * WearableListenerService *and* the programmatic MessageClient
+         * listener can fire for the same message when the app process is
+         * alive, which would start-then-immediately-stop a recording.
+         */
+        @Volatile
+        private var lastToggleTimestamp: Long = 0
+        private const val DEBOUNCE_MS = 2_000L          // ignore repeats within 2 s
+
         fun createMessageListener(context: Context): MessageClient.OnMessageReceivedListener {
             return MessageClient.OnMessageReceivedListener { messageEvent ->
                 Log.d(TAG, "[Programmatic] Message received: ${messageEvent.path}")
@@ -39,6 +49,13 @@ class WearActionListenerService : WearableListenerService() {
         }
 
         private fun toggleRecording(context: Context) {
+            val now = System.currentTimeMillis()
+            if (now - lastToggleTimestamp < DEBOUNCE_MS) {
+                Log.d(TAG, "Ignoring duplicate toggle-recording (debounce)")
+                return
+            }
+            lastToggleTimestamp = now
+
             Log.d(TAG, "Toggling recording from watch")
 
             val intent = Intent(context, RecordingService::class.java)

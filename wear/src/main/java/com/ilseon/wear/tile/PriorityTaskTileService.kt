@@ -1,7 +1,9 @@
 package com.ilseon.wear.tile
 
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.VibratorManager
+import androidx.annotation.RequiresApi
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
@@ -17,6 +19,7 @@ class PriorityTaskTileService : SuspendingTileService() {
         private const val RESOURCES_VERSION = "1"
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override suspend fun tileRequest(requestParams: RequestBuilders.TileRequest): TileBuilders.Tile {
         // Handle button taps — the clickable ID carries the action path
         val lastClickId = requestParams.currentState.lastClickableId

@@ -33,6 +33,8 @@ class TaskDataListenerService : WearableListenerService() {
             if (path == WearTaskData.PATH_RECORDING_STATE) {
                 shouldRefreshTile = true
                 shouldRefreshComplication = true
+                // Real state arrived from phone — drop the optimistic override
+                WearTaskDataLoader.clearOptimisticState()
             }
         }
 

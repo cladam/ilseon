@@ -1,20 +1,57 @@
 package com.ilseon.wear.tile
 
+import com.ilseon.wear.BuildConfig
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
 
 /**
  * Shared helper for loading data from the Wearable DataClient
  * and sending messages to the phone.
+ *
+ * Recording state is managed with an optimistic override so that
+ * Tile, Activity, and Complication all reflect the toggle immediately —
+ * before the phone has had time to sync back the real state.
  */
 object WearTaskDataLoader {
 
     private const val TAG = "WearTaskDataLoader"
+
+    // ─── Shared recording state ───────────────────────────────
+
+    private val _recordingState = MutableStateFlow(false)
+
+    /** Observable recording state — collect this in the Activity. */
+    val recordingState: StateFlow<Boolean> = _recordingState.asStateFlow()
+
+    /**
+     * When non-null, overrides the DataClient value until the phone
+     * syncs back the real state (see [clearOptimisticState]).
+     */
+    private var optimisticRecordingState: Boolean? = null
+
+    /**
+     * Debug-only placeholder so the UI is populated when no phone is connected.
+     */
+    private val DEBUG_PLACEHOLDER_TASK = WearTaskData(
+        title = "Morning Flow",
+        description = """
+            |- Wake up and hydrate
+            |- Take a timed shower
+            |- Wake up the kids, low-stress and calm
+            |- Eat a healthy breakfast
+            |- Get dressed and prep for the day
+            |- Leave for work
+        """.trimMargin(),
+        isUrgent = true,
+        dueTime = null
+    )
 
     /** Loads the current priority task from the DataClient. */
     suspend fun loadTaskData(context: Context): WearTaskData? {
@@ -44,12 +81,16 @@ object WearTaskDataLoader {
         } catch (e: Exception) {
             Log.d(TAG, "No task data from phone yet (expected on first run)", e)
             null
-        }
+        } ?: if (BuildConfig.DEBUG) DEBUG_PLACEHOLDER_TASK else null
     }
 
-    /** Loads the current recording state from the DataClient. */
+    /**
+     * Loads the current recording state.
+     * Returns the optimistic value if a toggle is pending,
+     * otherwise reads from the DataClient and updates the shared flow.
+     */
     suspend fun loadRecordingState(context: Context): Boolean {
-        return try {
+        val dataClientState = try {
             val dataClient = Wearable.getDataClient(context)
             val dataItems = dataClient.getDataItems(
                 "wear://*${WearTaskData.PATH_RECORDING_STATE}".toUri()
@@ -68,10 +109,31 @@ object WearTaskDataLoader {
             Log.d(TAG, "Could not read recording state", e)
             false
         }
+
+        val effective = optimisticRecordingState ?: dataClientState
+        _recordingState.value = effective
+        return effective
     }
 
-    /** Sends a toggle-recording message to the phone. */
+    /**
+     * Called by [TaskDataListenerService] when the real recording state
+     * arrives from the phone, so the optimistic override is no longer needed.
+     */
+    fun clearOptimisticState() {
+        Log.d(TAG, "Clearing optimistic recording state")
+        optimisticRecordingState = null
+    }
+
+    /**
+     * Optimistically toggles the recording state and sends the
+     * toggle message to the phone. All surfaces (Tile, Activity,
+     * Complication) that read from [recordingState] or call
+     * [loadRecordingState] will see the new value immediately.
+     */
     suspend fun toggleRecording(context: Context) {
+        val newState = !_recordingState.value
+        optimisticRecordingState = newState
+        _recordingState.value = newState
         sendAction(context, WearTaskData.ACTION_TOGGLE_RECORDING)
     }
 

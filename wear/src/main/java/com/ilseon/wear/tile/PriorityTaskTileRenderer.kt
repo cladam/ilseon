@@ -25,11 +25,17 @@ import com.ilseon.wear.R
 /**
  * Builds the protolayout for the Priority Task tile.
  *
+ * Tiles cannot scroll — they're glanceable. The layout shows a compact
+ * summary (title + first few description lines) and is tappable to open
+ * the full scrollable Activity.
+ *
  * Layout (round watch face):
  *  ┌───────────────────┐
- *  │   ★ Task Title    │
+ *  │   ★ Task Title    │  ← tap to open Activity
  *  │   ─────────────   │  ← divider (teal or red if overdue)
- *  │   Description...  │
+ *  │   - Item 1        │
+ *  │   - Item 2        │
+ *  │   ▾ +5 more       │
  *  │                   │
  *  │       [🎤]        │  ← voice recording toggle
  *  └───────────────────┘
@@ -46,6 +52,9 @@ object PriorityTaskTileRenderer {
     private const val COLOR_RECORDING = 0xFFEF5350.toInt()
 
     const val ID_ICON_MIC = "icon_mic"
+
+    /** Max description lines shown on the tile before the "+N more" hint. */
+    private const val MAX_VISIBLE_LINES = 4
 
     // ─── Public API ───────────────────────────────────────────
 
@@ -74,7 +83,7 @@ object PriorityTaskTileRenderer {
                     .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                     .apply {
                         if (task != null) {
-                            addContent(taskContent(task))
+                            addContent(taskContent(task, context))
                         } else {
                             addContent(emptyContent())
                         }
@@ -110,26 +119,68 @@ object PriorityTaskTileRenderer {
 
     // ─── Task content ─────────────────────────────────────────
 
-    private fun taskContent(task: WearTaskData): LayoutElement {
+    private fun taskContent(task: WearTaskData, context: Context): LayoutElement {
         val dividerColor = if (task.isOverdue) COLOR_RED else COLOR_TEAL
+
+        // Split description into lines for the compact tile view
+        val allLines = task.description
+            ?.lines()
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+        val visibleLines = allLines.take(MAX_VISIBLE_LINES)
+        val remaining = allLines.size - visibleLines.size
 
         return Column.Builder()
             .setWidth(expand())
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_START)
+            .setModifiers(
+                Modifiers.Builder()
+                    .setClickable(
+                        Clickable.Builder()
+                            .setId("open_activity")
+                            .setOnClick(
+                                ActionBuilders.LaunchAction.Builder()
+                                    .setAndroidActivity(
+                                        ActionBuilders.AndroidActivity.Builder()
+                                            .setPackageName(context.packageName)
+                                            .setClassName("com.ilseon.wear.MainActivity")
+                                            .build()
+                                    )
+                                    .build()
+                            )
+                            .build()
+                    )
+                    .build()
+            )
             .apply {
                 addContent(titleRow(task))
                 addContent(spacer(6f))
                 addContent(divider(dividerColor))
                 addContent(spacer(6f))
-                task.description?.let {
+                for (line in visibleLines) {
                     addContent(
                         Text.Builder()
-                            .setText(it)
-                            .setMaxLines(3)
+                            .setText(line)
+                            .setMaxLines(1)
                             .setFontStyle(
                                 FontStyle.Builder()
                                     .setSize(sp(13f))
                                     .setColor(argb(COLOR_TEXT_SECONDARY))
+                                    .build()
+                            )
+                            .build()
+                    )
+                    addContent(spacer(2f))
+                }
+                if (remaining > 0) {
+                    addContent(
+                        Text.Builder()
+                            .setText("▾ +$remaining more")
+                            .setMaxLines(1)
+                            .setFontStyle(
+                                FontStyle.Builder()
+                                    .setSize(sp(11f))
+                                    .setColor(argb(COLOR_TEAL))
                                     .build()
                             )
                             .build()

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,12 +67,12 @@ fun PriorityTaskScreen() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var task by remember { mutableStateOf<WearTaskData?>(null) }
-    var isRecording by remember { mutableStateOf(false) }
+    val isRecording by WearTaskDataLoader.recordingState.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         task = WearTaskDataLoader.loadTaskData(context)
-        isRecording = WearTaskDataLoader.loadRecordingState(context)
+        WearTaskDataLoader.loadRecordingState(context) // seeds the shared flow
         isLoading = false
     }
 
@@ -102,7 +103,23 @@ fun PriorityTaskScreen() {
                     Text(text = "Loading…", color = ColorTextSecondary, fontSize = 14.sp)
                 }
             } else if (task != null) {
-                item { TaskSection(task!!) }
+                // Title + divider as one item
+                item { TaskHeader(task!!) }
+                // Each description line as its own scrollable item
+                val lines = task!!.description
+                    ?.lines()
+                    ?.filter { it.isNotBlank() }
+                    ?: emptyList()
+                items(lines.size) { index ->
+                    Text(
+                        text = lines[index],
+                        color = ColorTextSecondary,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                    )
+                }
             } else {
                 item { EmptySection() }
             }
@@ -115,8 +132,6 @@ fun PriorityTaskScreen() {
                     onToggle = {
                         scope.launch {
                             WearTaskDataLoader.toggleRecording(context)
-                            // Optimistic toggle — phone will sync real state back
-                            isRecording = !isRecording
                         }
                     }
                 )
@@ -126,7 +141,7 @@ fun PriorityTaskScreen() {
 }
 
 @Composable
-private fun TaskSection(task: WearTaskData) {
+private fun TaskHeader(task: WearTaskData) {
     val dividerColor = if (task.isOverdue) ColorRed else ColorTeal
 
     Column(
@@ -154,19 +169,6 @@ private fun TaskSection(task: WearTaskData) {
                 .height(2.dp)
                 .background(dividerColor)
         )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Description
-        task.description?.let {
-            Text(
-                text = it,
-                color = ColorTextSecondary,
-                fontSize = 13.sp,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
     }
 }
 

@@ -1,5 +1,7 @@
 package com.ilseon.wear.tile
 
+import android.os.VibrationEffect
+import android.os.VibratorManager
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
@@ -18,12 +20,22 @@ class PriorityTaskTileService : SuspendingTileService() {
     override suspend fun tileRequest(requestParams: RequestBuilders.TileRequest): TileBuilders.Tile {
         // Handle button taps — the clickable ID carries the action path
         val lastClickId = requestParams.currentState.lastClickableId
-        if (lastClickId.isNotEmpty()) {
+        val togglingRecording = lastClickId == WearTaskData.ACTION_TOGGLE_RECORDING
+
+        if (togglingRecording) {
+            // Centralized toggle: flips optimistic state + sends message to phone
+            WearTaskDataLoader.toggleRecording(this)
+            // Haptic confirmation so the user knows the tap registered
+            val vibrator = getSystemService(VibratorManager::class.java)?.defaultVibrator
+            vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else if (lastClickId.isNotEmpty()) {
             WearTaskDataLoader.sendAction(this, lastClickId)
         }
 
         val task = WearTaskDataLoader.loadTaskData(this)
+        // loadRecordingState now returns the optimistic value when a toggle is pending
         val isRecording = WearTaskDataLoader.loadRecordingState(this)
+
         val layout = PriorityTaskTileRenderer.buildLayout(task, isRecording, this)
 
         return TileBuilders.Tile.Builder()

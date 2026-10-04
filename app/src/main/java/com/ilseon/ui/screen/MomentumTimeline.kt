@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.StreakIndicator
+import androidx.compose.ui.platform.LocalLocale
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.util.Locale
 
 data class DayData(val date: LocalDate, val streak: Int)
 
@@ -63,7 +63,7 @@ fun DayIndicator(day: DayData) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = day.date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+            text = day.date.dayOfWeek.getDisplayName(TextStyle.NARROW, LocalLocale.current.platformLocale),
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold
         )

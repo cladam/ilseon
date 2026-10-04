@@ -79,9 +79,9 @@ import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.theme.MutedTeal
+import androidx.compose.ui.platform.LocalLocale
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 import androidx.core.net.toUri
 
@@ -398,7 +398,7 @@ fun IdeaInboxScreen(
                                         Text(
                                             text = SimpleDateFormat(
                                                 "yyyy-MM-dd HH:mm",
-                                                Locale.getDefault()
+                                                LocalLocale.current.platformLocale
                                             ).format(Date(idea.createdAt)),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,

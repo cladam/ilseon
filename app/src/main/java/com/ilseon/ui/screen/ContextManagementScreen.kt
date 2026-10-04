@@ -68,6 +68,7 @@ import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.QuietAmber
+import androidx.compose.ui.platform.LocalLocale
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -480,7 +481,7 @@ fun DayPicker(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    text = day.getDisplayName(TextStyle.NARROW, LocalLocale.current.platformLocale),
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -519,9 +520,10 @@ private fun ContextItem(
                 }
                 focusBlock?.let {
                     Spacer(modifier = Modifier.height(4.dp))
+                    val currentLocale = LocalLocale.current.platformLocale
                     val days = if (it.repeatDays.isNotEmpty()) {
                         it.repeatDays.sorted().joinToString(", ") { dayOfWeek ->
-                            DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                            DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.SHORT, currentLocale)
                         }
                     } else {
                         "Not repeating"

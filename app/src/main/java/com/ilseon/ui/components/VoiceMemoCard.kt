@@ -51,9 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.voicememo.VoiceMemo
+import androidx.compose.ui.platform.LocalLocale
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -192,7 +192,7 @@ fun VoiceMemoCard(
                     Text(
                         text = SimpleDateFormat(
                             "yyyy-MM-dd HH:mm",
-                            Locale.getDefault()
+                            LocalLocale.current.platformLocale
                         ).format(Date(memo.timestamp)),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

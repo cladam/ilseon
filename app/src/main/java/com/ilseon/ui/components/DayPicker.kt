@@ -16,9 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLocale
 import java.time.DayOfWeek
 import java.time.format.TextStyle
-import java.util.Locale
 
 @Composable
 fun DayPicker(
@@ -46,7 +46,7 @@ fun DayPicker(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    text = day.getDisplayName(TextStyle.NARROW, LocalLocale.current.platformLocale),
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             }

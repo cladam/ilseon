@@ -13,7 +13,7 @@ plugins {
 
 android {
     namespace = "com.ilseon"
-    compileSdk = 36
+    compileSdk = 37
 
     sourceSets {
         getByName("androidTest") {

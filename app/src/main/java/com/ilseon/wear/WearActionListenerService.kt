@@ -10,29 +10,44 @@ import android.util.Log
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.ilseon.data.task.TaskRepository
+import com.ilseon.service.HapticManager
 import com.ilseon.service.RecordingService
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
  * Listens for messages from the Wear OS watch.
- * Handles /action/toggle-recording by directly toggling RecordingService.
+ * Handles /action/toggle-recording and /action/trigger-followup.
  */
 class WearActionListenerService : WearableListenerService() {
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface WearActionListenerEntryPoint {
+        fun taskRepository(): TaskRepository
+        fun hapticManager(): HapticManager
+    }
 
     companion object {
         private const val TAG = "WearActionListener"
 
         /**
-         * Guard against duplicate delivery.  Both the manifest-declared
+         * Guard against duplicate delivery. Both the manifest-declared
          * WearableListenerService *and* the programmatic MessageClient
          * listener can fire for the same message when the app process is
-         * alive, which would start-then-immediately-stop a recording.
+         * alive.
          */
         @Volatile
         private var lastToggleTimestamp: Long = 0
-        private const val DEBOUNCE_MS = 2_000L          // ignore repeats within 2 s
+        @Volatile
+        private var lastFollowUpTimestamp: Long = 0
+        private const val DEBOUNCE_MS = 2_000L // ignore repeats within 2 s
 
         fun createMessageListener(context: Context): MessageClient.OnMessageReceivedListener {
             return MessageClient.OnMessageReceivedListener { messageEvent ->
@@ -44,7 +59,41 @@ class WearActionListenerService : WearableListenerService() {
         private fun handleMessage(context: Context, messageEvent: MessageEvent) {
             when (messageEvent.path) {
                 "/action/toggle-recording" -> toggleRecording(context)
+                "/action/trigger-followup" -> triggerFollowUp(context)
                 else -> Log.w(TAG, "Unknown message path: ${messageEvent.path}")
+            }
+        }
+
+        private fun triggerFollowUp(context: Context) {
+            val now = System.currentTimeMillis()
+            if (now - lastFollowUpTimestamp < DEBOUNCE_MS) {
+                Log.d(TAG, "Ignoring duplicate trigger-followup (debounce)")
+                return
+            }
+            lastFollowUpTimestamp = now
+
+            Log.d(TAG, "Triggering quick follow-up task from watch")
+
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                WearActionListenerEntryPoint::class.java
+            )
+
+            // Immediate phone tactile nudge confirmation
+            try {
+                entryPoint.hapticManager().performNudge()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to perform phone haptic nudge", e)
+            }
+
+            // Create urgent follow-up task and schedule reminders
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val task = entryPoint.taskRepository().createQuickFollowUpTask()
+                    Log.d(TAG, "Quick follow-up task created successfully: ${task.id} (${task.title})")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to create quick follow-up task", e)
+                }
             }
         }
 

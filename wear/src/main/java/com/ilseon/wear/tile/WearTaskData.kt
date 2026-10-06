@@ -25,5 +25,6 @@ data class WearTaskData(
 
         // Message path for watch → phone action
         const val ACTION_TOGGLE_RECORDING = "/action/toggle-recording"
+        const val ACTION_TRIGGER_FOLLOWUP = "/action/trigger-followup"
     }
 }

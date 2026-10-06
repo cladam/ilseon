@@ -43,6 +43,14 @@
             android:taskAffinity=""
             android:excludeFromRecents="true" />
 
+        <!-- Trampoline activity for complication tap → trigger quick urgent follow-up -->
+        <activity
+            android:name=".complication.QuickUrgentTaskActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
         <service
             android:name=".complication.StartRecordingComplicationService"
             android:exported="true"
@@ -56,6 +64,24 @@
             <meta-data
                 android:name="android.support.wearable.complications.SUPPORTED_TYPES"
                 android:value="SHORT_TEXT,RANGED_VALUE,ICON,SMALL_IMAGE" />
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="0" />
+        </service>
+
+        <service
+            android:name=".complication.QuickFollowUpComplicationService"
+            android:exported="true"
+            android:icon="@drawable/ic_complication_followup"
+            android:label="Ilseon Quick Follow-Up"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT,ICON,SMALL_IMAGE" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
                 android:value="0" />

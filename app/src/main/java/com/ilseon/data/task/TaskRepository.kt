@@ -31,7 +31,8 @@ class TaskRepository @Inject constructor(
     private val focusBlockDao: FocusBlockDao,
     private val taskContextDao: TaskContextDao,
     private val reminderManager: IReminderManager,
-    private val userStatusRepository: UserStatusRepository
+    private val userStatusRepository: UserStatusRepository,
+    private val settingsRepository: SettingsRepository
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> = taskDao.getIncompleteTasks()
 
@@ -288,6 +289,65 @@ class TaskRepository @Inject constructor(
         val newContext = TaskContext(name = "Extracted", description = "Extracted tasks from a Voice Memo transcript")
         taskContextDao.insertContext(newContext)
         return newContext
+    }
+
+    suspend fun getIncidentFollowUpContextId(): UUID {
+        val configuredContextIdString = settingsRepository.incidentFollowUpContextId.first()
+        if (!configuredContextIdString.isNullOrBlank()) {
+            try {
+                val configuredUuid = UUID.fromString(configuredContextIdString)
+                val existing = taskContextDao.getContext(configuredUuid)
+                if (existing != null) {
+                    return existing.id
+                }
+            } catch (e: IllegalArgumentException) {
+                Log.w("TaskRepository", "Invalid UUID for incidentFollowUpContextId: $configuredContextIdString", e)
+            }
+        }
+
+        // Fallback search order: "Family", "Personal", or the first available context
+        val familyContext = taskContextDao.getContextByName("Family")
+        if (familyContext != null) return familyContext.id
+
+        val personalContext = taskContextDao.getContextByName("Personal")
+        if (personalContext != null) return personalContext.id
+
+        val allContexts = taskContextDao.getContexts().first()
+        if (allContexts.isNotEmpty()) {
+            return allContexts.first().id
+        }
+
+        // If no contexts exist at all, create a default "Personal" context
+        val defaultContext = TaskContext(name = "Personal", description = "Default personal context")
+        taskContextDao.insertContext(defaultContext)
+        return defaultContext.id
+    }
+
+    suspend fun createQuickFollowUpTask(): Task {
+        val configuredTitle = settingsRepository.incidentFollowUpTitle.first()
+            .ifBlank { SettingsRepositoryImpl.DEFAULT_INCIDENT_FOLLOW_UP_TITLE }
+        val delayMinutes = settingsRepository.incidentFollowUpDelayMinutes.first().coerceAtLeast(1)
+        val now = System.currentTimeMillis()
+        val dueTimestamp = now + java.util.concurrent.TimeUnit.MINUTES.toMillis(delayMinutes.toLong())
+        val contextId = getIncidentFollowUpContextId()
+
+        val task = Task(
+            id = UUID.randomUUID(),
+            title = configuredTitle,
+            contextId = contextId,
+            priority = TaskPriority.High,
+            isUrgent = true,
+            dueTime = dueTimestamp,
+            schedulingType = SchedulingType.Duration,
+            startTime = now,
+            endTime = dueTimestamp,
+            totalTimeInMinutes = delayMinutes,
+            remainingTimeInSeconds = delayMinutes * 60L
+        )
+
+        insertTask(task)
+        reminderManager.scheduleDurationTaskReminders(task)
+        return task
     }
 
     fun getCompletedTasks(): Flow<List<Task>> {

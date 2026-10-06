@@ -35,6 +35,8 @@ class TaskRepositoryTest {
     private lateinit var taskContextDao: TaskContextDao
     private lateinit var db: AppDatabase
     private lateinit var reminderManager: ReminderManager
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var userStatusRepository: com.ilseon.data.userstatus.UserStatusRepository
     private lateinit var repository: TaskRepository
 
     @Before
@@ -45,7 +47,17 @@ class TaskRepositoryTest {
         focusBlockDao = db.focusBlockDao()
         taskContextDao = db.taskContextDao()
         reminderManager = mockk(relaxed = true)
-        repository = TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager)
+        settingsRepository = mockk(relaxed = true)
+        userStatusRepository = mockk(relaxed = true)
+        repository = TaskRepository(
+            context,
+            taskDao,
+            focusBlockDao,
+            taskContextDao,
+            reminderManager,
+            userStatusRepository,
+            settingsRepository
+        )
     }
 
     @After

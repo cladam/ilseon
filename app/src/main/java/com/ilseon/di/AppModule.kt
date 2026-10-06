@@ -8,6 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ilseon.AppDatabase
 import com.ilseon.DatabaseCallback
 import com.ilseon.data.idea.IdeaDao
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskContextDao
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.task.TaskDao
@@ -268,9 +269,10 @@ abstract class AppModule {
             focusBlockDao: FocusBlockDao,
             taskContextDao: TaskContextDao,
             reminderManager: IReminderManager,
-            userStatusRepository: UserStatusRepository
+            userStatusRepository: UserStatusRepository,
+            settingsRepository: SettingsRepository
         ): TaskRepository {
-            return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository)
+            return TaskRepository(context, taskDao, focusBlockDao, taskContextDao, reminderManager, userStatusRepository, settingsRepository)
         }
 
         @Provides

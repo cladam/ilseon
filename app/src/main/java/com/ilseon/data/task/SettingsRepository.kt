@@ -28,6 +28,15 @@ interface SettingsRepository {
 
     val apiKey: Flow<String>
     suspend fun setApiKey(apiKey: String)
+
+    val incidentFollowUpTitle: Flow<String>
+    suspend fun setIncidentFollowUpTitle(title: String)
+
+    val incidentFollowUpContextId: Flow<String?>
+    suspend fun setIncidentFollowUpContextId(contextId: String?)
+
+    val incidentFollowUpDelayMinutes: Flow<Int>
+    suspend fun setIncidentFollowUpDelayMinutes(minutes: Int)
 }
 
 @Singleton
@@ -45,6 +54,13 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_MEDIA_BUTTON_TRIGGER = "media_button_trigger_enabled"
         const val KEY_SST_LANGUAGE = "sst_language"
         const val KEY_API_KEY = "gemini_api_key"
+        const val KEY_INCIDENT_FOLLOW_UP_TITLE = "incident_follow_up_title"
+        const val KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID = "incident_follow_up_context_id"
+        const val KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES = "incident_follow_up_delay_minutes"
+
+        const val DEFAULT_INCIDENT_FOLLOW_UP_TITLE =
+            "There was an incident that you have to follow-up, please pause, reflect and engage."
+        const val DEFAULT_INCIDENT_FOLLOW_UP_DELAY_MINUTES = 45
     }
 
     override val nudgeNotificationsEnabled: Flow<Boolean> = callbackFlow {
@@ -146,6 +162,61 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setApiKey(apiKey: String) {
         prefs.edit {
             putString(KEY_API_KEY, apiKey)
+        }
+    }
+
+    override val incidentFollowUpTitle: Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_INCIDENT_FOLLOW_UP_TITLE) {
+                trySend(prefs.getString(KEY_INCIDENT_FOLLOW_UP_TITLE, DEFAULT_INCIDENT_FOLLOW_UP_TITLE) ?: DEFAULT_INCIDENT_FOLLOW_UP_TITLE)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString(KEY_INCIDENT_FOLLOW_UP_TITLE, DEFAULT_INCIDENT_FOLLOW_UP_TITLE) ?: DEFAULT_INCIDENT_FOLLOW_UP_TITLE)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setIncidentFollowUpTitle(title: String) {
+        prefs.edit {
+            putString(KEY_INCIDENT_FOLLOW_UP_TITLE, title)
+        }
+    }
+
+    override val incidentFollowUpContextId: Flow<String?> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID) {
+                trySend(prefs.getString(KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID, null))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString(KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID, null))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setIncidentFollowUpContextId(contextId: String?) {
+        prefs.edit {
+            if (contextId != null) {
+                putString(KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID, contextId)
+            } else {
+                remove(KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID)
+            }
+        }
+    }
+
+    override val incidentFollowUpDelayMinutes: Flow<Int> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES) {
+                trySend(prefs.getInt(KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES, DEFAULT_INCIDENT_FOLLOW_UP_DELAY_MINUTES))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getInt(KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES, DEFAULT_INCIDENT_FOLLOW_UP_DELAY_MINUTES))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setIncidentFollowUpDelayMinutes(minutes: Int) {
+        prefs.edit {
+            putInt(KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES, minutes)
         }
     }
 }

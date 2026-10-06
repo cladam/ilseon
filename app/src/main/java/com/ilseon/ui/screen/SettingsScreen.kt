@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
@@ -75,6 +78,10 @@ fun SettingsScreen(
     val mediaButtonTriggerEnabled by viewModel.mediaButtonTriggerEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
     val apiKey by viewModel.apiKey.collectAsState()
+    val incidentFollowUpTitle by viewModel.incidentFollowUpTitle.collectAsState()
+    val incidentFollowUpContextId by viewModel.incidentFollowUpContextId.collectAsState()
+    val incidentFollowUpDelayMinutes by viewModel.incidentFollowUpDelayMinutes.collectAsState()
+    val availableContexts by viewModel.availableContexts.collectAsState()
     val context = LocalContext.current
 
     val exportReflectionsLauncher = rememberLauncherForActivityResult(
@@ -168,7 +175,14 @@ fun SettingsScreen(
         sstLanguage = sstLanguage,
         onSstLanguageChange = viewModel::setSstLanguage,
         apiKey = apiKey,
-        onApiKeyChange = viewModel::setApiKey
+        onApiKeyChange = viewModel::setApiKey,
+        incidentFollowUpTitle = incidentFollowUpTitle,
+        onIncidentFollowUpTitleChange = viewModel::setIncidentFollowUpTitle,
+        incidentFollowUpContextId = incidentFollowUpContextId,
+        onIncidentFollowUpContextIdChange = viewModel::setIncidentFollowUpContextId,
+        incidentFollowUpDelayMinutes = incidentFollowUpDelayMinutes,
+        onIncidentFollowUpDelayMinutesChange = viewModel::setIncidentFollowUpDelayMinutes,
+        availableContexts = availableContexts
     )
 }
 
@@ -194,7 +208,14 @@ private fun SettingsScreenContent(
     sstLanguage: String,
     onSstLanguageChange: (String) -> Unit,
     apiKey: String,
-    onApiKeyChange: (String) -> Unit
+    onApiKeyChange: (String) -> Unit,
+    incidentFollowUpTitle: String,
+    onIncidentFollowUpTitleChange: (String) -> Unit,
+    incidentFollowUpContextId: String?,
+    onIncidentFollowUpContextIdChange: (String?) -> Unit,
+    incidentFollowUpDelayMinutes: Int,
+    onIncidentFollowUpDelayMinutesChange: (Int) -> Unit,
+    availableContexts: List<com.ilseon.data.task.TaskContext>
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -251,6 +272,17 @@ private fun SettingsScreenContent(
             AISettingsCard(
                 apiKey = apiKey,
                 onApiKeyChange = onApiKeyChange
+            )
+        }
+        item {
+            IncidentFollowUpSettingsCard(
+                title = incidentFollowUpTitle,
+                onTitleChange = onIncidentFollowUpTitleChange,
+                selectedContextId = incidentFollowUpContextId,
+                onContextIdChange = onIncidentFollowUpContextIdChange,
+                delayMinutes = incidentFollowUpDelayMinutes,
+                onDelayMinutesChange = onIncidentFollowUpDelayMinutesChange,
+                availableContexts = availableContexts
             )
         }
         item {
@@ -560,6 +592,242 @@ private fun SettingsSwitchItem(
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
+}
+
+@Composable
+private fun IncidentFollowUpSettingsCard(
+    title: String,
+    onTitleChange: (String) -> Unit,
+    selectedContextId: String?,
+    onContextIdChange: (String?) -> Unit,
+    delayMinutes: Int,
+    onDelayMinutesChange: (Int) -> Unit,
+    availableContexts: List<com.ilseon.data.task.TaskContext>
+) {
+    var showTitleDialog by remember { mutableStateOf(false) }
+    var showDelayDialog by remember { mutableStateOf(false) }
+    var showContextDialog by remember { mutableStateOf(false) }
+
+    val selectedContextName = remember(selectedContextId, availableContexts) {
+        if (selectedContextId == null) {
+            "Auto (Family / Personal / First)"
+        } else {
+            availableContexts.find { it.id.toString() == selectedContextId }?.name ?: "Auto (Default)"
+        }
+    }
+
+    if (showTitleDialog) {
+        IncidentTitleDialog(
+            currentTitle = title,
+            onSave = {
+                onTitleChange(it)
+                showTitleDialog = false
+            },
+            onDismiss = { showTitleDialog = false }
+        )
+    }
+
+    if (showDelayDialog) {
+        IncidentDelayDialog(
+            currentDelay = delayMinutes,
+            onSave = {
+                onDelayMinutesChange(it)
+                showDelayDialog = false
+            },
+            onDismiss = { showDelayDialog = false }
+        )
+    }
+
+    if (showContextDialog) {
+        IncidentContextDialog(
+            contexts = availableContexts,
+            selectedContextId = selectedContextId,
+            onContextSelected = {
+                onContextIdChange(it)
+                showContextDialog = false
+            },
+            onDismiss = { showContextDialog = false }
+        )
+    }
+
+    AppCard {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Incident Follow-Up & Emergency Task",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SettingsItem(
+                icon = Icons.Default.WarningAmber,
+                title = "Grounding Follow-up Message",
+                subtitle = title,
+                onClick = { showTitleDialog = true }
+            )
+            SettingsItem(
+                icon = Icons.Default.Category,
+                title = "Target Context",
+                subtitle = selectedContextName,
+                onClick = { showContextDialog = true }
+            )
+            SettingsItem(
+                icon = Icons.Default.HourglassTop,
+                title = "Reminder Countdown Timer",
+                subtitle = "$delayMinutes minutes",
+                onClick = { showDelayDialog = true }
+            )
+        }
+    }
+}
+
+@Composable
+private fun IncidentTitleDialog(
+    currentTitle: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var text by remember { mutableStateOf(currentTitle) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Incident Follow-Up Message") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "This predefined grounding message is created automatically when triggered from the watch or widget without requiring decision-making.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Grounding Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(text.ifBlank { com.ilseon.data.task.SettingsRepositoryImpl.DEFAULT_INCIDENT_FOLLOW_UP_TITLE })
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun IncidentDelayDialog(
+    currentDelay: Int,
+    onSave: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var text by remember { mutableStateOf(currentDelay.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reminder Countdown") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Time in minutes before the un-ignorable high-priority alarm notification fires.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { input ->
+                        if (input.all { it.isDigit() }) {
+                            text = input
+                        }
+                    },
+                    label = { Text("Delay (minutes)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val parsed = text.toIntOrNull()?.coerceAtLeast(1) ?: 45
+                    onSave(parsed)
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun IncidentContextDialog(
+    contexts: List<com.ilseon.data.task.TaskContext>,
+    selectedContextId: String?,
+    onContextSelected: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Target Context") },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onContextSelected(null) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Auto (Family / Personal / First)",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selectedContextId == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    HorizontalDivider()
+                }
+                items(contexts.size) { index ->
+                    val ctx = contexts[index]
+                    val isSelected = ctx.id.toString() == selectedContextId
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onContextSelected(ctx.id.toString()) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = ctx.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

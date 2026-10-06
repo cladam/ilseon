@@ -30,9 +30,17 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val taskRepository: TaskRepository,
+    private val taskContextRepository: com.ilseon.data.task.TaskContextRepository,
     private val reflectionExporter: ReflectionExporter,
     private val ideaRepository: IdeaRepository
 ) : ViewModel() {
+
+    val availableContexts = taskContextRepository.getContexts()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val nudgeNotificationsEnabled = settingsRepository.nudgeNotificationsEnabled
         .stateIn(
@@ -186,6 +194,45 @@ class SettingsViewModel @Inject constructor(
     fun setApiKey(key: String) {
         viewModelScope.launch {
             settingsRepository.setApiKey(key)
+        }
+    }
+
+    val incidentFollowUpTitle = settingsRepository.incidentFollowUpTitle
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = com.ilseon.data.task.SettingsRepositoryImpl.DEFAULT_INCIDENT_FOLLOW_UP_TITLE
+        )
+
+    fun setIncidentFollowUpTitle(title: String) {
+        viewModelScope.launch {
+            settingsRepository.setIncidentFollowUpTitle(title)
+        }
+    }
+
+    val incidentFollowUpContextId = settingsRepository.incidentFollowUpContextId
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    fun setIncidentFollowUpContextId(contextId: String?) {
+        viewModelScope.launch {
+            settingsRepository.setIncidentFollowUpContextId(contextId)
+        }
+    }
+
+    val incidentFollowUpDelayMinutes = settingsRepository.incidentFollowUpDelayMinutes
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = com.ilseon.data.task.SettingsRepositoryImpl.DEFAULT_INCIDENT_FOLLOW_UP_DELAY_MINUTES
+        )
+
+    fun setIncidentFollowUpDelayMinutes(minutes: Int) {
+        viewModelScope.launch {
+            settingsRepository.setIncidentFollowUpDelayMinutes(minutes)
         }
     }
 }

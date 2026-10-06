@@ -33,6 +33,7 @@ class SettingsViewModelTest {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var ideaRepository: IdeaRepository
     private lateinit var taskRepository: TaskRepository
+    private lateinit var taskContextRepository: com.ilseon.data.task.TaskContextRepository
     private lateinit var reflectionExporter: ReflectionExporter
     private val testDispatcher = StandardTestDispatcher()
 
@@ -43,10 +44,12 @@ class SettingsViewModelTest {
         settingsRepository = mockk(relaxed = true)
         ideaRepository = mockk(relaxed = true)
         taskRepository = mockk(relaxed = true)
+        taskContextRepository = mockk(relaxed = true)
         reflectionExporter = mockk(relaxed = true)
 
         // Mock the flow to prevent issues during ViewModel initialization
         coEvery { settingsRepository.nudgeNotificationsEnabled } returns MutableStateFlow(true)
+        coEvery { taskContextRepository.getContexts() } returns flowOf(emptyList())
     }
 
     @After
@@ -57,7 +60,7 @@ class SettingsViewModelTest {
     @Test
     fun `setNudgeNotificationsEnabled calls repository`() = runTest {
         // Arrange
-        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, reflectionExporter, ideaRepository)
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
 
         // Act
         viewModel.setNudgeNotificationsEnabled(false)
@@ -68,12 +71,36 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `setIncidentFollowUpTitle calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setIncidentFollowUpTitle("Custom Title")
+        advanceUntilIdle()
+        coVerify { settingsRepository.setIncidentFollowUpTitle("Custom Title") }
+    }
+
+    @Test
+    fun `setIncidentFollowUpContextId calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setIncidentFollowUpContextId("ctx-123")
+        advanceUntilIdle()
+        coVerify { settingsRepository.setIncidentFollowUpContextId("ctx-123") }
+    }
+
+    @Test
+    fun `setIncidentFollowUpDelayMinutes calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setIncidentFollowUpDelayMinutes(30)
+        advanceUntilIdle()
+        coVerify { settingsRepository.setIncidentFollowUpDelayMinutes(30) }
+    }
+
+    @Test
     fun `exportReflections calls reflectionExporter`() = runTest {
         // Arrange
         val tasks = listOf(mockk<com.ilseon.data.task.Task>())
         coEvery { taskRepository.getTasksWithReflections() } returns flowOf(tasks)
         coEvery { reflectionExporter.exportReflections(tasks) } returns "exported data"
-        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, reflectionExporter, ideaRepository)
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
         var exportedData = ""
 
         // Act

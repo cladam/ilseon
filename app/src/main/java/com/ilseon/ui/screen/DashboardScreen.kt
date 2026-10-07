@@ -72,7 +72,9 @@ fun DashboardScreen(
                         task.isUrgent &&
                         !task.isComplete
             }
-            inContext to urgentOutOfContext
+            // Put urgentOutOfContext first so that even if created in another context,
+            // an urgent task (like an incident follow-up) takes priority over current in-context tasks
+            (urgentOutOfContext + inContext) to urgentOutOfContext
         } else {
             // Don't filter by startTime here - let all today's tasks through
             // The split into active/future happens in the next remember block

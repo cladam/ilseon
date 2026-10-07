@@ -66,6 +66,7 @@ class TaskRepositoryUnitTest {
 
         coEvery { taskDao.getIncompleteTasks() } returns flowOf(emptyList())
         coEvery { focusBlockDao.getAllFocusBlocks() } returns emptyList()
+        coEvery { focusBlockDao.getFocusBlocks() } returns flowOf(emptyList())
         coEvery { userStatusRepository.getStatus("user") } returns flowOf(null)
 
         repository = TaskRepository(

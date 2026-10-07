@@ -115,11 +115,11 @@ class TaskRepository @Inject constructor(
         val ilseonComparator = createIlseonComparator(energyLevel)
 
         return if (activeFocusBlock != null) {
-            val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
             val urgentOutOfContext = todayTasks.filter { task ->
                 task.contextId != activeFocusBlock.contextId && task.isUrgent && !task.isComplete
             }
-            focusContextTasks.sortedWith(ilseonComparator) + urgentOutOfContext.sortedWith(ilseonComparator)
+            val focusContextTasks = todayTasks.filter { it.contextId == activeFocusBlock.contextId }
+            urgentOutOfContext.sortedWith(ilseonComparator) + focusContextTasks.sortedWith(ilseonComparator)
         } else {
             val focusBlockContextIds = allFocusBlocks.map { it.contextId }.toSet()
             todayTasks.filter { task ->
@@ -292,6 +292,17 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun getIncidentFollowUpContextId(): UUID {
+        // Priority 1: If there is an active focus block right now, attach directly to its context
+        // so it immediately appears in the active focus view on dashboard and watch
+        val activeBlock = getActiveFocusBlock().first()
+        if (activeBlock != null) {
+            val blockContext = taskContextDao.getContext(activeBlock.contextId)
+            if (blockContext != null) {
+                return blockContext.id
+            }
+        }
+
+        // Priority 2: Use explicit user setting if configured
         val configuredContextIdString = settingsRepository.incidentFollowUpContextId.first()
         if (!configuredContextIdString.isNullOrBlank()) {
             try {
@@ -305,7 +316,7 @@ class TaskRepository @Inject constructor(
             }
         }
 
-        // Fallback search order: "Family", "Personal", or the first available context
+        // Priority 3: Fallback search order: "Family", "Personal", or the first available context
         val familyContext = taskContextDao.getContextByName("Family")
         if (familyContext != null) return familyContext.id
 
@@ -317,7 +328,7 @@ class TaskRepository @Inject constructor(
             return allContexts.first().id
         }
 
-        // If no contexts exist at all, create a default "Personal" context
+        // Priority 4: If no contexts exist at all, create a default "Personal" context
         val defaultContext = TaskContext(name = "Personal", description = "Default personal context")
         taskContextDao.insertContext(defaultContext)
         return defaultContext.id

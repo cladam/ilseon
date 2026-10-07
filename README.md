@@ -29,7 +29,7 @@ so attention stays anchored on what matters _right now_.
 * **Single Priority View**: The dashboard displays only your current or next task; the one thing that needs your attention.
 * **Sub-tasks**: Break large goals into sequential sub-tasks. When a parent task is set as the focus, the UI hides the master task and shows only the next immediate step.
 * **Quick Capture**: A floating action button opens an instant input screen for adding tasks in seconds, helping to externalise thoughts before they become mental clutter.
-* **Instant Incident Follow-Up & Freeze Recovery**: 1-tap zero-decision cognitive lifeline triggered from a Wear OS complication or lockscreen/homescreen Glance widget. Automatically creates an urgent follow-up task with a customizable grounding message (default: *"There was an incident that you have to follow-up, please pause, reflect and engage."*), attaches to the active context, starts a 45-minute reflection countdown timer, and delivers instant wrist and phone tactile confirmation.
+* **Instant Incident Follow-Up**: 1-tap zero-decision cognitive lifeline triggered from a Wear OS complication or lockscreen/homescreen widget.
 * **Idea Inbox**: Captures all non-actionable mental clutter. It operates with two views: a **Transient Inbox** for triage (convert to task or save) and a **Persistent Notes View** for long-term knowledge/notes.
 * **Voice Inbox**: A dedicated space for voice memos, allowing users to capture thoughts verbally and convert them to tasks later. Voice Memo's can be transcribed and saved to Notes if using Gemini API.
 * **Momentum Analytics**: Track daily consistency and reward level achievements over a timeline, providing positive, structured feedback on progress.

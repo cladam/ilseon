@@ -81,7 +81,7 @@ enum class WidgetAction(
     Task(R.drawable.ic_outline_add_task_24, "New Task", "com.ilseon.action.NEW_TASK", Color(0xFFB35F5F)),
     Idea(R.drawable.ic_outline_lightbulb_24, "New Idea", "com.ilseon.action.NEW_IDEA", Color(0xFFC08A3E)),
     Voice(R.drawable.ic_outline_mic_24, "New Voice Memo", "com.ilseon.action.NEW_VOICE_MEMO", Color(0xFF5A9B80)),
-    IncidentFollowUp(R.drawable.ic_outline_favorite_24, "Quick Follow-Up", "com.ilseon.action.TRIGGER_FOLLOW_UP", Color(0xFFD32F2F));
+    IncidentFollowUp(R.drawable.ic_outline_priority_high_24, "Quick Follow-Up", "com.ilseon.action.TRIGGER_FOLLOW_UP", Color(0xFFD32F2F));
 
     val primary get() = ColorProvider(baseColor)
     val background get() = ColorProvider(baseColor.copy(alpha = 0.12f))

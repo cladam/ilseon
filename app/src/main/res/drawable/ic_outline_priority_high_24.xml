@@ -3,6 +3,7 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+  <!-- Exclamation mark / Priority High in a rounded style -->
   <path
       android:fillColor="@android:color/white"
       android:pathData="M12,2C10.9,2 10,2.9 10,4L10,13C10,14.1 10.9,15 12,15C13.1,15 14,14.1 14,13L14,4C14,2.9 13.1,2 12,2ZM12,17C10.9,17 10,17.9 10,19C10,20.1 10.9,21 12,21C13.1,21 14,20.1 14,19C14,17.9 13.1,17 12,17Z"/>

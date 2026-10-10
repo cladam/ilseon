@@ -444,6 +444,15 @@ class TaskViewModel @Inject constructor(
                         startTime = st
                         endTime = et
                         dueTime = et
+                    } else if (isForTomorrow) {
+                        val tomorrow = Calendar.getInstance().apply {
+                            add(Calendar.DAY_OF_YEAR, 1)
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        startTime = tomorrow.timeInMillis
                     }
                 } else {
                     schedulingType = SchedulingType.None

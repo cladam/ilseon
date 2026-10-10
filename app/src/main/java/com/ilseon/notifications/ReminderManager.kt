@@ -65,6 +65,21 @@ class ReminderManager @Inject constructor(
             if (nextStartTime > now + schedulingWindow) {
                 return
             }
+        } else {
+            // For non-recurring tasks, check if the task is scheduled for tomorrow or later
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+            val startOfTomorrow = cal.timeInMillis
+
+            if (task.startTime != null && task.startTime >= startOfTomorrow) {
+                // Task is scheduled for tomorrow or later, do not schedule reminders for today
+                return
+            }
         }
 
         when (task.schedulingType) {

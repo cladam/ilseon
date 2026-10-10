@@ -324,4 +324,58 @@ class TaskViewModelTest {
         assert(capturedTask.completedAt != null)
         assertEquals(EnergyLevel.Medium, capturedTask.actualEnergyLevel)
     }
+
+    @Test
+    fun `addTask with isForTomorrow sets tomorrow startTime for Duration and None`() = runTest(testDispatcher.scheduler) {
+        val viewModel = TaskViewModel(context, taskRepository, hapticManager, soundManager, notificationService, reminderManager, settingsRepository, userStatusRepository, true)
+        val taskSlot = slot<Task>()
+        coEvery { taskRepository.insertTask(capture(taskSlot)) } just runs
+
+        // 1. None scheduling type
+        viewModel.addTask(
+            title = "Task for Tomorrow None",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Medium,
+            isUrgent = false,
+            startTimeStr = "",
+            endTimeStr = "",
+            durationInMinutes = null,
+            isRecurring = false,
+            recurrenceDays = emptySet(),
+            isForTomorrow = true
+        )
+        runCurrent()
+
+        val capturedNoneTask = taskSlot.captured
+        assertNotNull(capturedNoneTask.startTime)
+        val calTomorrow = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        assert(capturedNoneTask.startTime!! >= calTomorrow.timeInMillis)
+
+        // 2. Duration scheduling type
+        viewModel.addTask(
+            title = "Task for Tomorrow Duration",
+            description = null,
+            contextId = UUID.randomUUID(),
+            priority = TaskPriority.Medium,
+            isUrgent = false,
+            startTimeStr = "",
+            endTimeStr = "",
+            durationInMinutes = 25,
+            isRecurring = false,
+            recurrenceDays = emptySet(),
+            isForTomorrow = true
+        )
+        runCurrent()
+
+        val capturedDurationTask = taskSlot.captured
+        assertNotNull(capturedDurationTask.startTime)
+        assert(capturedDurationTask.startTime!! >= calTomorrow.timeInMillis)
+    }
 }

@@ -56,6 +56,15 @@ class NotificationHelper @Inject constructor(
         private const val FOCUS_CHANNEL_ID = "ilseon_focus_v2"
         private const val FOCUS_CHANNEL_NAME = "Focus Session"
         private const val FOCUS_CHANNEL_DESCRIPTION = "Persistent notification for the active focus session"
+
+        // Low-Sensory Audio Channels
+        const val CHANNEL_HIGH_PRIORITY_AUDIO = "ilseon_tasks_high_audio_v1"
+        private const val CHANNEL_HIGH_PRIORITY_AUDIO_NAME = "High-Priority Audio Cue"
+        private const val CHANNEL_HIGH_PRIORITY_AUDIO_DESCRIPTION = "Low-sensory gentle wood tap for high-priority tasks."
+
+        const val CHANNEL_URGENT_AUDIO = "ilseon_tasks_urgent_audio_v1"
+        private const val CHANNEL_URGENT_AUDIO_NAME = "Urgent Audio Cue"
+        private const val CHANNEL_URGENT_AUDIO_DESCRIPTION = "Low-sensory singing bowl chime for urgent tasks and incident follow-ups."
     }
 
     fun createNotificationChannels() {
@@ -120,8 +129,44 @@ class NotificationHelper @Inject constructor(
                 enableVibration(false)
             }
 
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .build()
+
+            val highSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.marimba_single}")
+            val highPriorityAudioChannel = NotificationChannel(
+                CHANNEL_HIGH_PRIORITY_AUDIO,
+                CHANNEL_HIGH_PRIORITY_AUDIO_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = CHANNEL_HIGH_PRIORITY_AUDIO_DESCRIPTION
+                setSound(highSoundUri, audioAttributes)
+                enableVibration(true)
+            }
+
+            val urgentSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.soft_singing_bowl_3}")
+            val urgentAudioChannel = NotificationChannel(
+                CHANNEL_URGENT_AUDIO,
+                CHANNEL_URGENT_AUDIO_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = CHANNEL_URGENT_AUDIO_DESCRIPTION
+                setSound(urgentSoundUri, audioAttributes)
+                enableVibration(true)
+            }
+
             notificationManager.createNotificationChannels(
-                listOf(criticalChannel, warningChannel, anchorChannel, naggingChannel, successChannel, focusChannel)
+                listOf(
+                    criticalChannel,
+                    warningChannel,
+                    anchorChannel,
+                    naggingChannel,
+                    successChannel,
+                    focusChannel,
+                    highPriorityAudioChannel,
+                    urgentAudioChannel
+                )
             )
         }
     }
@@ -144,15 +189,22 @@ class NotificationHelper @Inject constructor(
         description: String?,
         tier: NotificationTier,
         timerState: TimerState,
-        schedulingType: SchedulingType
+        schedulingType: SchedulingType,
+        isUrgent: Boolean = false,
+        isUrgentAudioEnabled: Boolean = false,
+        isHighPriorityAudioEnabled: Boolean = false
     ) {
-        val channelId = when (tier) {
-            NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
-            NotificationTier.PreStartWarning -> WARNING_CHANNEL_ID
-            NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
-            NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
-            NotificationTier.Nagging -> NAGGING_CHANNEL_ID
-            NotificationTier.Success -> SUCCESS_CHANNEL_ID
+        val channelId = when {
+            isUrgent && isUrgentAudioEnabled -> CHANNEL_URGENT_AUDIO
+            isHighPriorityAudioEnabled && (tier == NotificationTier.CriticalDecision || tier == NotificationTier.Nagging) -> CHANNEL_HIGH_PRIORITY_AUDIO
+            else -> when (tier) {
+                NotificationTier.CriticalDecision -> CRITICAL_CHANNEL_ID
+                NotificationTier.PreStartWarning -> WARNING_CHANNEL_ID
+                NotificationTier.PreBlockWarning -> WARNING_CHANNEL_ID
+                NotificationTier.SubtleAnchor -> ANCHOR_CHANNEL_ID
+                NotificationTier.Nagging -> NAGGING_CHANNEL_ID
+                NotificationTier.Success -> SUCCESS_CHANNEL_ID
+            }
         }
 
         val priority = when (tier) {

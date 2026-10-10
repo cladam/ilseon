@@ -95,6 +95,22 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `setUrgentAudioCueEnabled calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setUrgentAudioCueEnabled(true)
+        advanceUntilIdle()
+        coVerify { settingsRepository.setUrgentAudioCueEnabled(true) }
+    }
+
+    @Test
+    fun `setHighPriorityAudioCueEnabled calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setHighPriorityAudioCueEnabled(true)
+        advanceUntilIdle()
+        coVerify { settingsRepository.setHighPriorityAudioCueEnabled(true) }
+    }
+
+    @Test
     fun `exportReflections calls reflectionExporter`() = runTest {
         // Arrange
         val tasks = listOf(mockk<com.ilseon.data.task.Task>())

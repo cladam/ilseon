@@ -77,6 +77,20 @@ class SettingsViewModel @Inject constructor(
             initialValue = "en-GB"
         )
 
+    val urgentAudioCueEnabled = settingsRepository.urgentAudioCueEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    val highPriorityAudioCueEnabled = settingsRepository.highPriorityAudioCueEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)
@@ -86,6 +100,18 @@ class SettingsViewModel @Inject constructor(
     fun setNaggingNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNaggingNotificationsEnabled(enabled)
+        }
+    }
+
+    fun setUrgentAudioCueEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setUrgentAudioCueEnabled(enabled)
+        }
+    }
+
+    fun setHighPriorityAudioCueEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setHighPriorityAudioCueEnabled(enabled)
         }
     }
 

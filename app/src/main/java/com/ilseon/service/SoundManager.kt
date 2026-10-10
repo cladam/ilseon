@@ -23,11 +23,11 @@ class SoundManagerImpl @Inject constructor(
     private var mediaPlayer: MediaPlayer? = null
 
     override fun playWarningSound() {
-        playSound(R.raw.mid_block_warning)
+        playSound(R.raw.marimba_single)
     }
 
     override fun playAlertSound() {
-        playSound(R.raw.critical_alert)
+        playSound(R.raw.soft_singing_bowl_3)
     }
 
     private fun playSound(@RawRes soundResId: Int) {

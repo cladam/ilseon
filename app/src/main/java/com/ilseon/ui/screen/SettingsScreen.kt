@@ -74,6 +74,8 @@ fun SettingsScreen(
 ) {
     val nudgeNotificationsEnabled by viewModel.nudgeNotificationsEnabled.collectAsState()
     val naggingNotificationsEnabled by viewModel.naggingNotificationsEnabled.collectAsState()
+    val urgentAudioCueEnabled by viewModel.urgentAudioCueEnabled.collectAsState()
+    val highPriorityAudioCueEnabled by viewModel.highPriorityAudioCueEnabled.collectAsState()
     val bluetoothSstEnabled by viewModel.bluetoothSstEnabled.collectAsState()
     val mediaButtonTriggerEnabled by viewModel.mediaButtonTriggerEnabled.collectAsState()
     val sstLanguage by viewModel.sstLanguage.collectAsState()
@@ -168,6 +170,10 @@ fun SettingsScreen(
         onNudgeNotificationsChange = viewModel::setNudgeNotificationsEnabled,
         naggingNotificationsEnabled = naggingNotificationsEnabled,
         onNaggingNotificationsChange = viewModel::setNaggingNotificationsEnabled,
+        urgentAudioCueEnabled = urgentAudioCueEnabled,
+        onUrgentAudioCueChange = viewModel::setUrgentAudioCueEnabled,
+        highPriorityAudioCueEnabled = highPriorityAudioCueEnabled,
+        onHighPriorityAudioCueChange = viewModel::setHighPriorityAudioCueEnabled,
         bluetoothSstEnabled = bluetoothSstEnabled,
         onBluetoothSstEnabledChange = viewModel::setBluetoothSstEnabled,
         mediaButtonTriggerEnabled = mediaButtonTriggerEnabled,
@@ -201,6 +207,10 @@ private fun SettingsScreenContent(
     onNudgeNotificationsChange: (Boolean) -> Unit,
     naggingNotificationsEnabled: Boolean,
     onNaggingNotificationsChange: (Boolean) -> Unit,
+    urgentAudioCueEnabled: Boolean,
+    onUrgentAudioCueChange: (Boolean) -> Unit,
+    highPriorityAudioCueEnabled: Boolean,
+    onHighPriorityAudioCueChange: (Boolean) -> Unit,
     bluetoothSstEnabled: Boolean,
     onBluetoothSstEnabledChange: (Boolean) -> Unit,
     mediaButtonTriggerEnabled: Boolean,
@@ -248,7 +258,11 @@ private fun SettingsScreenContent(
                 nudgeNotificationsEnabled = nudgeNotificationsEnabled,
                 onNudgeNotificationsChange = onNudgeNotificationsChange,
                 naggingNotificationsEnabled = naggingNotificationsEnabled,
-                onNaggingNotificationsChange = onNaggingNotificationsChange
+                onNaggingNotificationsChange = onNaggingNotificationsChange,
+                urgentAudioCueEnabled = urgentAudioCueEnabled,
+                onUrgentAudioCueChange = onUrgentAudioCueChange,
+                highPriorityAudioCueEnabled = highPriorityAudioCueEnabled,
+                onHighPriorityAudioCueChange = onHighPriorityAudioCueChange
             )
         }
         item {
@@ -367,7 +381,11 @@ private fun NotificationSettingsCard(
     nudgeNotificationsEnabled: Boolean,
     onNudgeNotificationsChange: (Boolean) -> Unit,
     naggingNotificationsEnabled: Boolean,
-    onNaggingNotificationsChange: (Boolean) -> Unit
+    onNaggingNotificationsChange: (Boolean) -> Unit,
+    urgentAudioCueEnabled: Boolean,
+    onUrgentAudioCueChange: (Boolean) -> Unit,
+    highPriorityAudioCueEnabled: Boolean,
+    onHighPriorityAudioCueChange: (Boolean) -> Unit
 ) {
     AppCard {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -390,6 +408,20 @@ private fun NotificationSettingsCard(
                 subtitle = "Repeat high-priority task reminders",
                 checked = naggingNotificationsEnabled,
                 onCheckedChange = onNaggingNotificationsChange
+            )
+            SettingsSwitchItem(
+                icon = Icons.Default.WarningAmber,
+                title = "Urgent Audio Cue",
+                subtitle = "Play a single singing bowl chime for urgent follow-ups",
+                checked = urgentAudioCueEnabled,
+                onCheckedChange = onUrgentAudioCueChange
+            )
+            SettingsSwitchItem(
+                icon = Icons.Default.Notifications,
+                title = "High-Priority Audio Cue",
+                subtitle = "Play a gentle wood tap for high-priority reminders",
+                checked = highPriorityAudioCueEnabled,
+                onCheckedChange = onHighPriorityAudioCueChange
             )
         }
     }

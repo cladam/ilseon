@@ -17,6 +17,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -80,13 +82,19 @@ class NotificationServiceImpl @Inject constructor(
                 notificationHelper.showHapticFeedback(tier)
             }
 
+            val isUrgentAudioEnabled = runBlocking { settingsRepository.urgentAudioCueEnabled.first() }
+            val isHighPriorityAudioEnabled = runBlocking { settingsRepository.highPriorityAudioCueEnabled.first() }
+
             notificationHelper.showReminderNotification(
                 taskId,
                 title,
                 content,
                 tier,
                 timerState,
-                schedulingType
+                schedulingType,
+                isUrgent = false,
+                isUrgentAudioEnabled = isUrgentAudioEnabled,
+                isHighPriorityAudioEnabled = isHighPriorityAudioEnabled
             )
         }
     }
@@ -158,13 +166,20 @@ class NotificationServiceImpl @Inject constructor(
         ) {
             // Rule 3: Use nagging tier and haptic
             notificationHelper.showHapticFeedback(NotificationTier.Nagging)
+
+            val isUrgentAudioEnabled = runBlocking { settingsRepository.urgentAudioCueEnabled.first() }
+            val isHighPriorityAudioEnabled = runBlocking { settingsRepository.highPriorityAudioCueEnabled.first() }
+
             notificationHelper.showReminderNotification(
                 task.id.toString(),
                 "High-Priority Task Incomplete",
                 "Reminder: '${task.title}' is still waiting to be completed.",
                 NotificationTier.Nagging, // Correct Tier
                 task.timerState,
-                task.schedulingType
+                task.schedulingType,
+                isUrgent = task.isUrgent,
+                isUrgentAudioEnabled = isUrgentAudioEnabled,
+                isHighPriorityAudioEnabled = isHighPriorityAudioEnabled
             )
         }
     }

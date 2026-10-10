@@ -8,8 +8,13 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.ilseon.data.task.SchedulingType
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TimerState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -17,6 +22,9 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var notificationHelper: NotificationHelper
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
@@ -40,6 +48,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         val tierName = intent.getStringExtra("EXTRA_NOTIFICATION_TIER")
         val timerStateName = intent.getStringExtra("EXTRA_TIMER_STATE")
         val schedulingTypeName = intent.getStringExtra("EXTRA_SCHEDULING_TYPE")
+        val isUrgent = intent.getBooleanExtra("EXTRA_IS_URGENT", false)
 
         val tier = tierName?.let { NotificationTier.valueOf(it) } ?: return
         val timerState = timerStateName?.let { TimerState.valueOf(it) } ?: TimerState.NotStarted
@@ -49,14 +58,28 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         if (taskId != null && title != null) {
             // Always trigger haptic feedback along with the notification
             notificationHelper.showHapticFeedback(tier)
-            notificationHelper.showReminderNotification(
-                taskId,
-                title,
-                description,
-                tier,
-                timerState,
-                schedulingType
-            )
+
+            val pendingResult = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val isUrgentAudioEnabled = settingsRepository.urgentAudioCueEnabled.first()
+                    val isHighPriorityAudioEnabled = settingsRepository.highPriorityAudioCueEnabled.first()
+
+                    notificationHelper.showReminderNotification(
+                        taskId,
+                        title,
+                        description,
+                        tier,
+                        timerState,
+                        schedulingType,
+                        isUrgent = isUrgent,
+                        isUrgentAudioEnabled = isUrgentAudioEnabled,
+                        isHighPriorityAudioEnabled = isHighPriorityAudioEnabled
+                    )
+                } finally {
+                    pendingResult.finish()
+                }
+            }
         }
     }
 }

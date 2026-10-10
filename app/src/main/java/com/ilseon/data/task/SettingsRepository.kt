@@ -37,6 +37,12 @@ interface SettingsRepository {
 
     val incidentFollowUpDelayMinutes: Flow<Int>
     suspend fun setIncidentFollowUpDelayMinutes(minutes: Int)
+
+    val urgentAudioCueEnabled: Flow<Boolean>
+    suspend fun setUrgentAudioCueEnabled(enabled: Boolean)
+
+    val highPriorityAudioCueEnabled: Flow<Boolean>
+    suspend fun setHighPriorityAudioCueEnabled(enabled: Boolean)
 }
 
 @Singleton
@@ -57,6 +63,8 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_INCIDENT_FOLLOW_UP_TITLE = "incident_follow_up_title"
         const val KEY_INCIDENT_FOLLOW_UP_CONTEXT_ID = "incident_follow_up_context_id"
         const val KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES = "incident_follow_up_delay_minutes"
+        const val KEY_ENABLE_URGENT_AUDIO_CUE = "enable_urgent_audio_cue"
+        const val KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE = "enable_high_priority_audio_cue"
 
         const val DEFAULT_INCIDENT_FOLLOW_UP_TITLE =
             "There was an incident that you have to follow-up, please pause, reflect and engage."
@@ -217,6 +225,40 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setIncidentFollowUpDelayMinutes(minutes: Int) {
         prefs.edit {
             putInt(KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES, minutes)
+        }
+    }
+
+    override val urgentAudioCueEnabled: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_ENABLE_URGENT_AUDIO_CUE) {
+                trySend(prefs.getBoolean(KEY_ENABLE_URGENT_AUDIO_CUE, false))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_ENABLE_URGENT_AUDIO_CUE, false))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setUrgentAudioCueEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_ENABLE_URGENT_AUDIO_CUE, enabled)
+        }
+    }
+
+    override val highPriorityAudioCueEnabled: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE) {
+                trySend(prefs.getBoolean(KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE, false))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE, false))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setHighPriorityAudioCueEnabled(enabled: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE, enabled)
         }
     }
 }

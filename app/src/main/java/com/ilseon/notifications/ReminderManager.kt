@@ -327,6 +327,7 @@ class ReminderManager @Inject constructor(
             putExtra("EXTRA_NOTIFICATION_TIER", tier.name)
             putExtra("EXTRA_TIMER_STATE", task.timerState.name)
             putExtra("EXTRA_SCHEDULING_TYPE", task.schedulingType.name)
+            putExtra("EXTRA_IS_URGENT", task.isUrgent)
         }
         // The request code must be stable for a given task and tier to allow for cancellation.
         val requestCode = (task.id.toString() + tier.name).hashCode()

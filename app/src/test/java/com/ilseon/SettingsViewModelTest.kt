@@ -111,6 +111,14 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `setIsRightHandedFab calls repository`() = runTest {
+        val viewModel = SettingsViewModel(context, settingsRepository, taskRepository, taskContextRepository, reflectionExporter, ideaRepository)
+        viewModel.setIsRightHandedFab(false)
+        advanceUntilIdle()
+        coVerify { settingsRepository.setIsRightHandedFab(false) }
+    }
+
+    @Test
     fun `exportReflections calls reflectionExporter`() = runTest {
         // Arrange
         val tasks = listOf(mockk<com.ilseon.data.task.Task>())

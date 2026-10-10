@@ -343,7 +343,7 @@ class MainActivity : ComponentActivity() {
                     speechRecognizerLauncher.launch(intent)
                 }
 
-                val isRightHanded by remember { mutableStateOf(true) }
+                val isRightHanded by settingsViewModel.isRightHandedFab.collectAsState()
 
                 val intentToShow by remember { intentState }
                 LaunchedEffect(intentToShow) {

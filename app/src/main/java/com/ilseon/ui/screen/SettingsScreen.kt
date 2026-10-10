@@ -37,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -83,6 +84,7 @@ fun SettingsScreen(
     val incidentFollowUpTitle by viewModel.incidentFollowUpTitle.collectAsState()
     val incidentFollowUpContextId by viewModel.incidentFollowUpContextId.collectAsState()
     val incidentFollowUpDelayMinutes by viewModel.incidentFollowUpDelayMinutes.collectAsState()
+    val isRightHandedFab by viewModel.isRightHandedFab.collectAsState()
     val availableContexts by viewModel.availableContexts.collectAsState()
     val context = LocalContext.current
 
@@ -188,6 +190,8 @@ fun SettingsScreen(
         onIncidentFollowUpContextIdChange = viewModel::setIncidentFollowUpContextId,
         incidentFollowUpDelayMinutes = incidentFollowUpDelayMinutes,
         onIncidentFollowUpDelayMinutesChange = viewModel::setIncidentFollowUpDelayMinutes,
+        isRightHandedFab = isRightHandedFab,
+        onIsRightHandedFabChange = viewModel::setIsRightHandedFab,
         availableContexts = availableContexts
     )
 }
@@ -225,6 +229,8 @@ private fun SettingsScreenContent(
     onIncidentFollowUpContextIdChange: (String?) -> Unit,
     incidentFollowUpDelayMinutes: Int,
     onIncidentFollowUpDelayMinutesChange: (Int) -> Unit,
+    isRightHandedFab: Boolean,
+    onIsRightHandedFabChange: (Boolean) -> Unit,
     availableContexts: List<com.ilseon.data.task.TaskContext>
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -280,6 +286,12 @@ private fun SettingsScreenContent(
             HardwareSettingsCard(
                 mediaButtonTriggerEnabled = mediaButtonTriggerEnabled,
                 onMediaButtonTriggerEnabledChange = onMediaButtonTriggerEnabledChange
+            )
+        }
+        item {
+            FabHandednessSettingsCard(
+                isRightHanded = isRightHandedFab,
+                onIsRightHandedChange = onIsRightHandedFabChange
             )
         }
         item {
@@ -479,6 +491,65 @@ private fun HardwareSettingsCard(
                 checked = mediaButtonTriggerEnabled,
                 onCheckedChange = onMediaButtonTriggerEnabledChange
             )
+        }
+    }
+}
+
+@Composable
+private fun FabHandednessSettingsCard(
+    isRightHanded: Boolean,
+    onIsRightHandedChange: (Boolean) -> Unit
+) {
+    AppCard {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Action Button Position",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onIsRightHandedChange(true) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = isRightHanded,
+                    onClick = { onIsRightHandedChange(true) }
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Right-handed", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Place action button on the right",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onIsRightHandedChange(false) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = !isRightHanded,
+                    onClick = { onIsRightHandedChange(false) }
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Left-handed", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Place action button on the left",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

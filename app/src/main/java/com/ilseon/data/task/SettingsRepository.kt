@@ -43,6 +43,9 @@ interface SettingsRepository {
 
     val highPriorityAudioCueEnabled: Flow<Boolean>
     suspend fun setHighPriorityAudioCueEnabled(enabled: Boolean)
+
+    val isRightHandedFab: Flow<Boolean>
+    suspend fun setIsRightHandedFab(isRightHanded: Boolean)
 }
 
 @Singleton
@@ -65,6 +68,7 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_INCIDENT_FOLLOW_UP_DELAY_MINUTES = "incident_follow_up_delay_minutes"
         const val KEY_ENABLE_URGENT_AUDIO_CUE = "enable_urgent_audio_cue"
         const val KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE = "enable_high_priority_audio_cue"
+        const val KEY_IS_RIGHT_HANDED_FAB = "is_right_handed_fab"
 
         const val DEFAULT_INCIDENT_FOLLOW_UP_TITLE =
             "There was an incident that you have to follow-up, please pause, reflect and engage."
@@ -259,6 +263,23 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setHighPriorityAudioCueEnabled(enabled: Boolean) {
         prefs.edit {
             putBoolean(KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE, enabled)
+        }
+    }
+
+    override val isRightHandedFab: Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_IS_RIGHT_HANDED_FAB) {
+                trySend(prefs.getBoolean(KEY_IS_RIGHT_HANDED_FAB, true))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(KEY_IS_RIGHT_HANDED_FAB, true))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setIsRightHandedFab(isRightHanded: Boolean) {
+        prefs.edit {
+            putBoolean(KEY_IS_RIGHT_HANDED_FAB, isRightHanded)
         }
     }
 }

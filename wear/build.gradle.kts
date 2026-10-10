@@ -17,8 +17,8 @@ android {
         targetSdk = 36
         // Offset by 1_000_000 to avoid versionCode collisions with the phone app.
         // Phone uses 130, 131, … — Wear uses 1_000_130, 1_000_131, …
-        versionCode = 1_000_142
-        versionName = "0.43.3-wear"
+        versionCode = 1_000_143
+        versionName = "0.44.0-wear"
     }
 
     signingConfigs {

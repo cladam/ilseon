@@ -91,6 +91,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = false
         )
 
+    val isRightHandedFab = settingsRepository.isRightHandedFab
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)
@@ -112,6 +119,12 @@ class SettingsViewModel @Inject constructor(
     fun setHighPriorityAudioCueEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setHighPriorityAudioCueEnabled(enabled)
+        }
+    }
+
+    fun setIsRightHandedFab(isRightHanded: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setIsRightHandedFab(isRightHanded)
         }
     }
 

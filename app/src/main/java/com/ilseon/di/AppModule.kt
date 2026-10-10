@@ -87,7 +87,8 @@ abstract class AppModule {
                     MIGRATION_27_28,
                     MIGRATION_28_29,
                     MIGRATION_29_30,
-                    MIGRATION_30_31
+                    MIGRATION_30_31,
+                    MIGRATION_31_32
                 )
                 .build()
         }
@@ -229,6 +230,74 @@ abstract class AppModule {
             }
         }
 
+        private val MIGRATION_31_32 = object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create routines table
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `routines` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT,
+                        `contextId` TEXT NOT NULL,
+                        `startHour` INTEGER,
+                        `startMinute` INTEGER,
+                        `endHour` INTEGER,
+                        `endMinute` INTEGER,
+                        `daysOfWeek` TEXT,
+                        `resetCutoffHour` INTEGER NOT NULL,
+                        `displayOrder` INTEGER NOT NULL,
+                        `isArchived` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routines_contextId` ON `routines` (`contextId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routines_isArchived` ON `routines` (`isArchived`)")
+
+                // Create routine_steps table
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `routine_steps` (
+                        `id` TEXT NOT NULL,
+                        `routineId` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `orderIndex` INTEGER NOT NULL,
+                        `targetDurationMinutes` INTEGER,
+                        `energyLevel` TEXT,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routine_steps_routineId` ON `routine_steps` (`routineId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routine_steps_routineId_orderIndex` ON `routine_steps` (`routineId`, `orderIndex`)")
+
+                // Create routine_runs table
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `routine_runs` (
+                        `id` TEXT NOT NULL,
+                        `routineId` TEXT NOT NULL,
+                        `sessionDate` INTEGER NOT NULL,
+                        `startedAt` INTEGER NOT NULL,
+                        `completedAt` INTEGER,
+                        `currentStepIndex` INTEGER NOT NULL,
+                        `completedStepIds` TEXT NOT NULL,
+                        `skippedStepIds` TEXT NOT NULL,
+                        `isAbandoned` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routine_runs_routineId` ON `routine_runs` (`routineId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routine_runs_sessionDate` ON `routine_runs` (`sessionDate`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_routine_runs_routineId_sessionDate` ON `routine_runs` (`routineId`, `sessionDate`)")
+            }
+        }
+
 
         @Provides
         @Singleton
@@ -258,6 +327,20 @@ abstract class AppModule {
         @Singleton
         fun provideWorkBlockDao(appDatabase: AppDatabase): FocusBlockDao {
             return appDatabase.focusBlockDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideRoutineDao(appDatabase: AppDatabase): com.ilseon.data.routine.RoutineDao {
+            return appDatabase.routineDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideRoutineRepository(
+            routineDao: com.ilseon.data.routine.RoutineDao
+        ): com.ilseon.data.routine.RoutineRepository {
+            return com.ilseon.data.routine.RoutineRepositoryImpl(routineDao)
         }
 
         @Provides

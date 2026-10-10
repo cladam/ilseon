@@ -7,6 +7,10 @@ import androidx.room.TypeConverters
 import com.ilseon.data.EnergyLevel
 import com.ilseon.data.idea.Idea
 import com.ilseon.data.idea.IdeaDao
+import com.ilseon.data.routine.Routine
+import com.ilseon.data.routine.RoutineDao
+import com.ilseon.data.routine.RoutineRun
+import com.ilseon.data.routine.RoutineStep
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.FocusBlockDao
 import com.ilseon.data.task.ReminderType
@@ -24,7 +28,21 @@ import java.util.UUID
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-@Database(entities = [Task::class, TaskContext::class, FocusBlock::class, Idea::class, VoiceMemo::class, UserStatus::class], version = 31, exportSchema = false)
+@Database(
+    entities = [
+        Task::class,
+        TaskContext::class,
+        FocusBlock::class,
+        Idea::class,
+        VoiceMemo::class,
+        UserStatus::class,
+        Routine::class,
+        RoutineStep::class,
+        RoutineRun::class
+    ],
+    version = 32,
+    exportSchema = false
+)
 @TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -34,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ideaDao(): IdeaDao
     abstract fun voiceMemoDao(): VoiceMemoDao
     abstract fun userStatusDao(): UserStatusDao
+    abstract fun routineDao(): RoutineDao
 
     /**
      * TypeConverters to tell Room how to store Enum classes in the database.

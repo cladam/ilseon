@@ -592,7 +592,8 @@ class MainActivity : ComponentActivity() {
                                     activeFocusBlock = activeFocusBlock,
                                     onSwipeUp = {
                                         scope.launch { sheetState.show() }
-                                    }
+                                    },
+                                    taskViewModel = viewModel
                                 )
                             }
                             composable(Screen.NextTaskActivation.route) {
@@ -761,7 +762,10 @@ class MainActivity : ComponentActivity() {
                                 ArchiveScreen()
                             }
                             composable("ongoing_tasks/{contextId}") { backStackEntry ->
-                                OngoingTasksScreen(contextId = backStackEntry.arguments?.getString("contextId"))
+                                OngoingTasksScreen(
+                                    contextId = backStackEntry.arguments?.getString("contextId"),
+                                    taskViewModel = viewModel
+                                )
                             }
                         }
                     }

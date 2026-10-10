@@ -25,9 +25,9 @@ import javax.inject.Singleton
 interface NotificationService {
     fun sendTaskFinishedNotification(task: Task)
     fun sendTaskStartingSoonNotification(taskTitle: String, minutesUntilStart: Int)
-    fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int)
-    fun sendFocusBlockStartedNotification(focusBlockName: String)
-    fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int)
+    fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int, contextId: UUID? = null)
+    fun sendFocusBlockStartedNotification(focusBlockName: String, contextId: UUID? = null)
+    fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int, contextId: UUID? = null)
     fun sendNaggingNotification(task: Task)
     fun sendHapticFeedback(tier: NotificationTier)
 }
@@ -116,27 +116,30 @@ class NotificationServiceImpl @Inject constructor(
         )
     }
 
-    override fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int) {
+    override fun sendFocusBlockStartingSoonNotification(focusBlockName: String, minutesUntilStart: Int, contextId: UUID?) {
         sendNotification(
-            "Focus Block Starting Soon",
-            "'$focusBlockName' is starting in $minutesUntilStart minutes.",
-            NotificationTier.PreBlockWarning
+            title = "Focus Block Starting Soon",
+            content = "'$focusBlockName' is starting in $minutesUntilStart minutes.",
+            tier = NotificationTier.PreBlockWarning,
+            taskId = contextId?.let { "focus_block_$it" } ?: UUID.randomUUID().toString()
         )
     }
 
-    override fun sendFocusBlockStartedNotification(focusBlockName: String) {
+    override fun sendFocusBlockStartedNotification(focusBlockName: String, contextId: UUID?) {
         sendNotification(
-            "Focus Block Started",
-            "'$focusBlockName' has now started.",
-            NotificationTier.CriticalDecision
+            title = "Focus Block Started",
+            content = "'$focusBlockName' has now started.",
+            tier = NotificationTier.CriticalDecision,
+            taskId = contextId?.let { "focus_block_$it" } ?: UUID.randomUUID().toString()
         )
     }
 
-    override fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int) {
+    override fun sendFocusBlockEndingSoonNotification(focusBlockName: String, minutesUntilEnd: Int, contextId: UUID?) {
         sendNotification(
-            "Focus Block Ending Soon",
-            "'$focusBlockName' is ending in $minutesUntilEnd minutes.",
-            NotificationTier.PreBlockWarning
+            title = "Focus Block Ending Soon",
+            content = "'$focusBlockName' is ending in $minutesUntilEnd minutes.",
+            tier = NotificationTier.PreBlockWarning,
+            taskId = contextId?.let { "focus_block_$it" } ?: UUID.randomUUID().toString()
         )
     }
 

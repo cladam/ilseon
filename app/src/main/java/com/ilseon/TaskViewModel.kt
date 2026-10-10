@@ -198,9 +198,8 @@ class TaskViewModel @Inject constructor(
                 if (currentId != lastNotifiedFocusBlockId) {
                     focusBlock?.let {
                         val context = taskRepository.getContextById(it.contextId)
-                        context?.let {
-                            notificationService.sendFocusBlockStartedNotification(it.name)
-                            hapticManager.performSuccess()
+                        context?.let { ctx ->
+                            notificationService.sendFocusBlockStartedNotification(ctx.name, it.contextId)
                         }
                     }
                     lastNotifiedFocusBlockId = currentId
@@ -312,9 +311,9 @@ class TaskViewModel @Inject constructor(
                     val minutesUntilStart = java.time.Duration.between(now, startTime).toMinutes() + 1
                     notificationService.sendFocusBlockStartingSoonNotification(
                         it.name,
-                        minutesUntilStart.toInt()
+                        minutesUntilStart.toInt(),
+                        focusBlock.contextId
                     )
-                    hapticManager.performNudge()
                     notifiedFocusBlocksStartingSoon.add(startingSoonKey)
                 }
 
@@ -325,9 +324,9 @@ class TaskViewModel @Inject constructor(
                     val minutesUntilEnd = java.time.Duration.between(now, endTime).toMinutes() + 1
                     notificationService.sendFocusBlockEndingSoonNotification(
                         it.name,
-                        minutesUntilEnd.toInt()
+                        minutesUntilEnd.toInt(),
+                        focusBlock.contextId
                     )
-                    hapticManager.performNudge()
                     notifiedFocusBlocksEndingSoon.add(endingSoonKey)
                 }
             }

@@ -12,7 +12,10 @@ import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.service.HapticManager
+import com.ilseon.wear.WearDataSender
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +36,8 @@ enum class RoutineRunnerUiState {
 class RoutineViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
     private val contextRepository: TaskContextRepository,
-    private val hapticManager: HapticManager
+    private val hapticManager: HapticManager,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     val activeRoutines: StateFlow<List<RoutineWithSteps>> =
@@ -199,12 +203,46 @@ class RoutineViewModel @Inject constructor(
         )
     }
 
+    private fun syncRoutineToWear(routine: RoutineWithSteps?, run: RoutineRun?) {
+        viewModelScope.launch {
+            if (routine == null || run == null) {
+                WearDataSender.sendRoutineState(
+                    context = appContext,
+                    routineTitle = null,
+                    stepTitle = null,
+                    stepIndex = 0,
+                    totalSteps = 0,
+                    targetDurationMins = null,
+                    isActive = false,
+                    isComplete = false
+                )
+                return@launch
+            }
+            val steps = routine.sortedSteps
+            val currentIndex = run.currentStepIndex.coerceIn(0, steps.size)
+            val isComplete = run.completedAt != null || currentIndex >= steps.size
+            val currentStep = if (!isComplete && steps.isNotEmpty()) steps[currentIndex] else null
+
+            WearDataSender.sendRoutineState(
+                context = appContext,
+                routineTitle = routine.routine.title,
+                stepTitle = currentStep?.title ?: "Complete!",
+                stepIndex = currentIndex + 1,
+                totalSteps = steps.size,
+                targetDurationMins = currentStep?.targetDurationMinutes,
+                isActive = true,
+                isComplete = isComplete
+            )
+        }
+    }
+
     fun startRoutine(routineWithSteps: RoutineWithSteps) {
         viewModelScope.launch {
             val run = routineRepository.getOrCreateTodayRun(routineWithSteps.routine.id)
             _runningRoutine.value = routineWithSteps
             _currentRun.value = run
             _runnerUiState.value = RoutineRunnerUiState.FullOverlay
+            syncRoutineToWear(routineWithSteps, run)
         }
     }
 
@@ -218,6 +256,7 @@ class RoutineViewModel @Inject constructor(
 
     fun onStepCompleted(step: RoutineStep, nextIndex: Int) {
         val run = _currentRun.value ?: return
+        val routine = _runningRoutine.value
         hapticManager.performNudge()
         viewModelScope.launch {
             routineRepository.recordStepCompleted(run.id, step.id, nextIndex)
@@ -226,11 +265,13 @@ class RoutineViewModel @Inject constructor(
                 completedStepIds = run.completedStepIds + step.id.toString()
             )
             _currentRun.value = updatedRun
+            syncRoutineToWear(routine, updatedRun)
         }
     }
 
     fun onStepSkipped(step: RoutineStep, nextIndex: Int) {
         val run = _currentRun.value ?: return
+        val routine = _runningRoutine.value
         hapticManager.performNudge()
         viewModelScope.launch {
             routineRepository.recordStepSkipped(run.id, step.id, nextIndex)
@@ -239,6 +280,7 @@ class RoutineViewModel @Inject constructor(
                 skippedStepIds = run.skippedStepIds + step.id.toString()
             )
             _currentRun.value = updatedRun
+            syncRoutineToWear(routine, updatedRun)
         }
     }
 
@@ -254,6 +296,7 @@ class RoutineViewModel @Inject constructor(
                 routineRepository.completeRun(run.id)
             }
         }
+        syncRoutineToWear(null, null)
         _runnerUiState.value = RoutineRunnerUiState.Hidden
         _runningRoutine.value = null
         _currentRun.value = null

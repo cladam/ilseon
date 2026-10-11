@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.wear.tiles.TileService
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
 import com.ilseon.wear.complication.StartRecordingComplicationService
 
@@ -35,6 +36,14 @@ class TaskDataListenerService : WearableListenerService() {
                 shouldRefreshComplication = true
                 // Real state arrived from phone — drop the optimistic override
                 WearTaskDataLoader.clearOptimisticState()
+            }
+            if (path == WearTaskData.PATH_ROUTINE_STATE) {
+                try {
+                    val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+                    WearTaskDataLoader.updateRoutineStateFromDataMap(dataMap)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse routine state on watch", e)
+                }
             }
         }
 

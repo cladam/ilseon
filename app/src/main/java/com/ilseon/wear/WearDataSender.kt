@@ -19,11 +19,21 @@ object WearDataSender {
     // Must match the constants in wear/.../WearTaskData.kt
     private const val PATH_PRIORITY_TASK = "/priority-task"
     private const val PATH_RECORDING_STATE = "/recording-state"
+    private const val PATH_ROUTINE_STATE = "/routine-state"
+
     private const val KEY_TITLE = "title"
     private const val KEY_DESCRIPTION = "description"
     private const val KEY_IS_URGENT = "is_urgent"
     private const val KEY_DUE_TIME = "due_time"
     private const val KEY_IS_RECORDING = "is_recording"
+
+    private const val KEY_ROUTINE_TITLE = "routine_title"
+    private const val KEY_STEP_TITLE = "step_title"
+    private const val KEY_STEP_INDEX = "step_index"
+    private const val KEY_TOTAL_STEPS = "total_steps"
+    private const val KEY_TARGET_MINS = "target_duration_mins"
+    private const val KEY_IS_ACTIVE = "is_active"
+    private const val KEY_IS_COMPLETE = "is_complete"
 
     /**
      * Returns true if the Wearable API is usable on this device.
@@ -99,6 +109,52 @@ object WearDataSender {
             Log.d(TAG, "Sent recording state to watch: isRecording=$isRecording")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send recording state to watch", e)
+        }
+    }
+
+    /**
+     * Pushes active routine execution state to the watch.
+     * Pass null or isActive=false when no routine is running.
+     */
+    suspend fun sendRoutineState(
+        context: Context,
+        routineTitle: String?,
+        stepTitle: String?,
+        stepIndex: Int,
+        totalSteps: Int,
+        targetDurationMins: Int?,
+        isActive: Boolean,
+        isComplete: Boolean
+    ) {
+        if (!isWearableAvailable(context)) return
+
+        try {
+            val dataClient = Wearable.getDataClient(context)
+
+            if (!isActive && routineTitle == null) {
+                dataClient.deleteDataItems(
+                    android.net.Uri.parse("wear://*$PATH_ROUTINE_STATE")
+                ).await()
+                Log.d(TAG, "Cleared routine state on watch")
+                return
+            }
+
+            val putDataReq = PutDataMapRequest.create(PATH_ROUTINE_STATE).apply {
+                dataMap.putString(KEY_ROUTINE_TITLE, routineTitle ?: "")
+                dataMap.putString(KEY_STEP_TITLE, stepTitle ?: "")
+                dataMap.putInt(KEY_STEP_INDEX, stepIndex)
+                dataMap.putInt(KEY_TOTAL_STEPS, totalSteps)
+                dataMap.putInt(KEY_TARGET_MINS, targetDurationMins ?: 0)
+                dataMap.putBoolean(KEY_IS_ACTIVE, isActive)
+                dataMap.putBoolean(KEY_IS_COMPLETE, isComplete)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }.asPutDataRequest()
+                .setUrgent()
+
+            dataClient.putDataItem(putDataReq).await()
+            Log.d(TAG, "Sent routine state to watch: $routineTitle (Step $stepIndex/$totalSteps: $stepTitle)")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to send routine state to watch", e)
         }
     }
 }

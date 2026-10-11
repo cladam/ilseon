@@ -30,6 +30,11 @@ object WearTaskDataLoader {
     /** Observable recording state — collect this in the Activity. */
     val recordingState: StateFlow<Boolean> = _recordingState.asStateFlow()
 
+    // ─── Shared routine state ─────────────────────────────────
+
+    private val _routineState = MutableStateFlow<WearRoutineData?>(null)
+    val routineState: StateFlow<WearRoutineData?> = _routineState.asStateFlow()
+
     /**
      * When non-null, overrides the DataClient value until the phone
      * syncs back the real state (see [clearOptimisticState]).
@@ -116,9 +121,95 @@ object WearTaskDataLoader {
     }
 
     /**
-     * Called by [TaskDataListenerService] when the real recording state
-     * arrives from the phone, so the optimistic override is no longer needed.
+     * Loads the current routine state from the DataClient.
      */
+    suspend fun loadRoutineState(context: Context): WearRoutineData? {
+        val state = try {
+            val dataClient = Wearable.getDataClient(context)
+            val dataItems = dataClient.getDataItems(
+                "wear://*${WearTaskData.PATH_ROUTINE_STATE}".toUri()
+            ).await()
+
+            val item = dataItems.firstOrNull()
+            if (item != null) {
+                val dataMap = DataMapItem.fromDataItem(item).dataMap
+                val routineTitle = dataMap.getString(WearTaskData.KEY_ROUTINE_TITLE, "")
+                val stepTitle = dataMap.getString(WearTaskData.KEY_STEP_TITLE, "")
+                val stepIndex = dataMap.getInt(WearTaskData.KEY_STEP_INDEX, 0)
+                val totalSteps = dataMap.getInt(WearTaskData.KEY_TOTAL_STEPS, 0)
+                val targetDurationMins = if (dataMap.containsKey(WearTaskData.KEY_TARGET_MINS)) {
+                    dataMap.getInt(WearTaskData.KEY_TARGET_MINS).takeIf { it > 0 }
+                } else null
+                val isActive = dataMap.getBoolean(WearTaskData.KEY_IS_ACTIVE, false)
+                val isComplete = dataMap.getBoolean(WearTaskData.KEY_IS_COMPLETE, false)
+
+                dataItems.release()
+                if (routineTitle.isNotEmpty() && isActive) {
+                    WearRoutineData(
+                        routineTitle = routineTitle,
+                        stepTitle = stepTitle,
+                        stepIndex = stepIndex,
+                        totalSteps = totalSteps,
+                        targetDurationMins = targetDurationMins,
+                        isActive = isActive,
+                        isComplete = isComplete
+                    )
+                } else null
+            } else {
+                dataItems.release()
+                null
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not read routine state", e)
+            null
+        }
+
+        _routineState.value = state
+        return state
+    }
+
+    /**
+     * Sends action to phone to complete the current routine step and advance.
+     */
+    suspend fun advanceRoutineStep(context: Context) {
+        sendAction(context, WearTaskData.ACTION_ROUTINE_NEXT)
+    }
+
+    /**
+     * Sends action to phone to skip the current routine step.
+     */
+    suspend fun skipRoutineStep(context: Context) {
+        sendAction(context, WearTaskData.ACTION_ROUTINE_SKIP)
+    }
+
+    /**
+     * Called by [TaskDataListenerService] when routine data arrives from the phone.
+     */
+    fun updateRoutineStateFromDataMap(dataMap: com.google.android.gms.wearable.DataMap) {
+        val routineTitle = dataMap.getString(WearTaskData.KEY_ROUTINE_TITLE, "")
+        val stepTitle = dataMap.getString(WearTaskData.KEY_STEP_TITLE, "")
+        val stepIndex = dataMap.getInt(WearTaskData.KEY_STEP_INDEX, 0)
+        val totalSteps = dataMap.getInt(WearTaskData.KEY_TOTAL_STEPS, 0)
+        val targetDurationMins = if (dataMap.containsKey(WearTaskData.KEY_TARGET_MINS)) {
+            dataMap.getInt(WearTaskData.KEY_TARGET_MINS).takeIf { it > 0 }
+        } else null
+        val isActive = dataMap.getBoolean(WearTaskData.KEY_IS_ACTIVE, false)
+        val isComplete = dataMap.getBoolean(WearTaskData.KEY_IS_COMPLETE, false)
+
+        if (routineTitle.isNotEmpty() && isActive) {
+            _routineState.value = WearRoutineData(
+                routineTitle = routineTitle,
+                stepTitle = stepTitle,
+                stepIndex = stepIndex,
+                totalSteps = totalSteps,
+                targetDurationMins = targetDurationMins,
+                isActive = isActive,
+                isComplete = isComplete
+            )
+        } else {
+            _routineState.value = null
+        }
+    }
     fun clearOptimisticState() {
         Log.d(TAG, "Clearing optimistic recording state")
         optimisticRecordingState = null

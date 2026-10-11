@@ -40,8 +40,12 @@ import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import com.ilseon.wear.tile.WearRoutineData
 import com.ilseon.wear.tile.WearTaskData
 import com.ilseon.wear.tile.WearTaskDataLoader
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -69,11 +73,13 @@ fun PriorityTaskScreen() {
     val context = LocalContext.current
     var task by remember { mutableStateOf<WearTaskData?>(null) }
     val isRecording by WearTaskDataLoader.recordingState.collectAsState()
+    val routineData by WearTaskDataLoader.routineState.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         task = WearTaskDataLoader.loadTaskData(context)
         WearTaskDataLoader.loadRecordingState(context) // seeds the shared flow
+        WearTaskDataLoader.loadRoutineState(context)
         isLoading = false
     }
 
@@ -102,6 +108,25 @@ fun PriorityTaskScreen() {
             if (isLoading) {
                 item {
                     Text(text = "Loading…", color = ColorTextSecondary, fontSize = 14.sp)
+                }
+            } else if (routineData != null && routineData!!.isActive) {
+                // Active Wrist Routine Step Runner
+                item {
+                    WearRoutineHeader(routineData!!)
+                }
+                item {
+                    WearRoutineActions(
+                        onNext = {
+                            scope.launch {
+                                WearTaskDataLoader.advanceRoutineStep(context)
+                            }
+                        },
+                        onSkip = {
+                            scope.launch {
+                                WearTaskDataLoader.skipRoutineStep(context)
+                            }
+                        }
+                    )
                 }
             } else if (task != null) {
                 // Title + divider as one item
@@ -137,6 +162,111 @@ fun PriorityTaskScreen() {
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun WearRoutineHeader(routine: WearRoutineData) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = routine.routineTitle.uppercase(),
+            color = ColorTeal,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = "STEP ${routine.stepIndex} OF ${routine.totalSteps}",
+            color = ColorTextSecondary,
+            fontSize = 11.sp
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = routine.stepTitle,
+            color = ColorTextPrimary,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        if (routine.targetDurationMins != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "~${routine.targetDurationMins} min",
+                color = ColorTeal,
+                fontSize = 11.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(ColorTeal)
+        )
+    }
+}
+
+@Composable
+private fun WearRoutineActions(
+    onNext: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Big primary Next Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(ColorTeal)
+                .clickable { onNext() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "DONE ➔",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+
+        // Secondary Skip Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(ColorButtonBg)
+                .clickable { onSkip() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Skip for Now",
+                color = ColorTextSecondary,
+                fontSize = 12.sp
+            )
         }
     }
 }

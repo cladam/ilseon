@@ -19,6 +19,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 /**
@@ -32,6 +33,7 @@ class WearActionListenerService : WearableListenerService() {
     interface WearActionListenerEntryPoint {
         fun taskRepository(): TaskRepository
         fun hapticManager(): HapticManager
+        fun routineRepository(): com.ilseon.data.routine.RoutineRepository
     }
 
     companion object {
@@ -60,7 +62,133 @@ class WearActionListenerService : WearableListenerService() {
             when (messageEvent.path) {
                 "/action/toggle-recording" -> toggleRecording(context)
                 "/action/trigger-followup" -> triggerFollowUp(context)
+                "/action/routine-next" -> handleRoutineNext(context)
+                "/action/routine-skip" -> handleRoutineSkip(context)
                 else -> Log.w(TAG, "Unknown message path: ${messageEvent.path}")
+            }
+        }
+
+        private fun handleRoutineNext(context: Context) {
+            Log.d(TAG, "Watch triggered routine step next")
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                WearActionListenerEntryPoint::class.java
+            )
+            try {
+                entryPoint.hapticManager().performNudge()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed phone haptic on routine next", e)
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val repo = entryPoint.routineRepository()
+                    val runs = repo.observeAllRunsForToday().firstOrNull() ?: emptyList()
+                    val activeRun = runs.firstOrNull { it.completedAt == null && !it.isAbandoned }
+                    if (activeRun != null) {
+                        val routineWithSteps = repo.getRoutineWithSteps(activeRun.routineId)
+                        if (routineWithSteps != null) {
+                            val steps = routineWithSteps.sortedSteps
+                            val currentIndex = activeRun.currentStepIndex.coerceIn(0, steps.size)
+                            if (currentIndex < steps.size) {
+                                val currentStep = steps[currentIndex]
+                                val nextIndex = currentIndex + 1
+                                repo.recordStepCompleted(activeRun.id, currentStep.id, nextIndex)
+
+                                val isComplete = nextIndex >= steps.size
+                                if (isComplete) {
+                                    repo.completeRun(activeRun.id)
+                                    WearDataSender.sendRoutineState(
+                                        context = context,
+                                        routineTitle = routineWithSteps.routine.title,
+                                        stepTitle = "Complete!",
+                                        stepIndex = steps.size,
+                                        totalSteps = steps.size,
+                                        targetDurationMins = null,
+                                        isActive = false,
+                                        isComplete = true
+                                    )
+                                } else {
+                                    val nextStep = steps[nextIndex]
+                                    WearDataSender.sendRoutineState(
+                                        context = context,
+                                        routineTitle = routineWithSteps.routine.title,
+                                        stepTitle = nextStep.title,
+                                        stepIndex = nextIndex + 1,
+                                        totalSteps = steps.size,
+                                        targetDurationMins = nextStep.targetDurationMinutes,
+                                        isActive = true,
+                                        isComplete = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to advance routine step from watch", e)
+                }
+            }
+        }
+
+        private fun handleRoutineSkip(context: Context) {
+            Log.d(TAG, "Watch triggered routine step skip")
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                WearActionListenerEntryPoint::class.java
+            )
+            try {
+                entryPoint.hapticManager().performNudge()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed phone haptic on routine skip", e)
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val repo = entryPoint.routineRepository()
+                    val runs = repo.observeAllRunsForToday().firstOrNull() ?: emptyList()
+                    val activeRun = runs.firstOrNull { it.completedAt == null && !it.isAbandoned }
+                    if (activeRun != null) {
+                        val routineWithSteps = repo.getRoutineWithSteps(activeRun.routineId)
+                        if (routineWithSteps != null) {
+                            val steps = routineWithSteps.sortedSteps
+                            val currentIndex = activeRun.currentStepIndex.coerceIn(0, steps.size)
+                            if (currentIndex < steps.size) {
+                                val currentStep = steps[currentIndex]
+                                val nextIndex = currentIndex + 1
+                                repo.recordStepSkipped(activeRun.id, currentStep.id, nextIndex)
+
+                                val isComplete = nextIndex >= steps.size
+                                if (isComplete) {
+                                    repo.completeRun(activeRun.id)
+                                    WearDataSender.sendRoutineState(
+                                        context = context,
+                                        routineTitle = routineWithSteps.routine.title,
+                                        stepTitle = "Complete!",
+                                        stepIndex = steps.size,
+                                        totalSteps = steps.size,
+                                        targetDurationMins = null,
+                                        isActive = false,
+                                        isComplete = true
+                                    )
+                                } else {
+                                    val nextStep = steps[nextIndex]
+                                    WearDataSender.sendRoutineState(
+                                        context = context,
+                                        routineTitle = routineWithSteps.routine.title,
+                                        stepTitle = nextStep.title,
+                                        stepIndex = nextIndex + 1,
+                                        totalSteps = steps.size,
+                                        targetDurationMins = nextStep.targetDurationMinutes,
+                                        isActive = true,
+                                        isComplete = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to skip routine step from watch", e)
+                }
             }
         }
 

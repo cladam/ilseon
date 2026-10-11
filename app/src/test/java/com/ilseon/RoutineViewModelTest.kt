@@ -1,5 +1,6 @@
 package com.ilseon
 
+import android.content.Context
 import com.ilseon.data.routine.Routine
 import com.ilseon.data.routine.RoutineRepository
 import com.ilseon.data.routine.RoutineStep
@@ -25,6 +26,7 @@ class RoutineViewModelTest {
     private val routineRepository: RoutineRepository = mockk(relaxed = true)
     private val contextRepository: TaskContextRepository = mockk(relaxed = true)
     private val hapticManager: HapticManager = mockk(relaxed = true)
+    private val mockContext: Context = mockk(relaxed = true)
     private lateinit var viewModel: RoutineViewModel
 
     private val contextId1 = UUID.randomUUID()
@@ -34,7 +36,7 @@ class RoutineViewModelTest {
     fun setup() {
         coEvery { routineRepository.observeActiveRoutines() } returns flowOf(emptyList())
         coEvery { contextRepository.getContexts() } returns flowOf(emptyList())
-        viewModel = RoutineViewModel(routineRepository, contextRepository, hapticManager)
+        viewModel = RoutineViewModel(routineRepository, contextRepository, hapticManager, mockContext)
     }
 
     @Test

@@ -63,6 +63,8 @@ class ActiveContextIncidentFollowUpTest {
         reminderManager = mockk(relaxed = true)
         userStatusRepository = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        val routineRepository: com.ilseon.data.routine.RoutineRepository = mockk(relaxed = true)
+        coEvery { routineRepository.observeCompletedRunsSince(any()) } returns flowOf(emptyList())
 
         coEvery { taskDao.getIncompleteTasks() } returns flowOf(emptyList())
         coEvery { userStatusRepository.getStatus("user") } returns flowOf(null)
@@ -74,7 +76,8 @@ class ActiveContextIncidentFollowUpTest {
             taskContextDao = taskContextDao,
             reminderManager = reminderManager,
             userStatusRepository = userStatusRepository,
-            settingsRepository = settingsRepository
+            settingsRepository = settingsRepository,
+            routineRepository = routineRepository
         )
     }
 

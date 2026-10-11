@@ -90,6 +90,12 @@ interface RoutineDao {
     @Query("SELECT * FROM routine_runs WHERE sessionDate = :sessionDate")
     fun observeRunsForSessionDate(sessionDate: Long): Flow<List<RoutineRun>>
 
+    @Query("SELECT * FROM routine_runs WHERE completedAt IS NOT NULL AND completedAt >= :sinceTimestamp")
+    fun observeCompletedRunsSince(sinceTimestamp: Long): Flow<List<RoutineRun>>
+
+    @Query("SELECT * FROM routine_runs WHERE completedAt IS NOT NULL AND completedAt BETWEEN :startTime AND :endTime")
+    suspend fun getCompletedRunsBetween(startTime: Long, endTime: Long): List<RoutineRun>
+
     @Query("SELECT * FROM routine_runs WHERE routineId = :routineId ORDER BY startedAt DESC LIMIT :limit")
     suspend fun getRecentRunsForRoutine(routineId: UUID, limit: Int = 10): List<RoutineRun>
 }

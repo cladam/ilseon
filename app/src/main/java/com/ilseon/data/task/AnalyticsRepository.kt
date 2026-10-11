@@ -3,8 +3,10 @@ package com.ilseon.data.task
 import android.content.Context
 import com.ilseon.TimeInterval
 import com.ilseon.data.idea.IdeaDao
+import com.ilseon.data.routine.RoutineRepository
 import com.ilseon.data.voicememo.VoiceMemoDao
 import com.ilseon.ui.screen.AnalyticsData
+import com.ilseon.ui.screen.RoutineAnalyticsData
 import com.ilseon.util.UsageStatsReader
 import com.ilseon.util.allStopWords
 import com.ilseon.util.cleanTextForAnalysis
@@ -20,7 +22,8 @@ class AnalyticsRepository @Inject constructor(
     private val taskDao: TaskDao,
     private val taskContextDao: TaskContextDao,
     private val ideaDao: IdeaDao,
-    private val voiceMemoDao: VoiceMemoDao
+    private val voiceMemoDao: VoiceMemoDao,
+    private val routineRepository: RoutineRepository
 ) {
     private val usageStatsReader = UsageStatsReader(context)
 
@@ -96,6 +99,20 @@ class AnalyticsRepository @Inject constructor(
         val ideasCount = ideaDao.getIdeasCount(startTime, endTime)
         val voiceMemosCount = voiceMemoDao.getVoiceMemosCount(startTime, endTime)
 
+        val completedRuns = routineRepository.getCompletedRunsBetween(startTime, endTime)
+        val completedRoutinesCount = completedRuns.size
+        val completedStepsCount = completedRuns.sumOf { it.completedStepIds.size }
+        val avgRoutineDurationMinutes = if (completedRuns.isNotEmpty()) {
+            val totalDurationMs = completedRuns.mapNotNull { run ->
+                if (run.completedAt != null && run.completedAt > run.startedAt) {
+                    run.completedAt - run.startedAt
+                } else null
+            }.sum()
+            (totalDurationMs / (completedRuns.size * 60_000L)).toInt()
+        } else {
+            0
+        }
+
         return AnalyticsData(
             focusDistribution = focusDistribution,
             averageTimeBlockMinutes = averageTimeBlockMinutes,
@@ -104,7 +121,12 @@ class AnalyticsRepository @Inject constructor(
             overdueTasksCount = overdueTasksCount,
             interruptedTasksCount = interruptedTasksCount,
             ideasCount = ideasCount,
-            voiceMemosCount = voiceMemosCount
+            voiceMemosCount = voiceMemosCount,
+            routineAnalytics = RoutineAnalyticsData(
+                completedRoutinesCount = completedRoutinesCount,
+                completedStepsCount = completedStepsCount,
+                averageDurationMinutes = avgRoutineDurationMinutes
+            )
         )
     }
 

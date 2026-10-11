@@ -30,6 +30,8 @@ interface RoutineRepository {
     suspend fun getOrCreateTodayRun(routineId: UUID, currentTimeMillis: Long = System.currentTimeMillis()): RoutineRun
     fun observeTodayRun(routineId: UUID, currentTimeMillis: Long = System.currentTimeMillis()): Flow<RoutineRun?>
     fun observeAllRunsForToday(currentTimeMillis: Long = System.currentTimeMillis()): Flow<List<RoutineRun>>
+    fun observeCompletedRunsSince(sinceTimestamp: Long): Flow<List<RoutineRun>>
+    suspend fun getCompletedRunsBetween(startTime: Long, endTime: Long): List<RoutineRun>
 
     suspend fun recordStepCompleted(runId: UUID, stepId: UUID, nextStepIndex: Int)
     suspend fun recordStepSkipped(runId: UUID, stepId: UUID, nextStepIndex: Int)
@@ -163,6 +165,12 @@ class RoutineRepositoryImpl(
         val sessionDate = calculateSessionDate(currentTimeMillis, cutoff)
         return routineDao.observeRunsForSessionDate(sessionDate)
     }
+
+    override fun observeCompletedRunsSince(sinceTimestamp: Long): Flow<List<RoutineRun>> =
+        routineDao.observeCompletedRunsSince(sinceTimestamp)
+
+    override suspend fun getCompletedRunsBetween(startTime: Long, endTime: Long): List<RoutineRun> =
+        routineDao.getCompletedRunsBetween(startTime, endTime)
 
     override suspend fun recordStepCompleted(runId: UUID, stepId: UUID, nextStepIndex: Int) {
         val run = routineDao.getRunById(runId) ?: return

@@ -10,7 +10,9 @@ import com.ilseon.notifications.IReminderManager
 import com.ilseon.wear.WearDataSender
 import com.ilseon.widget.PriorityWidgetReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.ilseon.data.routine.RoutineRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -32,7 +34,8 @@ class TaskRepository @Inject constructor(
     private val taskContextDao: TaskContextDao,
     private val reminderManager: IReminderManager,
     private val userStatusRepository: UserStatusRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val routineRepository: RoutineRepository
 ) {
     fun getIncompleteTasks(): Flow<List<Task>> = taskDao.getIncompleteTasks()
 
@@ -243,19 +246,28 @@ class TaskRepository @Inject constructor(
             add(Calendar.HOUR, -24)
         }.timeInMillis
         return taskDao.getSuccessfulCompletionsCount(twentyFourHoursAgo)
+            .combine(routineRepository.observeCompletedRunsSince(twentyFourHoursAgo)) { taskCount, routineRuns ->
+                taskCount + routineRuns.size
+            }
     }
 
     fun getHistoricalCompletionStreaks(days: Int): Flow<Map<LocalDate, Int>> {
         val today = LocalDate.now()
         val dates = (0 until days).map { today.minusDays(it.toLong()) }
-        
-        return taskDao.getCompletedTasks().map { completedTasks ->
+        val oldestDate = dates.last()
+        val oldestStartOfDay = oldestDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        return taskDao.getCompletedTasks().combine(routineRepository.observeCompletedRunsSince(oldestStartOfDay)) { completedTasks, completedRoutines ->
             dates.associateWith { date ->
                 val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                completedTasks.count { task ->
+                val taskCompletions = completedTasks.count { task ->
                     task.completedAt != null && task.completedAt in startOfDay..endOfDay
                 }
+                val routineCompletions = completedRoutines.count { run ->
+                    run.completedAt != null && run.completedAt in startOfDay..endOfDay
+                }
+                taskCompletions + routineCompletions
             }
         }
     }

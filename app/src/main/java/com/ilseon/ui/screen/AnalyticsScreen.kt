@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,6 +57,12 @@ import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.SlateBlue
 
 // Data class to hold simulated analysis results
+data class RoutineAnalyticsData(
+    val completedRoutinesCount: Int,
+    val completedStepsCount: Int,
+    val averageDurationMinutes: Int
+)
+
 data class AnalyticsData(
     val focusDistribution: Map<String, Float>, // Context name to percentage
     val averageTimeBlockMinutes: Int,
@@ -64,7 +71,8 @@ data class AnalyticsData(
     val overdueTasksCount: Int,
     val interruptedTasksCount: Int,
     val ideasCount: Int,
-    val voiceMemosCount: Int
+    val voiceMemosCount: Int,
+    val routineAnalytics: RoutineAnalyticsData = RoutineAnalyticsData(0, 0, 0)
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -128,6 +136,11 @@ fun AnalyticsScreen(
                     }
                 }
             } else {
+                // Dedicated Routine & Rituals Insight Card
+                item {
+                    RoutineAnalyticsCard(data!!.routineAnalytics)
+                }
+
                 item {
                     AppCard {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -460,6 +473,95 @@ fun FocusDistributionChart(distribution: Map<String, Float>) {
     }
 }
 
+
+@Composable
+fun RoutineAnalyticsCard(routineData: RoutineAnalyticsData) {
+    AppCard {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Daily Rituals & Routines",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Rolling momentum and pacing through structured habits.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Completed Sessions
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "${routineData.completedRoutinesCount}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MutedTeal
+                    )
+                    Text(
+                        text = "Routines Done",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Micro-steps Executed
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "${routineData.completedStepsCount}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MutedTeal
+                    )
+                    Text(
+                        text = "Micro-Steps Done",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Avg Elapsed Duration
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (routineData.averageDurationMinutes > 0) "${routineData.averageDurationMinutes}m" else "—",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MutedTeal
+                    )
+                    Text(
+                        text = "Avg Duration",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun KeywordChip(keyword: String) {

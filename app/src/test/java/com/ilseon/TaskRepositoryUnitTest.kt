@@ -12,6 +12,7 @@ import com.ilseon.data.task.TaskDao
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.userstatus.UserStatusRepository
+import com.ilseon.data.routine.RoutineRepository
 import com.ilseon.notifications.IReminderManager
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -41,6 +42,7 @@ class TaskRepositoryUnitTest {
     private lateinit var reminderManager: IReminderManager
     private lateinit var userStatusRepository: UserStatusRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var routineRepository: RoutineRepository
     private lateinit var repository: TaskRepository
 
     @Before
@@ -63,11 +65,13 @@ class TaskRepositoryUnitTest {
         reminderManager = mockk(relaxed = true)
         userStatusRepository = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        routineRepository = mockk(relaxed = true)
 
         coEvery { taskDao.getIncompleteTasks() } returns flowOf(emptyList())
         coEvery { focusBlockDao.getAllFocusBlocks() } returns emptyList()
         coEvery { focusBlockDao.getFocusBlocks() } returns flowOf(emptyList())
         coEvery { userStatusRepository.getStatus("user") } returns flowOf(null)
+        coEvery { routineRepository.observeCompletedRunsSince(any()) } returns flowOf(emptyList())
 
         repository = TaskRepository(
             context = context,
@@ -76,7 +80,8 @@ class TaskRepositoryUnitTest {
             taskContextDao = taskContextDao,
             reminderManager = reminderManager,
             userStatusRepository = userStatusRepository,
-            settingsRepository = settingsRepository
+            settingsRepository = settingsRepository,
+            routineRepository = routineRepository
         )
     }
 

@@ -11,6 +11,7 @@ import com.ilseon.data.routine.RoutineWithSteps
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
+import com.ilseon.service.HapticManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,11 +32,20 @@ enum class RoutineRunnerUiState {
 @HiltViewModel
 class RoutineViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
-    private val contextRepository: TaskContextRepository
+    private val contextRepository: TaskContextRepository,
+    private val hapticManager: HapticManager
 ) : ViewModel() {
 
     val activeRoutines: StateFlow<List<RoutineWithSteps>> =
         routineRepository.observeActiveRoutines()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    val todayRuns: StateFlow<List<RoutineRun>> =
+        routineRepository.observeAllRunsForToday()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -82,25 +92,51 @@ class RoutineViewModel @Inject constructor(
     }
 
     /**
-     * Determines which routine is currently enabled / ready for the dashboard.
-     * Evaluates focus block context and time window (e.g. starts at 07:00).
+     * Data structure holding today's routine dashboard partition:
+     * - candidateRoutines: All uncompleted routines eligible for today's active block, sorted with in-progress first
+     * - selectedHeroRoutine: The primary routine to show in the Hero Card (or null if all done)
+     * - completedRoutines: Routines that have already been completed today in this cycle
      */
-    fun getDashboardReadyRoutine(
+    data class DashboardRoutineState(
+        val candidateRoutines: List<Pair<RoutineWithSteps, RoutineRun?>>,
+        val selectedHeroRoutine: Pair<RoutineWithSteps, RoutineRun?>?,
+        val completedRoutines: List<Pair<RoutineWithSteps, RoutineRun>>
+    )
+
+    // Optional manual cycle index if user switches between multiple routines in the same block
+    private val _manualRoutineIndex = MutableStateFlow(0)
+    val manualRoutineIndex: StateFlow<Int> = _manualRoutineIndex.asStateFlow()
+
+    fun cycleNextRoutine(totalCandidates: Int) {
+        if (totalCandidates > 1) {
+            _manualRoutineIndex.value = (_manualRoutineIndex.value + 1) % totalCandidates
+        }
+    }
+
+    /**
+     * Determines which routine is currently enabled / ready for the dashboard.
+     * Evaluates focus block context, time window (e.g. starts at 07:00),
+     * and separates completed runs so they don't block uncompleted ones.
+     */
+    fun getDashboardRoutineState(
         routines: List<RoutineWithSteps>,
+        todayRuns: List<RoutineRun>,
         activeFocusBlock: FocusBlock?,
+        manualIndex: Int = 0,
         nowCalendar: Calendar = Calendar.getInstance()
-    ): RoutineWithSteps? {
+    ): DashboardRoutineState {
         val currentHour = nowCalendar.get(Calendar.HOUR_OF_DAY)
         val currentMinute = nowCalendar.get(Calendar.MINUTE)
         val currentMinutesOfDay = currentHour * 60 + currentMinute
+        val runMap = todayRuns.associateBy { it.routineId }
 
-        return routines.firstOrNull { routineWithSteps ->
+        val eligibleRoutines = routines.filter { routineWithSteps ->
             val routine = routineWithSteps.routine
 
             // Context filter: if a focus block is active, only show routines belonging to it.
             // If no focus block is active, all routines are eligible.
             val contextMatches = activeFocusBlock == null || routine.contextId == activeFocusBlock.contextId
-            if (!contextMatches) return@firstOrNull false
+            if (!contextMatches) return@filter false
 
             // Start time filter: e.g. enabled at 7:00 AM
             val startMinutesOfDay = if (routine.startHour != null && routine.startMinute != null) {
@@ -116,8 +152,6 @@ class RoutineViewModel @Inject constructor(
                 null
             }
 
-            // If startHour is specified, the routine is only enabled once the start time has arrived.
-            // If no start time is specified, it is enabled all day.
             val isTimeEligible = when {
                 startMinutesOfDay != null && endMinutesOfDay != null ->
                     currentMinutesOfDay in startMinutesOfDay..endMinutesOfDay
@@ -128,6 +162,41 @@ class RoutineViewModel @Inject constructor(
 
             isTimeEligible
         }
+
+        val completed = mutableListOf<Pair<RoutineWithSteps, RoutineRun>>()
+        val uncompleted = mutableListOf<Pair<RoutineWithSteps, RoutineRun?>>()
+
+        eligibleRoutines.forEach { routineWithSteps ->
+            val run = runMap[routineWithSteps.routine.id]
+            if (run?.completedAt != null) {
+                completed.add(routineWithSteps to run)
+            } else {
+                uncompleted.add(routineWithSteps to run)
+            }
+        }
+
+        // Sort uncompleted routines:
+        // 1. In-progress first (currentStepIndex > 0)
+        // 2. Specific start times first
+        // 3. Display order / creation order
+        val sortedUncompleted = uncompleted.sortedWith(
+            compareByDescending<Pair<RoutineWithSteps, RoutineRun?>> { (_, run) -> (run?.currentStepIndex ?: 0) > 0 }
+                .thenBy { (routineWithSteps, _) -> routineWithSteps.routine.startHour ?: Int.MAX_VALUE }
+                .thenBy { (routineWithSteps, _) -> routineWithSteps.routine.displayOrder }
+        )
+
+        val selectedHero = if (sortedUncompleted.isNotEmpty()) {
+            val safeIndex = manualIndex.coerceIn(0, sortedUncompleted.lastIndex)
+            sortedUncompleted[safeIndex]
+        } else {
+            null
+        }
+
+        return DashboardRoutineState(
+            candidateRoutines = sortedUncompleted,
+            selectedHeroRoutine = selectedHero,
+            completedRoutines = completed
+        )
     }
 
     fun startRoutine(routineWithSteps: RoutineWithSteps) {
@@ -149,6 +218,7 @@ class RoutineViewModel @Inject constructor(
 
     fun onStepCompleted(step: RoutineStep, nextIndex: Int) {
         val run = _currentRun.value ?: return
+        hapticManager.performNudge()
         viewModelScope.launch {
             routineRepository.recordStepCompleted(run.id, step.id, nextIndex)
             val updatedRun = run.copy(
@@ -161,6 +231,7 @@ class RoutineViewModel @Inject constructor(
 
     fun onStepSkipped(step: RoutineStep, nextIndex: Int) {
         val run = _currentRun.value ?: return
+        hapticManager.performNudge()
         viewModelScope.launch {
             routineRepository.recordStepSkipped(run.id, step.id, nextIndex)
             val updatedRun = run.copy(
@@ -171,7 +242,12 @@ class RoutineViewModel @Inject constructor(
         }
     }
 
+    fun onStepPacingElapsed() {
+        hapticManager.performWarning()
+    }
+
     fun finishRoutine() {
+        hapticManager.performSuccess()
         val run = _currentRun.value
         if (run != null) {
             viewModelScope.launch {

@@ -41,6 +41,7 @@ import com.ilseon.RoutineViewModel
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
+import com.ilseon.ui.components.CompletedRoutinesCollapsedSection
 import com.ilseon.ui.components.RoutineCompactBar
 import com.ilseon.ui.components.RoutineHeroCard
 import com.ilseon.ui.components.RoutineRunnerOverlay
@@ -69,9 +70,11 @@ fun DashboardScreen(
     }
     val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
     val activeRoutines by routineViewModel.activeRoutines.collectAsState()
+    val todayRuns by routineViewModel.todayRuns.collectAsState()
     val runningRoutine by routineViewModel.runningRoutine.collectAsState()
     val currentRun by routineViewModel.currentRun.collectAsState()
     val runnerUiState by routineViewModel.runnerUiState.collectAsState()
+    val manualRoutineIndex by routineViewModel.manualRoutineIndex.collectAsState()
 
     var currentTimeMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -81,9 +84,17 @@ fun DashboardScreen(
         }
     }
 
-    val dashboardReadyRoutine = remember(activeRoutines, activeFocusBlock, currentTimeMillis) {
-        routineViewModel.getDashboardReadyRoutine(activeRoutines, activeFocusBlock)
+    val dashboardRoutineState = remember(activeRoutines, todayRuns, activeFocusBlock, manualRoutineIndex, currentTimeMillis) {
+        routineViewModel.getDashboardRoutineState(
+            routines = activeRoutines,
+            todayRuns = todayRuns,
+            activeFocusBlock = activeFocusBlock,
+            manualIndex = manualRoutineIndex
+        )
     }
+
+    val heroRoutinePair = dashboardRoutineState.selectedHeroRoutine
+    val completedRoutines = dashboardRoutineState.completedRoutines
 
     val contextMap = remember(contextsWithFocusBlock) {
         contextsWithFocusBlock.associate { it.context.id to it.context }
@@ -195,7 +206,7 @@ fun DashboardScreen(
             )
         }
 
-        if (priorityTask == null && urgentOutOfContextTasks.isEmpty() && dashboardReadyRoutine == null) {
+        if (priorityTask == null && urgentOutOfContextTasks.isEmpty() && heroRoutinePair == null && completedRoutines.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (focusContextName != null) "No tasks for $focusContextName" else "All clear!",
@@ -209,12 +220,18 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Active / Ready Routine Hero Card
-                if (dashboardReadyRoutine != null && runnerUiState != RoutineRunnerUiState.CollapsedBar) {
+                if (heroRoutinePair != null && runnerUiState != RoutineRunnerUiState.CollapsedBar) {
+                    val (heroRoutine, heroRun) = heroRoutinePair
                     item {
                         RoutineHeroCard(
-                            routineWithSteps = dashboardReadyRoutine,
-                            todayRun = currentRun,
-                            onStartRoutine = { routineViewModel.startRoutine(dashboardReadyRoutine) }
+                            routineWithSteps = heroRoutine,
+                            todayRun = heroRun,
+                            totalCandidates = dashboardRoutineState.candidateRoutines.size,
+                            currentCandidateIndex = manualRoutineIndex.coerceIn(0, dashboardRoutineState.candidateRoutines.lastIndex.coerceAtLeast(0)),
+                            onCycleNext = {
+                                routineViewModel.cycleNextRoutine(dashboardRoutineState.candidateRoutines.size)
+                            },
+                            onStartRoutine = { routineViewModel.startRoutine(heroRoutine) }
                         )
                     }
                 }
@@ -299,6 +316,18 @@ fun DashboardScreen(
                         )
                     }
                 }
+
+                // Collapsed Completed Routines section at the bottom
+                if (completedRoutines.isNotEmpty()) {
+                    item {
+                        CompletedRoutinesCollapsedSection(
+                            completedRoutines = completedRoutines,
+                            onRestartRoutine = { routineWithSteps ->
+                                routineViewModel.startRoutine(routineWithSteps)
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -313,6 +342,9 @@ fun DashboardScreen(
             },
             onStepSkipped = { step, nextIndex ->
                 routineViewModel.onStepSkipped(step, nextIndex)
+            },
+            onPacingElapsed = {
+                routineViewModel.onStepPacingElapsed()
             },
             onFinishRoutine = {
                 routineViewModel.finishRoutine()

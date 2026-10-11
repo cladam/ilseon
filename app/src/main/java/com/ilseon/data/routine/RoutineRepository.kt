@@ -29,6 +29,7 @@ interface RoutineRepository {
     fun calculateSessionDate(currentTimeMillis: Long, cutoffHour: Int = 4): Long
     suspend fun getOrCreateTodayRun(routineId: UUID, currentTimeMillis: Long = System.currentTimeMillis()): RoutineRun
     fun observeTodayRun(routineId: UUID, currentTimeMillis: Long = System.currentTimeMillis()): Flow<RoutineRun?>
+    fun observeAllRunsForToday(currentTimeMillis: Long = System.currentTimeMillis()): Flow<List<RoutineRun>>
 
     suspend fun recordStepCompleted(runId: UUID, stepId: UUID, nextStepIndex: Int)
     suspend fun recordStepSkipped(runId: UUID, stepId: UUID, nextStepIndex: Int)
@@ -155,6 +156,12 @@ class RoutineRepositoryImpl(
         val cutoff = 4 // standard default cutoff
         val sessionDate = calculateSessionDate(currentTimeMillis, cutoff)
         return routineDao.observeRunForRoutineAndSessionDate(routineId, sessionDate)
+    }
+
+    override fun observeAllRunsForToday(currentTimeMillis: Long): Flow<List<RoutineRun>> {
+        val cutoff = 4
+        val sessionDate = calculateSessionDate(currentTimeMillis, cutoff)
+        return routineDao.observeRunsForSessionDate(sessionDate)
     }
 
     override suspend fun recordStepCompleted(runId: UUID, stepId: UUID, nextStepIndex: Int) {

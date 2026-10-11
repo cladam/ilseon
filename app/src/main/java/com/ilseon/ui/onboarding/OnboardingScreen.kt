@@ -39,6 +39,10 @@ fun OnboardingScreen(onOnboardingFinished: () -> Unit) {
             description = "Your \"Front Line\" of focus. We hide the chaos and show only what matters right now. No more overwhelming lists."
         ),
         OnboardingSlide(
+            title = "Guided Routines",
+            description = "Step-by-step playlists for your daily rituals. Transition through morning or evening routines on autopilot without decision fatigue."
+        ),
+        OnboardingSlide(
             title = "Build Momentum",
             description = "Turn focus into a habit. Earn Momentum points for every task completed and reflection captured. Watch your daily streak grow as you find your flow."
         ),
@@ -52,7 +56,7 @@ fun OnboardingScreen(onOnboardingFinished: () -> Unit) {
         ),
         OnboardingSlide(
             title = "The Widget",
-            description = "Stay present without opening the app. The home screen widget shows your current priority and has shortcuts for quick capture."
+            description = "Stay present without opening the app. The home screen widget shows your current priority and has shortcuts for quick capture and instant incident follow-up."
         ),
         OnboardingSlide(
             title = "Your Data is Yours",

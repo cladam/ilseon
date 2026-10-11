@@ -1,5 +1,6 @@
 package com.ilseon.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,18 +20,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +62,9 @@ import com.ilseon.ui.theme.MutedTeal
 fun RoutineHeroCard(
     routineWithSteps: RoutineWithSteps,
     todayRun: RoutineRun?,
+    totalCandidates: Int = 1,
+    currentCandidateIndex: Int = 0,
+    onCycleNext: () -> Unit = {},
     onStartRoutine: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -95,7 +109,7 @@ fun RoutineHeroCard(
                         )
                     }
                     Text(
-                        text = "ROUTINE",
+                        text = if (totalCandidates > 1) "ROUTINE (${currentCandidateIndex + 1} OF $totalCandidates)" else "ROUTINE",
                         style = MaterialTheme.typography.labelSmall,
                         color = MutedTeal,
                         fontWeight = FontWeight.Bold,
@@ -103,12 +117,31 @@ fun RoutineHeroCard(
                     )
                 }
 
-                if (routineWithSteps.totalEstimatedMinutes > 0) {
-                    Text(
-                        text = "~${routineWithSteps.totalEstimatedMinutes} mins",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MutedDetail
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (routineWithSteps.totalEstimatedMinutes > 0) {
+                        Text(
+                            text = "~${routineWithSteps.totalEstimatedMinutes} mins",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MutedDetail
+                        )
+                    }
+
+                    if (totalCandidates > 1) {
+                        IconButton(
+                            onClick = onCycleNext,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = "Switch to next routine in this block",
+                                tint = MutedDetail,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -153,6 +186,106 @@ fun RoutineHeroCard(
                     text = if (isStarted) "Continue Routine (Step ${currentIndex + 1}/${steps.size})" else "Start Routine",
                     fontWeight = FontWeight.SemiBold
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Collapsed Section showing routines that have already been completed today.
+ */
+@Composable
+fun CompletedRoutinesCollapsedSection(
+    completedRoutines: List<Pair<RoutineWithSteps, RoutineRun>>,
+    onRestartRoutine: (RoutineWithSteps) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = LightGrey.copy(alpha = 0.6f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderQuiet)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MutedTeal,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Completed Routines Today (${completedRoutines.size})",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MutedDetail
+                    )
+                }
+
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MutedDetail
+                )
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    completedRoutines.forEach { (routineWithSteps, _) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(BorderQuiet)
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = routineWithSteps.routine.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "All ${routineWithSteps.steps.size} steps done",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MutedDetail
+                                )
+                            }
+
+                            TextButton(
+                                onClick = { onRestartRoutine(routineWithSteps) }
+                            ) {
+                                Text("Restart", color = MutedTeal, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

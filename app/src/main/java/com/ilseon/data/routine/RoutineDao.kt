@@ -87,6 +87,9 @@ interface RoutineDao {
     @Query("SELECT * FROM routine_runs WHERE routineId = :routineId AND sessionDate = :sessionDate LIMIT 1")
     fun observeRunForRoutineAndSessionDate(routineId: UUID, sessionDate: Long): Flow<RoutineRun?>
 
+    @Query("SELECT * FROM routine_runs WHERE sessionDate = :sessionDate")
+    fun observeRunsForSessionDate(sessionDate: Long): Flow<List<RoutineRun>>
+
     @Query("SELECT * FROM routine_runs WHERE routineId = :routineId ORDER BY startedAt DESC LIMIT :limit")
     suspend fun getRecentRunsForRoutine(routineId: UUID, limit: Int = 10): List<RoutineRun>
 }

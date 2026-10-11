@@ -68,6 +68,7 @@ fun RoutineRunnerOverlay(
     todayRun: RoutineRun,
     onStepCompleted: (step: RoutineStep, nextIndex: Int) -> Unit,
     onStepSkipped: (step: RoutineStep, nextIndex: Int) -> Unit,
+    onPacingElapsed: () -> Unit,
     onFinishRoutine: () -> Unit,
     onMinimize: () -> Unit
 ) {
@@ -79,13 +80,21 @@ fun RoutineRunnerOverlay(
 
     // Elastic elapsed step timer
     var elapsedSeconds by remember(currentStep?.id) { mutableIntStateOf(0) }
+    var hasFiredPacingNudge by remember(currentStep?.id) { mutableStateOf(false) }
+
+    val targetSeconds = (currentStep?.targetDurationMinutes ?: 0) * 60
 
     LaunchedEffect(currentStep?.id, isComplete) {
         if (!isComplete) {
             elapsedSeconds = 0
+            hasFiredPacingNudge = false
             while (true) {
                 delay(1000L)
                 elapsedSeconds++
+                if (targetSeconds > 0 && elapsedSeconds >= targetSeconds && !hasFiredPacingNudge) {
+                    hasFiredPacingNudge = true
+                    onPacingElapsed()
+                }
             }
         }
     }

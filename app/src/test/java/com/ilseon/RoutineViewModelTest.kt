@@ -10,6 +10,7 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.data.routine.RoutineRun
 import com.ilseon.service.HapticManager
+import com.ilseon.data.task.FocusBlockRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -25,6 +26,7 @@ class RoutineViewModelTest {
 
     private val routineRepository: RoutineRepository = mockk(relaxed = true)
     private val contextRepository: TaskContextRepository = mockk(relaxed = true)
+    private val focusBlockRepository: FocusBlockRepository = mockk(relaxed = true)
     private val hapticManager: HapticManager = mockk(relaxed = true)
     private val mockContext: Context = mockk(relaxed = true)
     private lateinit var viewModel: RoutineViewModel
@@ -36,7 +38,8 @@ class RoutineViewModelTest {
     fun setup() {
         coEvery { routineRepository.observeActiveRoutines() } returns flowOf(emptyList())
         coEvery { contextRepository.getContexts() } returns flowOf(emptyList())
-        viewModel = RoutineViewModel(routineRepository, contextRepository, hapticManager, mockContext)
+        coEvery { focusBlockRepository.getFocusBlocks() } returns flowOf(emptyList())
+        viewModel = RoutineViewModel(routineRepository, contextRepository, focusBlockRepository, hapticManager, mockContext)
     }
 
     @Test
@@ -209,5 +212,45 @@ class RoutineViewModelTest {
 
         assertNotNull(state.selectedHeroRoutine)
         assertEquals("In Progress", state.selectedHeroRoutine?.first?.routine?.title)
+    }
+
+    @Test
+    fun `getDashboardRoutineState hides routine whose context has a scheduled focus block when that block is inactive`() {
+        val routineInScheduledContext = RoutineWithSteps(
+            routine = Routine(
+                id = UUID.randomUUID(),
+                title = "Monday Evening Routine",
+                contextId = contextId1
+            ),
+            steps = listOf(RoutineStep(routineId = UUID.randomUUID(), title = "Step 1"))
+        )
+        val routineInOpenContext = RoutineWithSteps(
+            routine = Routine(
+                id = UUID.randomUUID(),
+                title = "General Daily Routine",
+                contextId = contextId2
+            ),
+            steps = listOf(RoutineStep(routineId = UUID.randomUUID(), title = "Step 1"))
+        )
+
+        // Context 1 has a focus block scheduled, Context 2 has no focus blocks
+        val scheduledBlockForContext1 = FocusBlock(
+            contextId = contextId1,
+            startTime = "18:00",
+            endTime = "21:00",
+            repeatDays = listOf(1) // Monday
+        )
+
+        // When NO focus block is active right now:
+        val state = viewModel.getDashboardRoutineState(
+            routines = listOf(routineInScheduledContext, routineInOpenContext),
+            todayRuns = emptyList(),
+            activeFocusBlock = null,
+            allFocusBlocks = listOf(scheduledBlockForContext1)
+        )
+
+        // Monday Evening Routine must be filtered out! Only the open General routine is eligible.
+        assertEquals(1, state.candidateRoutines.size)
+        assertEquals("General Daily Routine", state.selectedHeroRoutine?.first?.routine?.title)
     }
 }

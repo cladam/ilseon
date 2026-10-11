@@ -71,6 +71,7 @@ fun DashboardScreen(
     val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
     val activeRoutines by routineViewModel.activeRoutines.collectAsState()
     val todayRuns by routineViewModel.todayRuns.collectAsState()
+    val allFocusBlocks by routineViewModel.allFocusBlocks.collectAsState()
     val runningRoutine by routineViewModel.runningRoutine.collectAsState()
     val currentRun by routineViewModel.currentRun.collectAsState()
     val runnerUiState by routineViewModel.runnerUiState.collectAsState()
@@ -84,11 +85,12 @@ fun DashboardScreen(
         }
     }
 
-    val dashboardRoutineState = remember(activeRoutines, todayRuns, activeFocusBlock, manualRoutineIndex, currentTimeMillis) {
+    val dashboardRoutineState = remember(activeRoutines, todayRuns, activeFocusBlock, allFocusBlocks, manualRoutineIndex, currentTimeMillis) {
         routineViewModel.getDashboardRoutineState(
             routines = activeRoutines,
             todayRuns = todayRuns,
             activeFocusBlock = activeFocusBlock,
+            allFocusBlocks = allFocusBlocks,
             manualIndex = manualRoutineIndex
         )
     }

@@ -9,6 +9,7 @@ import com.ilseon.data.routine.RoutineStep
 import com.ilseon.data.routine.RoutineStepDraft
 import com.ilseon.data.routine.RoutineWithSteps
 import com.ilseon.data.task.FocusBlock
+import com.ilseon.data.task.FocusBlockRepository
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.task.TaskContextRepository
 import com.ilseon.service.HapticManager
@@ -36,6 +37,7 @@ enum class RoutineRunnerUiState {
 class RoutineViewModel @Inject constructor(
     private val routineRepository: RoutineRepository,
     private val contextRepository: TaskContextRepository,
+    private val focusBlockRepository: FocusBlockRepository,
     private val hapticManager: HapticManager,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
@@ -58,6 +60,14 @@ class RoutineViewModel @Inject constructor(
 
     val contexts: StateFlow<List<TaskContext>> =
         contextRepository.getContexts()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    val allFocusBlocks: StateFlow<List<FocusBlock>> =
+        focusBlockRepository.getFocusBlocks()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -126,6 +136,7 @@ class RoutineViewModel @Inject constructor(
         routines: List<RoutineWithSteps>,
         todayRuns: List<RoutineRun>,
         activeFocusBlock: FocusBlock?,
+        allFocusBlocks: List<FocusBlock> = emptyList(),
         manualIndex: Int = 0,
         nowCalendar: Calendar = Calendar.getInstance()
     ): DashboardRoutineState {
@@ -134,12 +145,23 @@ class RoutineViewModel @Inject constructor(
         val currentMinutesOfDay = currentHour * 60 + currentMinute
         val runMap = todayRuns.associateBy { it.routineId }
 
+        // Contexts that have explicit scheduled focus blocks
+        val contextsWithBlocks = allFocusBlocks.map { it.contextId }.toSet()
+
         val eligibleRoutines = routines.filter { routineWithSteps ->
             val routine = routineWithSteps.routine
 
-            // Context filter: if a focus block is active, only show routines belonging to it.
-            // If no focus block is active, all routines are eligible.
-            val contextMatches = activeFocusBlock == null || routine.contextId == activeFocusBlock.contextId
+            // Context filter logic:
+            // 1. If a focus block is active right now: ONLY show routines belonging to this active focus block.
+            // 2. If NO focus block is active right now:
+            //    - Routines whose context has scheduled focus blocks (e.g. Monday evening block) are INACTIVE and must NOT show.
+            //    - Only routines in unscheduled / open contexts (like Default) are eligible when outside any focus block.
+            val contextMatches = if (activeFocusBlock != null) {
+                routine.contextId == activeFocusBlock.contextId
+            } else {
+                !contextsWithBlocks.contains(routine.contextId)
+            }
+
             if (!contextMatches) return@filter false
 
             // Start time filter: e.g. enabled at 7:00 AM

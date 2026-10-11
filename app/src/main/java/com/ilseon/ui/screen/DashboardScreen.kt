@@ -20,9 +20,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,9 +36,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ilseon.TaskContextViewModel
 import com.ilseon.TaskViewModel
+import com.ilseon.RoutineRunnerUiState
+import com.ilseon.RoutineViewModel
 import com.ilseon.data.task.FocusBlock
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AnimatedTaskItem
+import com.ilseon.ui.components.RoutineCompactBar
+import com.ilseon.ui.components.RoutineHeroCard
+import com.ilseon.ui.components.RoutineRunnerOverlay
 import com.ilseon.ui.theme.MutedRed
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -51,13 +60,31 @@ fun DashboardScreen(
     activeFocusBlock: FocusBlock?,
     onSwipeUp: () -> Unit,
     taskViewModel: TaskViewModel = hiltViewModel(),
-    contextViewModel: TaskContextViewModel = hiltViewModel()
+    contextViewModel: TaskContextViewModel = hiltViewModel(),
+    routineViewModel: RoutineViewModel = hiltViewModel()
 ) {
     Log.d("DashboardDebug", "=== Received Tasks ===")
     tasks.forEach { task ->
         Log.d("DashboardDebug", "Received: ${task.title}, startTime=${task.startTime}, isRecurring=${task.isRecurring}")
     }
     val contextsWithFocusBlock by contextViewModel.contextsWithFocusBlock.collectAsState()
+    val activeRoutines by routineViewModel.activeRoutines.collectAsState()
+    val runningRoutine by routineViewModel.runningRoutine.collectAsState()
+    val currentRun by routineViewModel.currentRun.collectAsState()
+    val runnerUiState by routineViewModel.runnerUiState.collectAsState()
+
+    var currentTimeMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15_000L) // Refresh every 15 seconds to catch minute ticks
+            currentTimeMillis = System.currentTimeMillis()
+        }
+    }
+
+    val dashboardReadyRoutine = remember(activeRoutines, activeFocusBlock, currentTimeMillis) {
+        routineViewModel.getDashboardReadyRoutine(activeRoutines, activeFocusBlock)
+    }
+
     val contextMap = remember(contextsWithFocusBlock) {
         contextsWithFocusBlock.associate { it.context.id to it.context }
     }
@@ -156,9 +183,19 @@ fun DashboardScreen(
     ) {
         ClockDisplay()
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
 
-        if (priorityTask == null && urgentOutOfContextTasks.isEmpty()) {
+        // Compact Floating Progress Bar if routine is running in the background
+        if (runnerUiState == RoutineRunnerUiState.CollapsedBar && runningRoutine != null && currentRun != null) {
+            RoutineCompactBar(
+                routineWithSteps = runningRoutine!!,
+                todayRun = currentRun!!,
+                onExpand = { routineViewModel.expandRunner() },
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        if (priorityTask == null && urgentOutOfContextTasks.isEmpty() && dashboardReadyRoutine == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (focusContextName != null) "No tasks for $focusContextName" else "All clear!",
@@ -171,6 +208,17 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Active / Ready Routine Hero Card
+                if (dashboardReadyRoutine != null && runnerUiState != RoutineRunnerUiState.CollapsedBar) {
+                    item {
+                        RoutineHeroCard(
+                            routineWithSteps = dashboardReadyRoutine,
+                            todayRun = currentRun,
+                            onStartRoutine = { routineViewModel.startRoutine(dashboardReadyRoutine) }
+                        )
+                    }
+                }
+
                 if (priorityTask != null) {
                     item {
                         AnimatedTaskItem(
@@ -253,5 +301,25 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    // Distraction-Free Full-Screen Routine Playlist Overlay
+    if (runnerUiState == RoutineRunnerUiState.FullOverlay && runningRoutine != null && currentRun != null) {
+        RoutineRunnerOverlay(
+            routineWithSteps = runningRoutine!!,
+            todayRun = currentRun!!,
+            onStepCompleted = { step, nextIndex ->
+                routineViewModel.onStepCompleted(step, nextIndex)
+            },
+            onStepSkipped = { step, nextIndex ->
+                routineViewModel.onStepSkipped(step, nextIndex)
+            },
+            onFinishRoutine = {
+                routineViewModel.finishRoutine()
+            },
+            onMinimize = {
+                routineViewModel.minimizeRunner()
+            }
+        )
     }
 }

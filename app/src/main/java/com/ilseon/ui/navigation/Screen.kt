@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
     object VoiceInbox : Screen("voice_inbox")
     object Recorder : Screen("recorder")
     object FuelCheck : Screen("fuel_check")
+    object Routines : Screen("routines")
 
     fun withArgs(vararg args: String): String {
         return buildString {

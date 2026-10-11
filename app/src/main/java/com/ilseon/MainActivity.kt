@@ -110,6 +110,7 @@ import com.ilseon.ui.screen.IdeaInboxScreen
 import com.ilseon.ui.screen.NextTaskActivationScreen
 import com.ilseon.ui.screen.OngoingTasksScreen
 import com.ilseon.ui.screen.ReflectionScreen
+import com.ilseon.ui.screen.RoutinesScreen
 import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.RecorderScreen
 import com.ilseon.ui.screen.SettingsScreen
@@ -289,6 +290,7 @@ class MainActivity : ComponentActivity() {
                 val tasks by viewModel.tasks.collectAsState()
                 val completionStreak by viewModel.completionStreak.collectAsState()
                 val activeFocusBlock by viewModel.activeFocusBlock.collectAsState()
+                val routineViewModel: RoutineViewModel = hiltViewModel()
                 var completedTaskIds by remember { mutableStateOf<Set<UUID>>(emptySet()) }
 
                 var vttTitleResult by remember { mutableStateOf("") }
@@ -593,7 +595,8 @@ class MainActivity : ComponentActivity() {
                                     onSwipeUp = {
                                         scope.launch { sheetState.show() }
                                     },
-                                    taskViewModel = viewModel
+                                    taskViewModel = viewModel,
+                                    routineViewModel = routineViewModel
                                 )
                             }
                             composable(Screen.NextTaskActivation.route) {
@@ -653,6 +656,9 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate("ongoing_tasks/$contextId")
                                     }
                                 )
+                            }
+                            composable(Screen.Routines.route) {
+                                RoutinesScreen(viewModel = routineViewModel)
                             }
                             composable(
                                 route = "${Screen.IdeaInbox.route}?ideaId={ideaId}",
@@ -884,6 +890,7 @@ private fun DrawerContent(
         "Voice Inbox" to Screen.VoiceInbox.route,
         "Reflections" to Screen.Reflections.route,
         "Contexts" to Screen.ContextManagement.route,
+        "Routines" to Screen.Routines.route,
         "Analytics" to Screen.Analytics.route
     )
 

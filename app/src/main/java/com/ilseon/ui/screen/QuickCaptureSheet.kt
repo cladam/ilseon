@@ -4,6 +4,7 @@ import android.text.format.DateFormat
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -451,34 +452,28 @@ fun QuickCaptureSheet(
             fontSize = 14.sp
         )
         Spacer(Modifier.height(8.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            contexts.chunked(3).forEach { rowContexts ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            contexts.forEach { ctx ->
+                Button(
+                    onClick = { selectedContextId = ctx.id },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary.copy(
+                            alpha = 0.2f
+                        ) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.7f
+                        )
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {
-                    rowContexts.forEach { ctx ->
-                        Button(
-                            onClick = { selectedContextId = ctx.id },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.2f
-                                ) else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.7f
-                                )
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = ButtonDefaults.buttonElevation(0.dp)
-                        ) {
-                            Text(ctx.name)
-                        }
-                    }
-                    // Add spacers to fill the row if there are less than 3 items
-                    repeat(3 - rowContexts.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                    Text(ctx.name)
                 }
             }
         }

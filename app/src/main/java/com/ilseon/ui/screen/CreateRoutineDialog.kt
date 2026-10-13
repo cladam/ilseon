@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -182,7 +183,7 @@ fun CreateRoutineDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 600.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 // Template Presets (Only shown in create mode to ease blank-page freeze)
                 if (!isEditMode) {
@@ -337,7 +338,7 @@ fun CreateRoutineDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Context Selector Chips
+                // Context Selector Chips (Single scrollable row so multiple contexts never push steps offscreen)
                 if (contexts.isNotEmpty()) {
                     Text(
                         text = "Focus Context",
@@ -345,9 +346,11 @@ fun CreateRoutineDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         contexts.forEach { ctx ->
                             FilterChip(
@@ -503,13 +506,11 @@ fun CreateRoutineDialog(
                 }
 
                 // Existing Steps List
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp, max = 220.dp),
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    itemsIndexed(steps) { index, step ->
+                    steps.forEachIndexed { index, step ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

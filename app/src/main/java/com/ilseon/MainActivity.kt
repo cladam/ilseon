@@ -168,7 +168,16 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            IlseonTheme {
+            val themeModeString by settingsViewModel.themeMode.collectAsState()
+            val themeMode = remember(themeModeString) {
+                try {
+                    com.ilseon.ui.theme.AppThemeMode.valueOf(themeModeString)
+                } catch (e: Exception) {
+                    com.ilseon.ui.theme.AppThemeMode.Dark
+                }
+            }
+
+            IlseonTheme(themeMode = themeMode) {
                 val fuelCheckViewModel: FuelCheckViewModel = hiltViewModel()
                 val userStatus by fuelCheckViewModel.userStatus.collectAsState()
                 LaunchedEffect(userStatus) {

@@ -98,6 +98,19 @@ class SettingsViewModel @Inject constructor(
             initialValue = true
         )
 
+    val themeMode = settingsRepository.themeMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = com.ilseon.data.task.SettingsRepositoryImpl.DEFAULT_THEME_MODE
+        )
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            settingsRepository.setThemeMode(mode)
+        }
+    }
+
     fun setNudgeNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNudgeNotificationsEnabled(enabled)

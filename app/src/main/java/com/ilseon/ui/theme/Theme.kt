@@ -13,6 +13,12 @@ import androidx.compose.ui.graphics.Color
 import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.TaskPriority
 
+enum class AppThemeMode {
+    Dark,
+    Light,
+    Auto
+}
+
 /**
  * Custom semantic colors for domain concepts like Priority, Energy, and subtle borders.
  */
@@ -140,11 +146,18 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun IlseonTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: AppThemeMode = AppThemeMode.Dark,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
+    val systemInDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        AppThemeMode.Dark -> true
+        AppThemeMode.Light -> false
+        AppThemeMode.Auto -> systemInDark
+    }
+
+    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
+    val extendedColors = if (isDark) DarkExtendedColors else LightExtendedColors
 
     CompositionLocalProvider(
         LocalExtendedColors provides extendedColors

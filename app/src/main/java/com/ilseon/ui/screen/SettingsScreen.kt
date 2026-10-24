@@ -85,6 +85,7 @@ fun SettingsScreen(
     val incidentFollowUpContextId by viewModel.incidentFollowUpContextId.collectAsState()
     val incidentFollowUpDelayMinutes by viewModel.incidentFollowUpDelayMinutes.collectAsState()
     val isRightHandedFab by viewModel.isRightHandedFab.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
     val availableContexts by viewModel.availableContexts.collectAsState()
     val context = LocalContext.current
 
@@ -192,6 +193,8 @@ fun SettingsScreen(
         onIncidentFollowUpDelayMinutesChange = viewModel::setIncidentFollowUpDelayMinutes,
         isRightHandedFab = isRightHandedFab,
         onIsRightHandedFabChange = viewModel::setIsRightHandedFab,
+        themeMode = themeMode,
+        onThemeModeChange = viewModel::setThemeMode,
         availableContexts = availableContexts
     )
 }
@@ -231,6 +234,8 @@ private fun SettingsScreenContent(
     onIncidentFollowUpDelayMinutesChange: (Int) -> Unit,
     isRightHandedFab: Boolean,
     onIsRightHandedFabChange: (Boolean) -> Unit,
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit,
     availableContexts: List<com.ilseon.data.task.TaskContext>
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -286,6 +291,12 @@ private fun SettingsScreenContent(
             HardwareSettingsCard(
                 mediaButtonTriggerEnabled = mediaButtonTriggerEnabled,
                 onMediaButtonTriggerEnabledChange = onMediaButtonTriggerEnabledChange
+            )
+        }
+        item {
+            AppearanceSettingsCard(
+                currentThemeMode = themeMode,
+                onThemeModeChange = onThemeModeChange
             )
         }
         item {
@@ -491,6 +502,52 @@ private fun HardwareSettingsCard(
                 checked = mediaButtonTriggerEnabled,
                 onCheckedChange = onMediaButtonTriggerEnabledChange
             )
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSettingsCard(
+    currentThemeMode: String,
+    onThemeModeChange: (String) -> Unit
+) {
+    val themeOptions = listOf(
+        Triple("Dark", "Dark", "Deep, low-sensory dark theme (Default)"),
+        Triple("Light", "Light", "Soft, low-glare light theme"),
+        Triple("Auto", "System default", "Follow system dark/light mode setting")
+    )
+
+    AppCard {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Appearance",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            themeOptions.forEach { (modeKey, title, subtitle) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onThemeModeChange(modeKey) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = currentThemeMode == modeKey,
+                        onClick = { onThemeModeChange(modeKey) }
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
     }
 }

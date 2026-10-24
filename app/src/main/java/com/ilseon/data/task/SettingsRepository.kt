@@ -46,6 +46,9 @@ interface SettingsRepository {
 
     val isRightHandedFab: Flow<Boolean>
     suspend fun setIsRightHandedFab(isRightHanded: Boolean)
+
+    val themeMode: Flow<String>
+    suspend fun setThemeMode(mode: String)
 }
 
 @Singleton
@@ -69,6 +72,8 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_ENABLE_URGENT_AUDIO_CUE = "enable_urgent_audio_cue"
         const val KEY_ENABLE_HIGH_PRIORITY_AUDIO_CUE = "enable_high_priority_audio_cue"
         const val KEY_IS_RIGHT_HANDED_FAB = "is_right_handed_fab"
+        const val KEY_THEME_MODE = "app_theme_mode"
+        const val DEFAULT_THEME_MODE = "Dark"
 
         const val DEFAULT_INCIDENT_FOLLOW_UP_TITLE =
             "There was an incident that you have to follow-up, please pause, reflect and engage."
@@ -280,6 +285,23 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setIsRightHandedFab(isRightHanded: Boolean) {
         prefs.edit {
             putBoolean(KEY_IS_RIGHT_HANDED_FAB, isRightHanded)
+        }
+    }
+
+    override val themeMode: Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_THEME_MODE) {
+                trySend(prefs.getString(KEY_THEME_MODE, DEFAULT_THEME_MODE) ?: DEFAULT_THEME_MODE)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString(KEY_THEME_MODE, DEFAULT_THEME_MODE) ?: DEFAULT_THEME_MODE)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setThemeMode(mode: String) {
+        prefs.edit {
+            putString(KEY_THEME_MODE, mode)
         }
     }
 }

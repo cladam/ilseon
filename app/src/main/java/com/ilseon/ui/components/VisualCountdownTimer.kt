@@ -28,8 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ilseon.ui.theme.IlseonTheme
-import com.ilseon.ui.theme.MutedTeal
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
@@ -48,9 +47,12 @@ fun VisualCountdownTimer(
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
 
+    val warningColor = MaterialTheme.extendedColors.priorityMedium
+    val primaryColor = MaterialTheme.colorScheme.primary
+
     val pulsingColor by infiniteTransition.animateColor(
-        initialValue = QuietAmber,
-        targetValue = QuietAmber.copy(alpha = 0.7f),
+        initialValue = warningColor,
+        targetValue = warningColor.copy(alpha = 0.7f),
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
@@ -58,8 +60,8 @@ fun VisualCountdownTimer(
     )
 
     val subtlePulseColor by infiniteTransition.animateColor(
-        initialValue = MutedTeal,
-        targetValue = MutedTeal.copy(alpha = 0.8f),
+        initialValue = primaryColor,
+        targetValue = primaryColor.copy(alpha = 0.8f),
         animationSpec = infiniteRepeatable(
             animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse

@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.RecorderState
-import com.ilseon.ui.theme.MutedTeal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -75,7 +74,7 @@ fun RecorderScreen(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Saved",
                         modifier = Modifier.size(64.dp),
-                        tint = MutedTeal
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -130,7 +129,7 @@ fun RecorderScreen(
                         onClick = onStartRecording,
                         modifier = Modifier.size(80.dp),
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MutedTeal,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
@@ -265,6 +264,8 @@ private fun PulsingWaveform() {
         }
     }
 
+    val waveColor = MaterialTheme.colorScheme.primary
+
     Canvas(
         modifier = Modifier
             .fillMaxWidth(0.6f)
@@ -281,7 +282,7 @@ private fun PulsingWaveform() {
             val x = center + (i - lineCount / 2) * lineWidth * 2
 
             drawLine(
-                color = MutedTeal,
+                color = waveColor,
                 start = Offset(x, (size.height - lineHeight) / 2),
                 end = Offset(x, (size.height + lineHeight) / 2),
                 strokeWidth = lineWidth * 0.8f,

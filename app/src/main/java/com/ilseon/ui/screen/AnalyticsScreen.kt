@@ -52,7 +52,6 @@ import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.theme.BlueTeal
 import com.ilseon.ui.theme.MutedGreen
 import com.ilseon.ui.theme.MutedRed
-import com.ilseon.ui.theme.MutedTeal
 import com.ilseon.ui.theme.QuietAmber
 import com.ilseon.ui.theme.SlateBlue
 
@@ -397,9 +396,10 @@ fun FocusDistributionChart(distribution: Map<String, Float>) {
         distribution.entries.sortedByDescending { it.value }
     }
 
-    val chartColors = remember(sortedDistribution.size) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val chartColors = remember(sortedDistribution.size, primaryColor) {
         listOf(
-            MutedTeal,
+            primaryColor,
             QuietAmber,
             MutedRed,
             BlueTeal,
@@ -508,7 +508,7 @@ fun RoutineAnalyticsCard(routineData: RoutineAnalyticsData) {
                         text = "${routineData.completedRoutinesCount}",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MutedTeal
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Routines Done",
@@ -529,7 +529,7 @@ fun RoutineAnalyticsCard(routineData: RoutineAnalyticsData) {
                         text = "${routineData.completedStepsCount}",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MutedTeal
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Micro-Steps Done",
@@ -550,7 +550,7 @@ fun RoutineAnalyticsCard(routineData: RoutineAnalyticsData) {
                         text = if (routineData.averageDurationMinutes > 0) "${routineData.averageDurationMinutes}m" else "—",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MutedTeal
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Avg Duration",

@@ -38,7 +38,7 @@ import com.ilseon.CompletedTasksViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskPriority
 import com.ilseon.ui.theme.IlseonTheme
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -126,7 +126,7 @@ private fun CompletedTaskItem(
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = "Urgent",
-                            tint = QuietAmber,
+                            tint = MaterialTheme.extendedColors.priorityHigh,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))

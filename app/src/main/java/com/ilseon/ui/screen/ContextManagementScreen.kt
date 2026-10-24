@@ -67,7 +67,7 @@ import com.ilseon.data.task.Task
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TimePickerDialog
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
 import androidx.compose.ui.platform.LocalLocale
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -583,7 +583,7 @@ fun TasksDialog(
                                 Icon(
                                     imageVector = Icons.Default.LocalFireDepartment,
                                     contentDescription = "Urgent",
-                                    tint = QuietAmber,
+                                    tint = MaterialTheme.extendedColors.priorityHigh,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))

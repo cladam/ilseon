@@ -64,7 +64,8 @@ import com.ilseon.data.toColor
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.VisualCountdownTimer
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
+import com.ilseon.ui.theme.toThemeColor
 import com.ilseon.ui.theme.toColor
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.delay
@@ -163,7 +164,7 @@ fun CurrentPriorityTask(
                 .border(
                     width = 1.dp,
                     color = when {
-                        isOverdue -> QuietAmber
+                        isOverdue -> MaterialTheme.extendedColors.priorityHigh
                         else -> colorScheme.primary
                     },
                     shape = RoundedCornerShape(24.dp)
@@ -199,23 +200,24 @@ fun CurrentPriorityTask(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(task.priority.toColor(), CircleShape)
+                            .background(task.priority.toThemeColor(), CircleShape)
                     )
                     Text(
                         text = contextName,
-                        color = colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
 
                 // Energy Badge
                 task.energyLevel?.let { level ->
+                    val levelColor = level.toThemeColor()
                     Row(
                         modifier = Modifier
-                            .background(level.toColor().copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .background(levelColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                             .border(
                                 width = 1.dp,
-                                color = level.toColor().copy(alpha = 0.5f),
+                                color = levelColor.copy(alpha = 0.5f),
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -231,14 +233,14 @@ fun CurrentPriorityTask(
                         Icon(
                             imageVector = icon,
                             contentDescription = "Energy Level",
-                            tint = level.toColor(),
+                            tint = levelColor,
                             modifier = Modifier
                                 .size(20.dp)
                                 .rotate(90f)
                         )
                         Text(
                             text = level.name,
-                            color = level.toColor(),
+                            color = levelColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -259,7 +261,7 @@ fun CurrentPriorityTask(
                             Icon(
                                 imageVector = Icons.Default.LocalFireDepartment,
                                 contentDescription = "Urgent",
-                                tint = QuietAmber,
+                                tint = MaterialTheme.extendedColors.priorityHigh,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -287,7 +289,7 @@ fun CurrentPriorityTask(
                         val endTimeStr = timeFormat.format(Date(task.endTime))
                         Text(
                             text = "Time Block: $startTimeStr - $endTimeStr",
-                            color = colorScheme.onSurface.copy(alpha = 0.7f),
+                            color = colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }

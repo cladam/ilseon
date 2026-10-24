@@ -68,8 +68,8 @@ import com.ilseon.data.EnergyLevel
 import com.ilseon.data.task.DayOfWeek
 import com.ilseon.data.task.SchedulingType
 import com.ilseon.data.task.TaskPriority
-import com.ilseon.data.toColor
 import com.ilseon.ui.components.DayPicker
+import com.ilseon.ui.theme.toThemeColor
 import com.ilseon.ui.components.TimePickerDialog
 import com.ilseon.ui.theme.toColor
 import kotlinx.coroutines.delay
@@ -492,11 +492,12 @@ fun QuickCaptureSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             TaskPriority.entries.forEach { prio ->
+                val prioColor = prio.toThemeColor()
                 Button(
                     onClick = { priority = prio },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (priority == prio) prio.toColor() else MaterialTheme.colorScheme.surface,
+                        containerColor = if (priority == prio) prioColor else MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = if (priority == prio) Color.White else MaterialTheme.colorScheme.onSurface
                     ),
                     shape = RoundedCornerShape(12.dp),
@@ -521,11 +522,12 @@ fun QuickCaptureSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             EnergyLevel.entries.forEach { level ->
+                val levelColor = level.toThemeColor()
                 Button(
                     onClick = { energyLevel = if (energyLevel == level) null else level },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (energyLevel == level) level.toColor() else MaterialTheme.colorScheme.surface,
+                        containerColor = if (energyLevel == level) levelColor else MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = if (energyLevel == level) Color.White else MaterialTheme.colorScheme.onSurface
                     ),
                     shape = RoundedCornerShape(12.dp),

@@ -115,13 +115,7 @@ import com.ilseon.ui.screen.QuickCaptureSheet
 import com.ilseon.ui.screen.RecorderScreen
 import com.ilseon.ui.screen.SettingsScreen
 import com.ilseon.ui.screen.VoiceInboxScreen
-import com.ilseon.ui.theme.BorderQuiet
-import com.ilseon.ui.theme.CustomTextPrimary
 import com.ilseon.ui.theme.IlseonTheme
-import com.ilseon.ui.theme.LightGrey
-import com.ilseon.ui.theme.MutedDetail
-import com.ilseon.ui.theme.MutedRed
-import com.ilseon.ui.theme.MutedTeal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -463,7 +457,7 @@ class MainActivity : ComponentActivity() {
                                         .size(118.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.surface, CircleShape)
-                                        .border(1.dp, MutedDetail, CircleShape)
+                                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                                         .clickable {
                                             val useVtt = bluetoothSstEnabled && bluetoothChecker.isHeadsetConnected()
                                             when {
@@ -895,12 +889,19 @@ private fun DrawerContent(
     )
 
     navigationItems.forEach { (title, route) ->
+        val isSelected = currentRoute == route
         NavigationDrawerItem(
-            label = { Text(title) },
-            selected = currentRoute == route,
+            label = { 
+                Text(
+                    text = title,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                ) 
+            },
+            selected = isSelected,
             onClick = { onNavigate(route) },
             colors = NavigationDrawerItemDefaults.colors(
-                selectedContainerColor = androidx.compose.ui.graphics.Color.DarkGray
+                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                unselectedContainerColor = androidx.compose.ui.graphics.Color.Transparent
             )
         )
     }

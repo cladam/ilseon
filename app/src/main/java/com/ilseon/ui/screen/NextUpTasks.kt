@@ -52,7 +52,8 @@ import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.MarkdownText
 import com.ilseon.ui.components.TaskDetailsDialog
-import com.ilseon.ui.theme.MutedRed
+import com.ilseon.ui.theme.extendedColors
+import com.ilseon.ui.theme.toThemeColor
 import com.ilseon.ui.theme.toColor
 import java.util.UUID
 
@@ -134,7 +135,8 @@ fun NextUpTasks(
             ) {
                 tasks.forEach { task ->
                     val isOverdue = viewModel.isTaskOverdue(task)
-                    val borderColor = if (isOverdue) MutedRed else colorScheme.primary.copy(alpha = 0.3f)
+                    val urgentColor = MaterialTheme.extendedColors.priorityHigh
+                    val borderColor = if (isOverdue) urgentColor else colorScheme.primary.copy(alpha = 0.3f)
                     AnimatedTaskItem(
                         task = task,
                         isVisible = !completedTaskIds.contains(task.id),
@@ -149,10 +151,10 @@ fun NextUpTasks(
                                 Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(colorScheme.onSurface.copy(alpha = 0.1f))
+                                    .background(colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                     .border(
                                         1.dp,
-                                        MutedRed.copy(alpha = 0.5f),
+                                        urgentColor.copy(alpha = 0.5f),
                                         RoundedCornerShape(8.dp)
                                     )
                                     .clickable { taskToShowDetails = it }
@@ -178,7 +180,7 @@ fun NextUpTasks(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(it.priority.toColor())
+                                        .background(it.priority.toThemeColor())
                                 ) {}
                                 Spacer(Modifier.width(8.dp))
                                 it.energyLevel?.let { level ->
@@ -190,7 +192,7 @@ fun NextUpTasks(
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = "Energy Level: ${level.name}",
-                                        tint = level.toColor(),
+                                        tint = level.toThemeColor(),
                                         modifier = Modifier
                                             .size(16.dp)
                                             .rotate(90f)

@@ -45,7 +45,7 @@ import com.ilseon.ui.components.CompletedRoutinesCollapsedSection
 import com.ilseon.ui.components.RoutineCompactBar
 import com.ilseon.ui.components.RoutineHeroCard
 import com.ilseon.ui.components.RoutineRunnerOverlay
-import com.ilseon.ui.theme.MutedRed
+import com.ilseon.ui.theme.extendedColors
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -272,7 +272,7 @@ fun DashboardScreen(
                             Spacer(Modifier.height(16.dp))
                             Text(
                                 text = "Urgent Outside Focus",
-                                color = MutedRed,
+                                color = MaterialTheme.extendedColors.priorityHigh,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )

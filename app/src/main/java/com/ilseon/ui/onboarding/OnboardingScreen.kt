@@ -15,6 +15,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,8 +25,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ilseon.R
-import com.ilseon.ui.theme.MutedDetail
-import com.ilseon.ui.theme.MutedTeal
 
 @Composable
 fun OnboardingScreen(onOnboardingFinished: () -> Unit) {
@@ -97,7 +96,7 @@ fun OnboardingScreen(onOnboardingFinished: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(slides.size) { iteration ->
-                val color = if (pagerState.currentPage == iteration) MutedTeal else MutedDetail
+                val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 Box(
                     modifier = Modifier
                         .padding(2.dp)

@@ -47,7 +47,7 @@ import com.ilseon.TaskViewModel
 import com.ilseon.data.task.Task
 import com.ilseon.ui.components.EditTaskDialog
 import com.ilseon.ui.components.MarkdownText
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -161,7 +161,7 @@ private fun OngoingTaskItem(
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = "Urgent",
-                            tint = QuietAmber,
+                            tint = MaterialTheme.extendedColors.priorityHigh,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))

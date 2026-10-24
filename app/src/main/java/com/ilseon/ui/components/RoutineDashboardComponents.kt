@@ -50,10 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ilseon.data.routine.RoutineRun
 import com.ilseon.data.routine.RoutineWithSteps
-import com.ilseon.ui.theme.BorderQuiet
-import com.ilseon.ui.theme.LightGrey
-import com.ilseon.ui.theme.MutedDetail
-import com.ilseon.ui.theme.MutedTeal
 
 /**
  * Hero Card shown on Dashboard when an active Routine time window is open.
@@ -76,9 +72,9 @@ fun RoutineHeroCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = LightGrey
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderQuiet)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -98,20 +94,20 @@ fun RoutineHeroCard(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(MutedTeal.copy(alpha = 0.15f)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Repeat,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = MutedTeal
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
                         text = if (totalCandidates > 1) "ROUTINE (${currentCandidateIndex + 1} OF $totalCandidates)" else "ROUTINE",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MutedTeal,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
@@ -125,7 +121,7 @@ fun RoutineHeroCard(
                         Text(
                             text = "~${routineWithSteps.totalEstimatedMinutes} mins",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MutedDetail
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -137,7 +133,7 @@ fun RoutineHeroCard(
                             Icon(
                                 imageVector = Icons.Default.Sync,
                                 contentDescription = "Switch to next routine in this block",
-                                tint = MutedDetail,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -158,7 +154,7 @@ fun RoutineHeroCard(
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MutedDetail,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -172,7 +168,7 @@ fun RoutineHeroCard(
                     .height(48.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MutedTeal,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
@@ -206,9 +202,9 @@ fun CompletedRoutinesCollapsedSection(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = LightGrey.copy(alpha = 0.6f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderQuiet)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -229,21 +225,21 @@ fun CompletedRoutinesCollapsedSection(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        tint = MutedTeal,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = "Completed Routines Today (${completedRoutines.size})",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = MutedDetail
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MutedDetail
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -259,7 +255,7 @@ fun CompletedRoutinesCollapsedSection(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(BorderQuiet)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -274,14 +270,14 @@ fun CompletedRoutinesCollapsedSection(
                                 Text(
                                     text = "All ${routineWithSteps.steps.size} steps done",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MutedDetail
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
                             TextButton(
                                 onClick = { onRestartRoutine(routineWithSteps) }
                             ) {
-                                Text("Restart", color = MutedTeal, fontSize = 12.sp)
+                                Text("Restart", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
                             }
                         }
                     }
@@ -314,9 +310,9 @@ fun RoutineCompactBar(
             .clickable { onExpand() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = LightGrey
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderQuiet),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -333,7 +329,7 @@ fun RoutineCompactBar(
                     Text(
                         text = routineWithSteps.routine.title,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MutedTeal,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -352,12 +348,12 @@ fun RoutineCompactBar(
                     Text(
                         text = "${currentIndex + 1}/${steps.size}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MutedDetail
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Resume",
-                        tint = MutedDetail
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -370,8 +366,8 @@ fun RoutineCompactBar(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
-                color = MutedTeal,
-                trackColor = BorderQuiet
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outline
             )
         }
     }

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
-import com.ilseon.ui.theme.toColor
+import com.ilseon.ui.theme.toThemeColor
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
@@ -77,11 +77,11 @@ fun TaskDetailsDialog(
                     Box(
                         modifier = Modifier
                             .size(10.dp)
-                            .background(task.priority.toColor(), CircleShape)
+                            .background(task.priority.toThemeColor(), CircleShape)
                     )
                     Text(
                         text = context?.name ?: "General",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }

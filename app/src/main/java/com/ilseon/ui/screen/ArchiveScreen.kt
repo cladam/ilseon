@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.ArchiveViewModel
 import com.ilseon.ui.components.AppCard
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -92,7 +92,7 @@ fun ArchiveScreen(
                                         Icon(
                                             imageVector = Icons.Default.LocalFireDepartment,
                                             contentDescription = "Urgent",
-                                            tint = QuietAmber,
+                                            tint = MaterialTheme.extendedColors.priorityHigh,
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))

@@ -78,7 +78,6 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.GravitySwipeBox
 import com.ilseon.ui.components.MarkdownText
-import com.ilseon.ui.theme.MutedTeal
 import androidx.compose.ui.platform.LocalLocale
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -438,7 +437,7 @@ fun IdeaInboxScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.CheckCircle,
                                                     contentDescription = "Convert to Task",
-                                                    tint = MutedTeal
+                                                    tint = MaterialTheme.colorScheme.primary
                                                 )
                                             }
                                         } else {

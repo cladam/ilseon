@@ -30,8 +30,8 @@ import com.ilseon.data.task.Task
 import com.ilseon.data.task.TaskContext
 import com.ilseon.data.toColor
 import com.ilseon.ui.components.MarkdownText
-import com.ilseon.ui.theme.QuietAmber
-import com.ilseon.ui.theme.toColor
+import com.ilseon.ui.theme.extendedColors
+import com.ilseon.ui.theme.toThemeColor
 import java.util.UUID
 
 @Composable
@@ -93,23 +93,24 @@ fun NextTaskActivationScreen(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
-                                    .background(nextTask.priority.toColor(), CircleShape)
+                                    .background(nextTask.priority.toThemeColor(), CircleShape)
                             )
                             Text(
                                 text = contextMap[nextTask.contextId]?.name ?: "General",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp
                             )
                         }
 
                         // Energy Badge
                         nextTask.energyLevel?.let { level ->
+                            val levelColor = level.toThemeColor()
                             Row(
                                 modifier = Modifier
-                                    .background(level.toColor().copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                    .background(levelColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                                     .border(
                                         width = 1.dp,
-                                        color = level.toColor().copy(alpha = 0.5f),
+                                        color = levelColor.copy(alpha = 0.5f),
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -124,14 +125,14 @@ fun NextTaskActivationScreen(
                                 Icon(
                                     imageVector = icon,
                                     contentDescription = "Energy Level",
-                                    tint = level.toColor(),
+                                    tint = levelColor,
                                     modifier = Modifier
                                         .size(20.dp)
                                         .rotate(90f)
                                 )
                                 Text(
                                     text = level.name,
-                                    color = level.toColor(),
+                                    color = levelColor,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -151,7 +152,7 @@ fun NextTaskActivationScreen(
                                     Icon(
                                         imageVector = Icons.Default.LocalFireDepartment,
                                         contentDescription = "Urgent",
-                                        tint = QuietAmber,
+                                        tint = MaterialTheme.extendedColors.priorityHigh,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))

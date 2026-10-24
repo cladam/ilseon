@@ -56,7 +56,8 @@ import com.ilseon.data.task.TaskContext
 import com.ilseon.data.toColor
 import com.ilseon.ui.components.AppCard
 import com.ilseon.ui.components.MarkdownText
-import com.ilseon.ui.theme.QuietAmber
+import com.ilseon.ui.theme.extendedColors
+import com.ilseon.ui.theme.toThemeColor
 import com.ilseon.ui.theme.toColor
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
@@ -265,35 +266,32 @@ private fun ReflectionItem(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(task.priority.toColor(), CircleShape)
+                            .background(task.priority.toThemeColor(), CircleShape)
                     )
                     Text(
                         text = contextName,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                     if (task.isUrgent) {
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = "Urgent",
-                            tint = QuietAmber,
+                            tint = MaterialTheme.extendedColors.priorityHigh,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                 }
                 task.actualEnergyLevel?.let { level ->
+                    val levelColor = level.toThemeColor()
                     Row(
                         modifier = Modifier
                             .background(
-                                level
-                                    .toColor()
-                                    .copy(alpha = 0.1f), RoundedCornerShape(8.dp)
+                                levelColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp)
                             )
                             .border(
                                 width = 1.dp,
-                                color = level
-                                    .toColor()
-                                    .copy(alpha = 0.5f),
+                                color = levelColor.copy(alpha = 0.5f),
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -308,14 +306,14 @@ private fun ReflectionItem(
                         Icon(
                             imageVector = icon,
                             contentDescription = "Energy Level",
-                            tint = level.toColor(),
+                            tint = levelColor,
                             modifier = Modifier
                                 .size(20.dp)
                                 .rotate(90f)
                         )
                         Text(
                             text = level.name,
-                            color = level.toColor(),
+                            color = levelColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )

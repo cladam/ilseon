@@ -50,11 +50,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.ilseon.data.routine.RoutineRun
 import com.ilseon.data.routine.RoutineStep
 import com.ilseon.data.routine.RoutineWithSteps
-import com.ilseon.ui.theme.BorderQuiet
-import com.ilseon.ui.theme.DarkGrey
-import com.ilseon.ui.theme.LightGrey
-import com.ilseon.ui.theme.MutedDetail
-import com.ilseon.ui.theme.MutedTeal
 import kotlinx.coroutines.delay
 
 /**
@@ -108,7 +103,7 @@ fun RoutineRunnerOverlay(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = DarkGrey
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
@@ -128,12 +123,12 @@ fun RoutineRunnerOverlay(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
-                            .background(LightGrey)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Minimize Routine",
-                            tint = MutedDetail
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -148,7 +143,7 @@ fun RoutineRunnerOverlay(
                             Text(
                                 text = "STEP ${currentIndex + 1} OF ${steps.size}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MutedTeal,
+                                color = MaterialTheme.colorScheme.primary,
                                 letterSpacing = 1.sp
                             )
                         }
@@ -169,14 +164,14 @@ fun RoutineRunnerOverlay(
                             modifier = Modifier
                                 .size(88.dp)
                                 .clip(CircleShape)
-                                .background(MutedTeal.copy(alpha = 0.15f)),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = MutedTeal
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                         Spacer(modifier = Modifier.height(24.dp))
@@ -190,7 +185,7 @@ fun RoutineRunnerOverlay(
                         Text(
                             text = "All steps done. Resets automatically at 4:00 AM.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MutedDetail,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -202,7 +197,7 @@ fun RoutineRunnerOverlay(
                             .height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MutedTeal
+                            containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
                         Text("Back to Dashboard", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
@@ -226,7 +221,7 @@ fun RoutineRunnerOverlay(
                             modifier = Modifier
                                 .size(140.dp)
                                 .clip(CircleShape)
-                                .background(LightGrey),
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -234,14 +229,14 @@ fun RoutineRunnerOverlay(
                                     text = timeFormatted,
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isOverTarget) MutedTeal
+                                    color = if (isOverTarget) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.onSurface
                                 )
                                 if (currentStep.targetDurationMinutes != null) {
                                     Text(
                                         text = "Target: ${currentStep.targetDurationMinutes}m",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MutedDetail
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -275,7 +270,7 @@ fun RoutineRunnerOverlay(
                                 .height(64.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MutedTeal
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(
@@ -295,16 +290,16 @@ fun RoutineRunnerOverlay(
                                 .fillMaxWidth()
                                 .height(48.dp),
                             shape = RoundedCornerShape(16.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderQuiet)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SkipNext,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = MutedDetail
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Skip for Now", fontSize = 14.sp, color = MutedDetail)
+                            Text("Skip for Now", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

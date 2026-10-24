@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.ilseon.data.EnergyLevel
-import com.ilseon.data.toColor
+import com.ilseon.ui.theme.toThemeColor
 import kotlinx.coroutines.delay
 
 @Composable
@@ -122,6 +122,7 @@ fun ReflectionDialog(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             EnergyLevel.entries.forEach { level ->
+                                val levelColor = level.toThemeColor()
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier
@@ -129,7 +130,7 @@ fun ReflectionDialog(
                                         .clickable { selectedEnergyLevel = level }
                                         .background(
                                             if (selectedEnergyLevel == level) {
-                                                level.toColor().copy(alpha = 0.2f)
+                                                levelColor.copy(alpha = 0.2f)
                                             } else {
                                                 Color.Transparent
                                             }
@@ -137,7 +138,7 @@ fun ReflectionDialog(
                                         .border(
                                             width = 1.dp,
                                             color = if (selectedEnergyLevel == level) {
-                                                level.toColor()
+                                                levelColor
                                             } else {
                                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                                             },
@@ -145,7 +146,7 @@ fun ReflectionDialog(
                                         )
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
-                                    Text(level.name, color = level.toColor())
+                                    Text(level.name, color = levelColor)
                                 }
                             }
                         }

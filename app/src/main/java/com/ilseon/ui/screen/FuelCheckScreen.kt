@@ -35,10 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ilseon.FuelCheckViewModel
 import com.ilseon.data.EnergyLevel
-import com.ilseon.ui.theme.EnergyHigh
-import com.ilseon.ui.theme.EnergyLow
-import com.ilseon.ui.theme.EnergyMedium
 import com.ilseon.ui.theme.IlseonTheme
+import com.ilseon.ui.theme.toThemeColor
 
 @Composable
 fun FuelCheckScreen(
@@ -84,10 +82,11 @@ fun EnergyButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val levelColor = energyLevel.toThemeColor()
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(containerColor = energyLevel.toColor().copy(alpha = 0.1f))
+        colors = ButtonDefaults.buttonColors(containerColor = levelColor.copy(alpha = 0.1f))
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -102,7 +101,7 @@ fun EnergyButton(
                         EnergyLevel.Low -> Icons.Default.Battery1Bar
                     },
                     contentDescription = null,
-                    tint = energyLevel.toColor()
+                    tint = levelColor
                 )
                 Text(
                     text = energyLevel.name,
@@ -114,17 +113,9 @@ fun EnergyButton(
                 Box(
                     modifier = Modifier
                         .size(12.dp)
-                        .background(color = energyLevel.toColor(), shape = CircleShape)
+                        .background(color = levelColor, shape = CircleShape)
                 )
             }
         }
-    }
-}
-
-fun EnergyLevel.toColor(): Color {
-    return when (this) {
-        EnergyLevel.High -> EnergyHigh
-        EnergyLevel.Medium -> EnergyMedium
-        EnergyLevel.Low -> EnergyLow
     }
 }

@@ -278,7 +278,7 @@ fun QuickCaptureSheet(
         // --- SCHEDULING SECTION ---
         Text(
             "Scheduling",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
         Row(
@@ -420,7 +420,7 @@ fun QuickCaptureSheet(
 
                 Text(
                     "Repeat on",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
                 Spacer(Modifier.height(8.dp))
@@ -438,7 +438,7 @@ fun QuickCaptureSheet(
                 Text(
                     text = "Task will recur every week on the selected days.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -448,7 +448,7 @@ fun QuickCaptureSheet(
         // --- CONTEXT SECTION ---
         Text(
             "Context",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
         Spacer(Modifier.height(8.dp))
@@ -466,9 +466,7 @@ fun QuickCaptureSheet(
                         containerColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary.copy(
                             alpha = 0.2f
                         ) else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.7f
-                        )
+                        contentColor = if (selectedContextId == ctx.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     shape = RoundedCornerShape(12.dp),
                     elevation = ButtonDefaults.buttonElevation(0.dp)
@@ -483,7 +481,7 @@ fun QuickCaptureSheet(
         // --- PRIORITY SECTION ---
         Text(
             "Priority",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
         Spacer(Modifier.height(8.dp))
@@ -513,7 +511,7 @@ fun QuickCaptureSheet(
         // --- ENERGY LEVEL SECTION ---
         Text(
             "Energy Level (Optional)",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
         Spacer(Modifier.height(8.dp))
@@ -554,7 +552,7 @@ fun QuickCaptureSheet(
             Text(
                 "Urgent",
                 modifier = Modifier.padding(start = 8.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

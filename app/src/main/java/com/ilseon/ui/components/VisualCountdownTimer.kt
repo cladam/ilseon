@@ -77,6 +77,8 @@ fun VisualCountdownTimer(
         return String.format("%02d:%02d", minutes, seconds)
     }
 
+    val trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier.size(size)
@@ -84,7 +86,7 @@ fun VisualCountdownTimer(
         Canvas(modifier = Modifier.size(size)) {
             // Background arc
             drawArc(
-                color = Color.Gray.copy(alpha = 0.3f),
+                color = trackColor,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,

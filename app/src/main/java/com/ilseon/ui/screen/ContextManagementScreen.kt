@@ -419,7 +419,7 @@ fun ContextManagementScreen(
         // List of existing contexts
         Text(
             text = "Existing Contexts",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )

@@ -362,14 +362,14 @@ fun CurrentPriorityTask(
                     Text(
                         "Sub-Tasks",
                         style = typography.labelMedium,
-                        color = colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = colorScheme.onSurfaceVariant
                     )
                     Text(
                         "$completedCount/${subTasks.size}",
                         style = typography.labelMedium,
                         color = if (completedCount == subTasks.size)
                             colorScheme.primary
-                        else colorScheme.onSurface.copy(alpha = 0.5f)
+                        else colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -405,7 +405,7 @@ fun CurrentPriorityTask(
                                 modifier = Modifier.size(20.dp),
                                 colors = androidx.compose.material3.CheckboxDefaults.colors(
                                     checkedColor = colorScheme.primary,
-                                    uncheckedColor = colorScheme.onSurface.copy(alpha = 0.5f)
+                                    uncheckedColor = colorScheme.outline
                                 )
                             )
                             Spacer(Modifier.width(8.dp))
@@ -413,7 +413,7 @@ fun CurrentPriorityTask(
                                 text = subTask.title,
                                 style = typography.bodyMedium,
                                 color = if (subTask.isComplete)
-                                    colorScheme.onSurface.copy(alpha = 0.5f)
+                                    colorScheme.onSurfaceVariant
                                 else colorScheme.onSurface,
                                 textDecoration = if (subTask.isComplete)
                                     androidx.compose.ui.text.style.TextDecoration.LineThrough

@@ -657,11 +657,15 @@ class MainActivity : ComponentActivity() {
                                     initialContextDescription = vttContextDescriptionResult,
                                     onNavigateToOngoingTasks = { contextId ->
                                         navController.navigate("ongoing_tasks/$contextId")
-                                    }
+                                    },
+                                    isRightHanded = isRightHanded
                                 )
                             }
                             composable(Screen.Routines.route) {
-                                RoutinesScreen(viewModel = routineViewModel)
+                                RoutinesScreen(
+                                    viewModel = routineViewModel,
+                                    isRightHanded = isRightHanded
+                                )
                             }
                             composable(
                                 route = "${Screen.IdeaInbox.route}?ideaId={ideaId}",

@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -35,7 +36,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -81,23 +84,13 @@ fun ContextManagementScreen(
     onNewContextDescriptionVttClick: () -> Unit,
     initialContextName: String = "",
     initialContextDescription: String = "",
-    onNavigateToOngoingTasks: (String) -> Unit
+    onNavigateToOngoingTasks: (String) -> Unit,
+    isRightHanded: Boolean = true
 ) {
     val contextsWithFocusBlock by viewModel.contextsWithFocusBlock.collectAsState()
-    var newContextName by remember { mutableStateOf(initialContextName) }
-    var newContextDescription by remember { mutableStateOf(initialContextDescription) }
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
-    var focusBlockEnabled by remember { mutableStateOf(false) }
-    var showStartTimePicker by remember { mutableStateOf(false) }
-    var showEndTimePicker by remember { mutableStateOf(false) }
-    var newRepeatDays by remember { mutableStateOf<List<Int>>(emptyList()) }
-    var editingContext by remember { mutableStateOf<ContextWithFocusBlock?>(null) }
-    val isEditing = editingContext != null
 
-    val is24HourFormat = DateFormat.is24HourFormat(LocalContext.current)
-    val startTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
-    val endTimeState = rememberTimePickerState(is24Hour = is24HourFormat)
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var editingContext by remember { mutableStateOf<ContextWithFocusBlock?>(null) }
 
     val showTasksDialog by viewModel.showTasksDialog.collectAsState()
     val tasks by viewModel.selectedContextTasks.collectAsState()
@@ -109,349 +102,125 @@ fun ContextManagementScreen(
         )
     }
 
-    fun resetForm() {
-        newContextName = ""
-        newContextDescription = ""
-        startTime = ""
-        endTime = ""
-        focusBlockEnabled = false
-        newRepeatDays = emptyList()
-        editingContext = null
-    }
-
-    LaunchedEffect(initialContextName) {
-        newContextName = initialContextName
-    }
-
-    LaunchedEffect(initialContextDescription) {
-        newContextDescription = initialContextDescription
-    }
-
-    LaunchedEffect(editingContext) {
-        editingContext?.let { contextToEdit ->
-            newContextName = contextToEdit.context.name
-            newContextDescription = contextToEdit.context.description ?: ""
-            focusBlockEnabled = contextToEdit.focusBlock != null
-            if (contextToEdit.focusBlock != null) {
-                startTime = contextToEdit.focusBlock.startTime
-                endTime = contextToEdit.focusBlock.endTime
-                newRepeatDays = contextToEdit.focusBlock.repeatDays
-            } else {
-                startTime = ""
-                endTime = ""
-                newRepeatDays = emptyList()
-            }
+    LaunchedEffect(initialContextName, initialContextDescription) {
+        if (initialContextName.isNotBlank() || initialContextDescription.isNotBlank()) {
+            showBottomSheet = true
         }
     }
 
-
-    if (showStartTimePicker) {
-        TimePickerDialog(
-            onCancel = { showStartTimePicker = false },
-            onConfirm = {
-                startTime = String.format("%02d:%02d", startTimeState.hour, startTimeState.minute)
-                showStartTimePicker = false
-            },
-        ) {
-            TimePicker(state = startTimeState)
-        }
-    }
-
-    if (showEndTimePicker) {
-        TimePickerDialog(
-            onCancel = { showEndTimePicker = false },
-            onConfirm = {
-                endTime = String.format("%02d:%02d", endTimeState.hour, endTimeState.minute)
-                showEndTimePicker = false
-            },
-        ) {
-            TimePicker(state = endTimeState)
-        }
-    }
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-    ) {
-        Text(
-            text = "Manage Contexts",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(Modifier.height(24.dp))
-
-        // Add new context section
-        Column {
-            OutlinedTextField(
-                value = newContextName,
-                onValueChange = { newContextName = it },
-                label = { Text(if (isEditing) "Context name" else "New context name") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                ),
-                maxLines = 1,
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Next
-                ),
-                trailingIcon = {
-                    IconButton(onClick = onNewContextVttClick) {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = "Voice To Text"
-                        )
-                    }
-                }
-            )
-            Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
-                value = newContextDescription,
-                onValueChange = { newContextDescription = it },
-                label = { Text("Description (optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                ),
-                maxLines = 5,
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    capitalization = KeyboardCapitalization.Sentences,
-                ),
-                trailingIcon = {
-                    IconButton(onClick = onNewContextDescriptionVttClick) {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = "Voice To Text"
-                        )
-                    }
-                }
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = focusBlockEnabled,
-                        onClick = { focusBlockEnabled = !focusBlockEnabled },
-                        role = Role.Checkbox
-                    )
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = focusBlockEnabled,
-                    onCheckedChange = null
-                )
-                Text(
-                    text = "Enable Focus Block",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-
-            AnimatedVisibility(visible = focusBlockEnabled) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            OutlinedTextField(
-                                value = startTime,
-                                onValueChange = {},
-                                label = { Text("Start Time") },
-                                modifier = Modifier.fillMaxWidth(),
-                                readOnly = true,
-                                colors = TextFieldDefaults.colors(
-                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    cursorColor = MaterialTheme.colorScheme.primary,
-                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.3f
-                                    ),
-                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.7f
-                                    ),
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.7f
-                                    )
-                                ),
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clickable { showStartTimePicker = true }
-                            )
-                        }
-                        Box(modifier = Modifier.weight(1f)) {
-                            OutlinedTextField(
-                                value = endTime,
-                                onValueChange = {},
-                                label = { Text("End Time") },
-                                modifier = Modifier.fillMaxWidth(),
-                                readOnly = true,
-                                colors = TextFieldDefaults.colors(
-                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    cursorColor = MaterialTheme.colorScheme.primary,
-                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.3f
-                                    ),
-                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.7f
-                                    ),
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.7f
-                                    )
-                                ),
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clickable { showEndTimePicker = true }
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Repeat Days",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-                    )
-                    DayPicker(
-                        selectedDays = newRepeatDays,
-                        onDaySelected = { day ->
-                            newRepeatDays = if (newRepeatDays.contains(day)) {
-                                newRepeatDays.filter { it != day }
-                            } else {
-                                newRepeatDays + day
-                            }
-                        }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        if (newContextName.isNotBlank()) {
-                            val st = if (focusBlockEnabled) startTime else null
-                            val et = if (focusBlockEnabled) endTime else null
-                            val desc = newContextDescription.ifBlank { null }
-                            val days = if (focusBlockEnabled) newRepeatDays else null
-                            if (isEditing) {
-                                editingContext?.let {
-                                    viewModel.updateContext(
-                                        it.context.id,
-                                        newContextName,
-                                        desc,
-                                        st,
-                                        et,
-                                        days
-                                    )
-                                }
-                            } else {
-                                viewModel.addContext(newContextName, desc, st, et, days)
-                            }
-                            resetForm()
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    enabled = newContextName.isNotBlank()
-                ) {
-                    Text(if (isEditing) "Update" else "Add Context", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                }
-                if (isEditing) {
-                    Button(
-                        onClick = { resetForm() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                    ) {
-                        Text("Cancel", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // List of existing contexts
-        Text(
-            text = "Existing Contexts",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(12.dp))
-
-        if (contextsWithFocusBlock.isEmpty()) {
+    Scaffold(
+        floatingActionButtonPosition = if (isRightHanded) FabPosition.End else FabPosition.Start,
+        floatingActionButton = {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                    .size(118.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    .clickable {
+                        editingContext = null
+                        showBottomSheet = true
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "No contexts yet. Add one above!",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 16.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(contextsWithFocusBlock, key = { it.context.id }) { item ->
-                    ContextItem(
-                        contextWithFocusBlock = item,
-                        onDelete = { viewModel.deleteContext(item.context.id) },
-                        onEdit = { editingContext = item },
-                        onNavigateToOngoingTasks = { onNavigateToOngoingTasks(item.context.id.toString()) }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "New Context",
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "NEW CONTEXT",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 11.sp
                     )
                 }
             }
         }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = "Manage Contexts",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = "Dedicated focus blocks and environments for your tasks and routines.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            if (contextsWithFocusBlock.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No contexts yet. Tap + to create one!",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 16.sp
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(contextsWithFocusBlock, key = { it.context.id }) { item ->
+                        ContextItem(
+                            contextWithFocusBlock = item,
+                            onDelete = { viewModel.deleteContext(item.context.id) },
+                            onEdit = {
+                                editingContext = item
+                                showBottomSheet = true
+                            },
+                            onNavigateToOngoingTasks = { onNavigateToOngoingTasks(item.context.id.toString()) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showBottomSheet) {
+        ContextBottomSheet(
+            editingContext = editingContext,
+            onDismiss = {
+                showBottomSheet = false
+                editingContext = null
+            },
+            onSave = { name, desc, st, et, days ->
+                if (editingContext != null) {
+                    viewModel.updateContext(
+                        editingContext!!.context.id,
+                        name,
+                        desc,
+                        st,
+                        et,
+                        days
+                    )
+                } else {
+                    viewModel.addContext(name, desc, st, et, days)
+                }
+                showBottomSheet = false
+                editingContext = null
+            },
+            onVttNameClick = onNewContextVttClick,
+            onVttDescriptionClick = onNewContextDescriptionVttClick,
+            initialVttName = initialContextName,
+            initialVttDescription = initialContextDescription
+        )
     }
 }
 

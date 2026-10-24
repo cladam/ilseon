@@ -24,12 +24,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -745,7 +754,8 @@ fun AddIdeaDialog(
     onDismiss: () -> Unit,
     onAddIdea: (String, List<String>, UUID?) -> Unit,
     onVttClick: () -> Unit,
-    taskContexts: List<TaskContext>
+    taskContexts: List<TaskContext>,
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
     var textFieldValue by remember {
         mutableStateOf(
@@ -759,7 +769,6 @@ fun AddIdeaDialog(
     var contextId by remember { mutableStateOf<UUID?>(null) }
     val focusRequester = remember { FocusRequester() }
     var fullScreenImageUri by remember { mutableStateOf<String?>(null) }
-    var contextMenuExpanded by remember { mutableStateOf(false) }
 
     fullScreenImageUri?.let { uri ->
         FullScreenImageDialog(imageUri = uri, onDismiss = { fullScreenImageUri = null })
@@ -781,169 +790,221 @@ fun AddIdeaDialog(
         }
     )
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding(),
-            topBar = {
-                TopAppBar(
-                    title = { Text("New Idea") },
-                    navigationIcon = {
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close"
-                            )
-                        }
-                    },
-                    actions = {
-                        Box {
-                            IconButton(onClick = { contextMenuExpanded = true }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Select Context")
-                            }
-                            DropdownMenu(
-                                expanded = contextMenuExpanded,
-                                onDismissRequest = { contextMenuExpanded = false }
-                            ) {
-                                taskContexts.forEach { context ->
-                                    DropdownMenuItem(
-                                        text = { Text(context.name) },
-                                        onClick = {
-                                            contextId = context.id
-                                            contextMenuExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                        IconButton(onClick = {
-                            imagePicker.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.AddPhotoAlternate,
-                                contentDescription = "Add Image"
-                            )
-                        }
-                        IconButton(onClick = onVttClick) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = "Voice To Text"
-                            )
-                        }
-                        TextButton(
-                            onClick = { onAddIdea(textFieldValue.text, imageUris, contextId) },
-                            enabled = textFieldValue.text.isNotBlank()
-                        ) {
-                            Text(
-                                text = "Save",
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                )
-            },
-            bottomBar = {
-                FormattingBar(
-                    onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
-                    onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
-                    onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
-                    onListClick = { textFieldValue = applyList(textFieldValue) },
-                    onHeadingClick = { textFieldValue = applyHeading(textFieldValue) },
-                    onCheckbockClick = { textFieldValue = applyCheckbox(textFieldValue) }
-                )
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                if (imageUris.isNotEmpty()) {
-                    if (imageUris.size == 1) {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            AsyncImage(
-                                model = imageUris.first().toUri(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { fullScreenImageUri = imageUris.first() },
-                                contentScale = ContentScale.Fit
-                            )
-                            IconButton(
-                                onClick = { imageUris = emptyList() },
-                                modifier = Modifier.align(Alignment.TopEnd)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove Image"
-                                )
-                            }
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            items(imageUris) { uri ->
-                                Box {
-                                    AsyncImage(
-                                        model = uri.toUri(),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .aspectRatio(1f)
-                                            .clickable { fullScreenImageUri = uri },
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    IconButton(
-                                        onClick = { imageUris = imageUris - uri },
-                                        modifier = Modifier.align(Alignment.TopEnd)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "Remove Image"
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                TextField(
-                    value = textFieldValue,
-                    onValueChange = { textFieldValue = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                    placeholder = { Text("Jot down your idea...") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                    ),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        capitalization = KeyboardCapitalization.Sentences
-                    )
-                )
-            }
+    LaunchedEffect(Unit) {
+        if (initialText.isEmpty()) {
+            delay(300)
+            focusRequester.requestFocus()
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (initialText.isEmpty()) {
-            focusRequester.requestFocus()
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 20.dp)
+                .navigationBarsPadding()
+                .imePadding()
+        ) {
+            // Header Row: Title & Action Icons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "New Idea",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Capture thoughts and inspiration spontaneously.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.AddPhotoAlternate,
+                            contentDescription = "Add Image",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onVttClick) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Voice To Text",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Context Selector (Single horizontal scrollable row)
+            if (taskContexts.isNotEmpty()) {
+                Text(
+                    text = "Focus Context (Optional)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FilterChip(
+                        selected = contextId == null,
+                        onClick = { contextId = null },
+                        label = { Text("None", fontSize = 12.sp) }
+                    )
+                    taskContexts.forEach { ctx ->
+                        FilterChip(
+                            selected = contextId == ctx.id,
+                            onClick = { contextId = ctx.id },
+                            label = { Text(ctx.name, fontSize = 12.sp) }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Attached Images
+            if (imageUris.isNotEmpty()) {
+                if (imageUris.size == 1) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        AsyncImage(
+                            model = imageUris.first().toUri(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { fullScreenImageUri = imageUris.first() },
+                            contentScale = ContentScale.Crop
+                        )
+                        IconButton(
+                            onClick = { imageUris = emptyList() },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(28.dp)
+                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove Image",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(imageUris) { uri ->
+                            Box {
+                                AsyncImage(
+                                    model = uri.toUri(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { fullScreenImageUri = uri },
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = { imageUris = imageUris - uri },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(2.dp)
+                                        .size(24.dp)
+                                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Remove Image",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // Markdown Formatting Toolbar
+            FormattingBar(
+                onBoldClick = { textFieldValue = applyMarkdown(textFieldValue, "**") },
+                onItalicClick = { textFieldValue = applyMarkdown(textFieldValue, "*") },
+                onUnderscoreClick = { textFieldValue = applyMarkdown(textFieldValue, "<u>", "</u>") },
+                onListClick = { textFieldValue = applyList(textFieldValue) },
+                onHeadingClick = { textFieldValue = applyHeading(textFieldValue) },
+                onCheckbockClick = { textFieldValue = applyCheckbox(textFieldValue) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Main Idea Text Field - Fills available vertical space for long-form thoughts
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = { textFieldValue = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                placeholder = { Text("Jot down your idea...") },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    capitalization = KeyboardCapitalization.Sentences
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Big Bottom Save Button (Matching Quick Capture, Routines, and Contexts)
+            Button(
+                onClick = { onAddIdea(textFieldValue.text, imageUris, contextId) },
+                enabled = textFieldValue.text.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = com.ilseon.ui.theme.MutedTeal
+                )
+            ) {
+                Text(
+                    text = "Save Idea",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

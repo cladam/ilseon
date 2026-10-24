@@ -258,14 +258,31 @@ class RoutineViewModel @Inject constructor(
         }
     }
 
+    // Preview / Test mode: runs the routine without persisting completions or recording a daily run
+    private val _isPreviewMode = MutableStateFlow(false)
+    val isPreviewMode: StateFlow<Boolean> = _isPreviewMode.asStateFlow()
+
     fun startRoutine(routineWithSteps: RoutineWithSteps) {
         viewModelScope.launch {
+            _isPreviewMode.value = false
             val run = routineRepository.getOrCreateTodayRun(routineWithSteps.routine.id)
             _runningRoutine.value = routineWithSteps
             _currentRun.value = run
             _runnerUiState.value = RoutineRunnerUiState.FullOverlay
             syncRoutineToWear(routineWithSteps, run)
         }
+    }
+
+    fun startRoutinePreview(routineWithSteps: RoutineWithSteps) {
+        _isPreviewMode.value = true
+        val ephemeralRun = RoutineRun(
+            routineId = routineWithSteps.routine.id,
+            sessionDate = System.currentTimeMillis(),
+            startedAt = System.currentTimeMillis()
+        )
+        _runningRoutine.value = routineWithSteps
+        _currentRun.value = ephemeralRun
+        _runnerUiState.value = RoutineRunnerUiState.FullOverlay
     }
 
     fun minimizeRunner() {
@@ -280,6 +297,16 @@ class RoutineViewModel @Inject constructor(
         val run = _currentRun.value ?: return
         val routine = _runningRoutine.value
         hapticManager.performNudge()
+
+        if (_isPreviewMode.value) {
+            // Ephemeral: only update in-memory state for preview testing
+            _currentRun.value = run.copy(
+                currentStepIndex = nextIndex,
+                completedStepIds = run.completedStepIds + step.id.toString()
+            )
+            return
+        }
+
         viewModelScope.launch {
             routineRepository.recordStepCompleted(run.id, step.id, nextIndex)
             val updatedRun = run.copy(
@@ -295,6 +322,15 @@ class RoutineViewModel @Inject constructor(
         val run = _currentRun.value ?: return
         val routine = _runningRoutine.value
         hapticManager.performNudge()
+
+        if (_isPreviewMode.value) {
+            _currentRun.value = run.copy(
+                currentStepIndex = nextIndex,
+                skippedStepIds = run.skippedStepIds + step.id.toString()
+            )
+            return
+        }
+
         viewModelScope.launch {
             routineRepository.recordStepSkipped(run.id, step.id, nextIndex)
             val updatedRun = run.copy(
@@ -313,12 +349,13 @@ class RoutineViewModel @Inject constructor(
     fun finishRoutine() {
         hapticManager.performSuccess()
         val run = _currentRun.value
-        if (run != null) {
+        if (!_isPreviewMode.value && run != null) {
             viewModelScope.launch {
                 routineRepository.completeRun(run.id)
             }
+            syncRoutineToWear(null, null)
         }
-        syncRoutineToWear(null, null)
+        _isPreviewMode.value = false
         _runnerUiState.value = RoutineRunnerUiState.Hidden
         _runningRoutine.value = null
         _currentRun.value = null

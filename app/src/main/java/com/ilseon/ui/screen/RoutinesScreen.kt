@@ -1,6 +1,7 @@
 package com.ilseon.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,30 +42,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ilseon.RoutineRunnerUiState
 import com.ilseon.RoutineViewModel
 import com.ilseon.data.routine.RoutineWithSteps
+import com.ilseon.ui.components.RoutineRunnerOverlay
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutinesScreen(
     viewModel: RoutineViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isRightHanded: Boolean = true
 ) {
     val activeRoutines by viewModel.activeRoutines.collectAsState()
     val contexts by viewModel.contexts.collectAsState()
     val isDialogOpen by viewModel.isCreateRoutineDialogOpen.collectAsState()
     val editingRoutine by viewModel.editingRoutine.collectAsState()
+    val runnerUiState by viewModel.runnerUiState.collectAsState()
+    val runningRoutine by viewModel.runningRoutine.collectAsState()
+    val currentRun by viewModel.currentRun.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        floatingActionButtonPosition = if (isRightHanded) androidx.compose.material3.FabPosition.End else androidx.compose.material3.FabPosition.Start,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.openCreateRoutineDialog() },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+            Box(
+                modifier = Modifier
+                    .size(118.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    .clickable { viewModel.openCreateRoutineDialog() },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Routine")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "New Routine",
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "NEW ROUTINE",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 11.sp
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -156,6 +182,7 @@ fun RoutinesScreen(
                     items(activeRoutines, key = { it.routine.id }) { item ->
                         RoutineCard(
                             routineWithSteps = item,
+                            onPlay = { viewModel.startRoutinePreview(item) },
                             onEdit = { viewModel.openEditRoutineDialog(item) },
                             onArchive = { viewModel.archiveRoutine(item.routine.id) },
                             onDelete = { viewModel.deleteRoutine(item.routine) }
@@ -167,7 +194,7 @@ fun RoutinesScreen(
     }
 
     if (isDialogOpen) {
-        CreateRoutineDialog(
+        CreateRoutineSheet(
             contexts = contexts,
             editingRoutine = editingRoutine,
             onDismiss = { viewModel.closeCreateRoutineDialog() },
@@ -187,11 +214,34 @@ fun RoutinesScreen(
             }
         )
     }
+
+    if (runnerUiState == RoutineRunnerUiState.FullOverlay && runningRoutine != null && currentRun != null) {
+        RoutineRunnerOverlay(
+            routineWithSteps = runningRoutine!!,
+            todayRun = currentRun!!,
+            onStepCompleted = { step, nextIndex ->
+                viewModel.onStepCompleted(step, nextIndex)
+            },
+            onStepSkipped = { step, nextIndex ->
+                viewModel.onStepSkipped(step, nextIndex)
+            },
+            onPacingElapsed = {
+                viewModel.onStepPacingElapsed()
+            },
+            onFinishRoutine = {
+                viewModel.finishRoutine()
+            },
+            onMinimize = {
+                viewModel.minimizeRunner()
+            }
+        )
+    }
 }
 
 @Composable
 private fun RoutineCard(
     routineWithSteps: RoutineWithSteps,
+    onPlay: () -> Unit,
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
@@ -230,7 +280,18 @@ private fun RoutineCard(
                     }
                 }
 
-                Row {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Test / Preview Routine",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                     IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                         Icon(
                             imageVector = Icons.Default.Edit,

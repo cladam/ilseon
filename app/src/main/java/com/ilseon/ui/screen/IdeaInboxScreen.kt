@@ -184,6 +184,7 @@ fun IdeaInboxScreen(
 ) {
     val ideas by viewModel.ideas.collectAsState()
     val taskContexts by viewModel.taskContexts.collectAsState()
+    var viewingIdea by remember { mutableStateOf<Idea?>(null) }
     var editingIdea by remember { mutableStateOf<Idea?>(null) }
     var currentView by remember { mutableStateOf("Inbox") }
     val lazyListState = rememberLazyListState()
@@ -271,6 +272,19 @@ fun IdeaInboxScreen(
         )
     }
 
+    viewingIdea?.let { idea ->
+        IdeaDetailsDialog(
+            idea = idea,
+            context = taskContexts.find { it.id == idea.contextId },
+            onDismiss = { viewingIdea = null },
+            onEdit = {
+                viewingIdea = null
+                editingIdea = idea
+            },
+            onImageClick = { uri -> fullScreenImageUri = uri }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -354,7 +368,8 @@ fun IdeaInboxScreen(
                     ) {
                         AppCard(
                             modifier = Modifier
-                                .animateItem(),
+                                .animateItem()
+                                .clickable { viewingIdea = idea },
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 if (idea.imageUris.isNotEmpty()) {
@@ -391,11 +406,29 @@ fun IdeaInboxScreen(
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
-                                idea.content?.let {
-                                    MarkdownText(
-                                        markdown = it,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
+                                idea.content?.let { content ->
+                                    var isOverflowing by remember(content) { mutableStateOf(false) }
+                                    Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                                        MarkdownText(
+                                            markdown = content,
+                                            maxLines = 4,
+                                            truncateOnTextOverflow = true,
+                                            onClick = { viewingIdea = idea },
+                                            onTextLayout = { lineCount ->
+                                                if (lineCount > 4) {
+                                                    isOverflowing = true
+                                                }
+                                            }
+                                        )
+                                    }
+                                    if (isOverflowing) {
+                                        Text(
+                                            text = "...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                    }
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -548,6 +581,132 @@ fun FormattingBar(
                 imageVector = Icons.Outlined.Title,
                 contentDescription = "Heading"
             )
+        }
+    }
+}
+
+@Composable
+fun IdeaDetailsDialog(
+    idea: Idea,
+    context: TaskContext?,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onImageClick: (String) -> Unit
+) {
+    val title = if (idea.isReference) "Note 📝" else "Idea 💡"
+    val scrollState = rememberScrollState()
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(16.dp))
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(scrollState)
+                ) {
+                    if (idea.imageUris.isNotEmpty()) {
+                        if (idea.imageUris.size == 1) {
+                            AsyncImage(
+                                model = Uri.parse(idea.imageUris.first()),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clickable { onImageClick(idea.imageUris.first()) },
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(3),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(120.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(idea.imageUris) { uri ->
+                                    AsyncImage(
+                                        model = Uri.parse(uri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .aspectRatio(1f)
+                                            .clickable { onImageClick(uri) },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    idea.content?.let { content ->
+                        if (content.isNotBlank()) {
+                            MarkdownText(
+                                markdown = content,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm",
+                            LocalLocale.current.platformLocale
+                        ).format(Date(idea.createdAt)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (context != null) {
+                        Text(
+                            text = context.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = onEdit) {
+                        Text("Edit")
+                    }
+                }
+            }
         }
     }
 }

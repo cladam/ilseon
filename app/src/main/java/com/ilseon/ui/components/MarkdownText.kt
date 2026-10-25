@@ -14,11 +14,19 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 fun MarkdownText(
     markdown: String,
     modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+    truncateOnTextOverflow: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    onTextLayout: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     MarkdownText(
         markdown = markdown,
         modifier = modifier,
+        maxLines = maxLines,
+        truncateOnTextOverflow = truncateOnTextOverflow,
+        onClick = onClick,
+        onTextLayout = onTextLayout,
         style = TextStyle(
             color = MaterialTheme.colorScheme.onSurface
         ),

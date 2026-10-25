@@ -57,12 +57,12 @@ class NotificationHelper @Inject constructor(
         private const val FOCUS_CHANNEL_NAME = "Focus Session"
         private const val FOCUS_CHANNEL_DESCRIPTION = "Persistent notification for the active focus session"
 
-        // Low-Sensory Audio Channels
-        const val CHANNEL_HIGH_PRIORITY_AUDIO = "ilseon_tasks_high_audio_v1"
+        // Low-Sensory Audio Channels (v2 with string-named raw URIs and volume-balanced audio)
+        const val CHANNEL_HIGH_PRIORITY_AUDIO = "ilseon_tasks_high_audio_v2"
         private const val CHANNEL_HIGH_PRIORITY_AUDIO_NAME = "High-Priority Audio Cue"
         private const val CHANNEL_HIGH_PRIORITY_AUDIO_DESCRIPTION = "Low-sensory gentle wood tap for high-priority tasks."
 
-        const val CHANNEL_URGENT_AUDIO = "ilseon_tasks_urgent_audio_v1"
+        const val CHANNEL_URGENT_AUDIO = "ilseon_tasks_urgent_audio_v2"
         private const val CHANNEL_URGENT_AUDIO_NAME = "Urgent Audio Cue"
         private const val CHANNEL_URGENT_AUDIO_DESCRIPTION = "Low-sensory singing bowl chime for urgent tasks and incident follow-ups."
     }
@@ -134,7 +134,7 @@ class NotificationHelper @Inject constructor(
                 .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
                 .build()
 
-            val highSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.marimba_single}")
+            val highSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/marimba_single")
             val highPriorityAudioChannel = NotificationChannel(
                 CHANNEL_HIGH_PRIORITY_AUDIO,
                 CHANNEL_HIGH_PRIORITY_AUDIO_NAME,
@@ -145,7 +145,7 @@ class NotificationHelper @Inject constructor(
                 enableVibration(true)
             }
 
-            val urgentSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.soft_singing_bowl_3}")
+            val urgentSoundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/soft_singing_bowl_3")
             val urgentAudioChannel = NotificationChannel(
                 CHANNEL_URGENT_AUDIO,
                 CHANNEL_URGENT_AUDIO_NAME,

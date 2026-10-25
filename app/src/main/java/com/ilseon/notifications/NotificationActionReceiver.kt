@@ -7,12 +7,14 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.ilseon.MainActivity
+import com.ilseon.data.task.SettingsRepository
 import com.ilseon.data.task.TaskRepository
 import com.ilseon.data.task.TimerState
 import com.ilseon.service.HapticManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -28,6 +30,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var hapticManager: HapticManager
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         val taskIdString = intent.getStringExtra("EXTRA_TASK_ID") ?: return
@@ -70,13 +75,19 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 Manifest.permission.POST_NOTIFICATIONS
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
+                            val isUrgentAudio = settingsRepository.urgentAudioCueEnabled.first()
+                            val isHighAudio = settingsRepository.highPriorityAudioCueEnabled.first()
+
                             notificationHelper.showReminderNotification(
                                 updatedTask.id.toString(),
                                 updatedTask.title,
                                 updatedTask.description,
                                 tier,
                                 updatedTask.timerState,
-                                updatedTask.schedulingType
+                                updatedTask.schedulingType,
+                                isUrgent = updatedTask.isUrgent,
+                                isUrgentAudioEnabled = isUrgentAudio,
+                                isHighPriorityAudioEnabled = isHighAudio
                             )
                         }
                     }
